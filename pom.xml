@@ -244,13 +244,6 @@
 	</build>
 	<repositories>
 		<repository>
-			<id>mvnrepository</id>
-			<url>http://maven.nuiton.org/release/</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
 			<id>oss.sonatype.org</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
 			<snapshots>

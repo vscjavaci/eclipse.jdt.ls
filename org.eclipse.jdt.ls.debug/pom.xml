@@ -21,9 +21,9 @@
 				<configuration>
 					<artifactItems>
 						<artifactItem>
-							<groupId>com.sun</groupId>
-						    <artifactId>tools</artifactId>
-						    <version>1.7.0.13</version>
+							 <groupId>com.google.code.gson</groupId>
+  							 <artifactId>gson</artifactId>
+						     <version>2.7</version>
 						</artifactItem>
 					</artifactItems>
 				</configuration>
