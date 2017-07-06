@@ -16,32 +16,27 @@ package org.eclipse.jdt.ls.debug.internal.model;
 import org.eclipse.jdt.ls.debug.internal.DebugException;
 
 /**
- * A value containing an indexed collection of variables - for example, an
- * array.
+ * A value containing an indexed collection of variables - for example,
+ * an array.
  * <p>
  * The indexed collection value has been added to the debug model to support
- * automatic partitioning of large arrays in the debug UI. Clients are not
- * required to implement this interface for values representing indexed
- * collections, however, doing so will provide enhanced display options in the
- * debug UI.
+ * automatic partitioning of large arrays in the debug UI. Clients are not required
+ * to implement this interface for values representing indexed collections,
+ * however, doing so will provide enhanced display options in the debug UI.
  * </p>
  * <p>
  * Clients may implement this interface.
  * </p>
- *
  * @since 3.0
  */
 public interface IIndexedValue extends IValue {
 
     /**
-     * Returns the variable at the given offset in this collection. The offset
-     * is zero based.
-     *
-     * @param offset
-     *            zero based offset into this collection
+     * Returns the variable at the given offset in this collection.
+     * The offset is zero based.
+     * @param offset zero based offset into this collection
      * @return returns the variable in this collection at the given offset
-     * @throws DebugException
-     *             if unable to retrieve the variable at the given offset
+     * @throws DebugException if unable to retrieve the variable at the given offset
      */
     public IVariable getVariable(int offset) throws DebugException;
 
@@ -49,14 +44,11 @@ public interface IIndexedValue extends IValue {
      * Returns a subset of the elements in this collection of variables as
      * specified by the given offset and length.
      *
-     * @param offset
-     *            beginning offset of the subset of elements to return
-     * @param length
-     *            the number of elements to return
-     * @return a subset of the elements in this collection of variables as
-     *         specified by the given offset and length
-     * @throws DebugException
-     *             if unable to retrieve the variables
+     * @param offset beginning offset of the subset of elements to return
+     * @param length the number of elements to return
+     * @return a subset of the elements in this collection of variables as specified by 
+     *      the given offset and length
+     * @throws DebugException if unable to retrieve the variables
      */
     public IVariable[] getVariables(int offset, int length) throws DebugException;
 
@@ -64,16 +56,15 @@ public interface IIndexedValue extends IValue {
      * Returns the number of entries in this indexed collection.
      *
      * @return the number of entries in this indexed collection
-     * @throws DebugException
-     *             if unable to determine the number of entries in this
-     *             collection
+     * @throws DebugException if unable to determine the number
+     *      of entries in this collection
      */
     public int getSize() throws DebugException;
 
     /**
      * Returns the index of the first variable contained in this value.
-     * Generally, indexed values are zero based, but this allows for an
-     * arbitrary base offset.
+     * Generally, indexed values are zero based, but this allows for
+     * an arbitrary base offset.
      *
      * @return the index of the first variable contained in this value
      */

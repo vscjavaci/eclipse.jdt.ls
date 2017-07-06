@@ -197,7 +197,7 @@ public interface IJavaDebugTarget extends IDebugTarget {
      *                <ul>
      *                <li>Failure communicating with the VM. The
      *                DebugException's status code contains the underlying
-     *                exception responsible for the failure.</li>
+     *                exception responsible for the failure.</li></ul>
      */
     public abstract boolean isOutOfSynch() throws DebugException;
 
@@ -212,7 +212,7 @@ public interface IJavaDebugTarget extends IDebugTarget {
      *                <ul>
      *                <li>Failure communicating with the VM. The
      *                DebugException's status code contains the underlying
-     *                exception responsible for the failure.</li>
+     *                exception responsible for the failure.</li></ul>
      */
     public abstract boolean mayBeOutOfSynch() throws DebugException;
 
@@ -391,30 +391,6 @@ public interface IJavaDebugTarget extends IDebugTarget {
      * @return timeout value, in milliseconds, or -1 if not supported
      */
     public int getRequestTimeout();
-
-    /**
-     * Returns whether this target supports providing monitor information.
-     *
-     * @return whether this target supports providing monitor information.
-     * @since 2.1
-     */
-    public boolean supportsMonitorInformation();
-
-    /**
-     * Returns whether this target supports access watchpoints.
-     *
-     * @return whether this target supports access watchpoints
-     * @since 3.0
-     */
-    public boolean supportsAccessWatchpoints();
-
-    /**
-     * Returns whether this target supports modification watchpoints.
-     *
-     * @return whether this target supports modification watchpoints
-     * @since 3.0
-     */
-    public boolean supportsModificationWatchpoints();
 
     /**
      * Set the default stratum used in this debug target.

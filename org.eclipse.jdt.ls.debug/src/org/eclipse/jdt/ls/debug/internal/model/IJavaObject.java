@@ -131,7 +131,7 @@ public interface IJavaObject extends IJavaValue {
      *                <ul>
      *                <li>Failure communicating with the VM. The
      *                DebugException's status code contains the underlying
-     *                exception responsible for the failure.</li>
+     *                exception responsible for the failure.</li></ul>
      */
     public IJavaFieldVariable getField(String name, boolean superField)
             throws DebugException;
@@ -151,7 +151,7 @@ public interface IJavaObject extends IJavaValue {
      *                <ul>
      *                <li>Failure communicating with the VM. The
      *                DebugException's status code contains the underlying
-     *                exception responsible for the failure.</li>
+     *                exception responsible for the failure.</li></ul>
      */
     public IJavaFieldVariable getField(String name, String typeSignature)
             throws DebugException;

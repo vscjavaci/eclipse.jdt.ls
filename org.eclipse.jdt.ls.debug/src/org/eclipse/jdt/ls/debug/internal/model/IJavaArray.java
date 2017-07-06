@@ -14,7 +14,6 @@
 package org.eclipse.jdt.ls.debug.internal.model;
 
 import org.eclipse.jdt.ls.debug.internal.DebugException;
-import org.eclipse.debug.core.model.IIndexedValue;
 
 /**
  * A value referencing an array on a target VM.

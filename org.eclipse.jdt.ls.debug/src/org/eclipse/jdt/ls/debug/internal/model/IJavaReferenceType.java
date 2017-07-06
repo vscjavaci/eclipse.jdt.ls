@@ -122,7 +122,7 @@ public interface IJavaReferenceType extends IJavaType {
      *                <li>Failure communicating with the VM. The
      *                DebugException's status code contains the underlying
      *                exception responsible for the failure.</li>
-     *                <ul>
+     *                </ul>
      * @since 3.1
      */
     public String getGenericSignature() throws DebugException;

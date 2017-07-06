@@ -14,12 +14,10 @@
 package org.eclipse.jdt.ls.debug.internal.model;
 
 import org.eclipse.jdt.ls.debug.internal.DebugException;
-import org.eclipse.debug.core.model.IVariable;
 
 /**
  * A local variable, field slot, or receiver (this) in a Java virtual machine.
  *
- * @see org.eclipse.debug.core.model.IVariable
  * @noimplement This interface is not intended to be implemented by clients.
  * @noextend This interface is not intended to be extended by clients.
  */

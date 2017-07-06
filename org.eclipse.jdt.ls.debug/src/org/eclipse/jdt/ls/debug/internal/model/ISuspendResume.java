@@ -13,7 +13,6 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-
 import org.eclipse.jdt.ls.debug.internal.DebugException;
 
 /**
@@ -30,18 +29,21 @@ public interface ISuspendResume {
      * @return whether this element can currently be resumed
      */
     public boolean canResume();
+    
     /**
      * Returns whether this element can currently be suspended.
      *
      * @return whether this element can currently be suspended
      */
     public boolean canSuspend();
+    
     /**
      * Returns whether this element is currently suspended.
      *
      * @return whether this element is currently suspended
      */
     public boolean isSuspended();
+    
     /**
      * Causes this element to resume its execution, generating a <code>RESUME</code> event.
      * Has no effect on an element that is not suspended. This call is non-blocking.
@@ -52,6 +54,7 @@ public interface ISuspendResume {
      * </ul>
      */
     public void resume() throws DebugException;
+    
     /**
      * Causes this element to suspend its execution, generating a <code>SUSPEND</code> event.
      * Has no effect on an already suspended element.

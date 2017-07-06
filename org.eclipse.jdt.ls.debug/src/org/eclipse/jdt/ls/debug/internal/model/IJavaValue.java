@@ -14,7 +14,6 @@
 package org.eclipse.jdt.ls.debug.internal.model;
 
 import org.eclipse.jdt.ls.debug.internal.DebugException;
-import org.eclipse.debug.core.model.IValue;
 
 /**
  * An object, primitive data type, or array, on a Java virtual machine.

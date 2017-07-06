@@ -13,7 +13,6 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-
 import org.eclipse.jdt.ls.debug.internal.DebugException;
 
 /**
@@ -50,7 +49,7 @@ public interface IValue extends IDebugElement {
      * @exception DebugException if this method fails.  Reasons include:
      * <ul><li>Failure communicating with the VM.  The DebugException's
      * status code contains the underlying exception responsible for
-     * the failure.</li>
+     * the failure.</li></ul>
      */
     public String getReferenceTypeName() throws DebugException;
 
@@ -61,7 +60,7 @@ public interface IValue extends IDebugElement {
      * @exception DebugException if this method fails.  Reasons include:
      * <ul><li>Failure communicating with the VM.  The DebugException's
      * status code contains the underlying exception responsible for
-     * the failure.</li>
+     * the failure.</li></ul>
      */
     public String getValueString() throws DebugException;
 
@@ -75,9 +74,10 @@ public interface IValue extends IDebugElement {
      * @exception DebugException if this method fails.  Reasons include:
      * <ul><li>Failure communicating with the VM.  The DebugException's
      * status code contains the underlying exception responsible for
-     * the failure.</li>
+     * the failure.</li></ul>
      */
     public boolean isAllocated() throws DebugException;
+
     /**
      * Returns the visible variables in this value. An empty
      * collection is returned if there are no visible variables.

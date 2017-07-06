@@ -78,7 +78,7 @@ public interface IVariable extends IDebugElement, IValueModification {
      *                <ul>
      *                <li>Failure communicating with the VM. The
      *                DebugException's status code contains the underlying
-     *                exception responsible for the failure.</li>
+     *                exception responsible for the failure.</li></ul>
      */
     public String getReferenceTypeName() throws DebugException;
 

@@ -13,8 +13,7 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.debug.core.model.ILineBreakpoint;
+import org.eclipse.jdt.ls.debug.internal.CoreException;
 
 /**
  * A breakpoint that suspends execution when a particular line of code is

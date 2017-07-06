@@ -13,7 +13,6 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-
 import org.eclipse.jdt.ls.debug.internal.DebugException;
 
 /**
@@ -74,7 +73,7 @@ public interface IThread extends IDebugElement, ISuspendResume, IStep, ITerminat
      * @exception DebugException if this method fails.  Reasons include:
      * <ul><li>Failure communicating with the VM.  The DebugException's
      * status code contains the underlying exception responsible for
-     * the failure.</li>
+     * the failure.</li></ul>
      */
     public int getPriority() throws DebugException;
     /**
@@ -85,9 +84,11 @@ public interface IThread extends IDebugElement, ISuspendResume, IStep, ITerminat
      * @exception DebugException if this method fails.  Reasons include:
      * <ul><li>Failure communicating with the VM.  The DebugException's
      * status code contains the underlying exception responsible for
-     * the failure.</li>
+     * the failure.</li></ul>
      */
+
     public IStackFrame getTopStackFrame() throws DebugException;
+
     /**
      * Returns the name of this thread. Name format is debug model
      * specific, and should be specified by a debug model.
@@ -96,7 +97,7 @@ public interface IThread extends IDebugElement, ISuspendResume, IStep, ITerminat
      * @exception DebugException if this method fails.  Reasons include:
      * <ul><li>Failure communicating with the VM.  The DebugException's
      * status code contains the underlying exception responsible for
-     * the failure.</li>
+     * the failure.</li></ul>
      */
     public String getName() throws DebugException;
 

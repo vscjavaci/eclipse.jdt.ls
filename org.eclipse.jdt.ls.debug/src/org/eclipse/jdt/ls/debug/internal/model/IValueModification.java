@@ -13,7 +13,6 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-
 import org.eclipse.jdt.ls.debug.internal.DebugException;
 
 /**

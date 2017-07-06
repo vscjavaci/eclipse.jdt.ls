@@ -14,7 +14,6 @@
 package org.eclipse.jdt.ls.debug.internal.model;
 
 import org.eclipse.jdt.ls.debug.internal.DebugException;
-import org.eclipse.debug.core.model.IDebugElement;
 
 /**
  * The type of a value on a Java debug target - a primitive data type, class,

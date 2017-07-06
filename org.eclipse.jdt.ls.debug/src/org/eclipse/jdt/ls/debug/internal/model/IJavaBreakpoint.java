@@ -13,8 +13,7 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.debug.core.model.IBreakpoint;
+import org.eclipse.jdt.ls.debug.internal.CoreException;
 
 /**
  * A breakpoint specific to the Java debug model. A Java breakpoint supports:

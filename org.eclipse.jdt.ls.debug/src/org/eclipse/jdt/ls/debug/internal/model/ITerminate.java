@@ -13,7 +13,6 @@
 
 package org.eclipse.jdt.ls.debug.internal.model;
 
-
 import org.eclipse.jdt.ls.debug.internal.DebugException;
 
 /**
@@ -30,12 +29,14 @@ public interface ITerminate {
      * @return whether this element can be terminated
      */
     public boolean canTerminate();
+
     /**
      * Returns whether this element is terminated.
      *
      * @return whether this element is terminated
      */
     public boolean isTerminated();
+
     /**
      * Causes this element to terminate, generating a <code>TERMINATE</code> event.
      * Implementations may be blocking or non-blocking.
