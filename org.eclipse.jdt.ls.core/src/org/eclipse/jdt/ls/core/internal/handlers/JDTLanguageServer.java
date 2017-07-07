@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.WorkingCopyOwner;
 import org.eclipse.jdt.ls.core.internal.CancellableProgressMonitor;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection.JavaLanguageClient;
+import org.eclipse.jdt.ls.core.internal.debug.StartDebugSessionHandler;
 import org.eclipse.jdt.ls.core.internal.JavaLanguageServerPlugin;
 import org.eclipse.jdt.ls.core.internal.JavaProtocolExtensions;
 import org.eclipse.jdt.ls.core.internal.LanguageServerWorkingCopyOwner;
@@ -397,6 +398,13 @@ public class JDTLanguageServer implements LanguageServer, TextDocumentService, W
 		logInfo(">> java/projectConfigurationUpdate");
 		ProjectConfigurationUpdateHandler handler = new ProjectConfigurationUpdateHandler(pm);
 		handler.updateConfiguration(param);
+	}
+
+	@Override
+	public CompletableFuture<String> startDebugSession(String type) {
+		logInfo(">> java/startDebugSession");
+		StartDebugSessionHandler handler = new StartDebugSessionHandler();
+		return handler.startDebugServer(type);
 	}
 
 	public void sendStatus(ServiceStatus serverStatus, String status) {
