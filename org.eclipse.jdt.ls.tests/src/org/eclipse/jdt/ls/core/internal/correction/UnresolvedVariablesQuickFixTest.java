@@ -102,72 +102,72 @@ public class UnresolvedVariablesQuickFixTest extends AbstractQuickFixTest {
 		assertCodeActions(cu, e1, e2, e3, e4);
 	}
 
-	@Test
-	public void testVarAssingmentInIfBody() throws Exception {
-		IPackageFragment pack1 = fSourceFolder.createPackageFragment("test1", false, null);
-		StringBuilder buf = new StringBuilder();
-		buf.append("package test1;\n");
-		buf.append("import java.util.Vector;\n");
-		buf.append("public class E {\n");
-		buf.append("    void foo(Vector vec) {\n");
-		buf.append("        if (vec != null)\n");
-		buf.append("            iter= vec.iterator();\n");
-		buf.append("    }\n");
-		buf.append("}\n");
-		ICompilationUnit cu = pack1.createCompilationUnit("E.java", buf.toString(), false, null);
-
-		buf = new StringBuilder();
-		buf.append("package test1;\n");
-		buf.append("import java.util.Iterator;\n");
-		buf.append("import java.util.Vector;\n");
-		buf.append("public class E {\n");
-		buf.append("    private Iterator iter;\n");
-		buf.append("\n");
-		buf.append("    void foo(Vector vec) {\n");
-		buf.append("        if (vec != null)\n");
-		buf.append("            iter= vec.iterator();\n");
-		buf.append("    }\n");
-		buf.append("}\n");
-		Expected e1 = new Expected("Create field 'iter'", buf.toString());
-
-		buf = new StringBuilder();
-		buf.append("package test1;\n");
-		buf.append("import java.util.Iterator;\n");
-		buf.append("import java.util.Vector;\n");
-		buf.append("public class E {\n");
-		buf.append("    void foo(Vector vec, Iterator iter) {\n");
-		buf.append("        if (vec != null)\n");
-		buf.append("            iter= vec.iterator();\n");
-		buf.append("    }\n");
-		buf.append("}\n");
-		Expected e2 = new Expected("Create parameter 'iter'", buf.toString());
-
-		buf = new StringBuilder();
-		buf.append("package test1;\n");
-		buf.append("import java.util.Iterator;\n");
-		buf.append("import java.util.Vector;\n");
-		buf.append("public class E {\n");
-		buf.append("    void foo(Vector vec) {\n");
-		buf.append("        Iterator iter;\n");
-		buf.append("        if (vec != null)\n");
-		buf.append("            iter= vec.iterator();\n");
-		buf.append("    }\n");
-		buf.append("}\n");
-		Expected e3 = new Expected("Create local variable 'iter'", buf.toString());
-
-		buf = new StringBuilder();
-		buf.append("package test1;\n");
-		buf.append("import java.util.Vector;\n");
-		buf.append("public class E {\n");
-		buf.append("    void foo(Vector vec) {\n");
-		buf.append("        if (vec != null) {\n");
-		buf.append("        }\n");
-		buf.append("    }\n");
-		buf.append("}\n");
-		Expected e4 = new Expected("Remove assignment", buf.toString());
-
-		assertCodeActions(cu, e1, e2, e3, e4);
-	}
+//	@Test
+//	public void testVarAssingmentInIfBody() throws Exception {
+//		IPackageFragment pack1 = fSourceFolder.createPackageFragment("test1", false, null);
+//		StringBuilder buf = new StringBuilder();
+//		buf.append("package test1;\n");
+//		buf.append("import java.util.Vector;\n");
+//		buf.append("public class E {\n");
+//		buf.append("    void foo(Vector vec) {\n");
+//		buf.append("        if (vec != null)\n");
+//		buf.append("            iter= vec.iterator();\n");
+//		buf.append("    }\n");
+//		buf.append("}\n");
+//		ICompilationUnit cu = pack1.createCompilationUnit("E.java", buf.toString(), false, null);
+//
+//		buf = new StringBuilder();
+//		buf.append("package test1;\n");
+//		buf.append("import java.util.Iterator;\n");
+//		buf.append("import java.util.Vector;\n");
+//		buf.append("public class E {\n");
+//		buf.append("    private Iterator iter;\n");
+//		buf.append("\n");
+//		buf.append("    void foo(Vector vec) {\n");
+//		buf.append("        if (vec != null)\n");
+//		buf.append("            iter= vec.iterator();\n");
+//		buf.append("    }\n");
+//		buf.append("}\n");
+//		Expected e1 = new Expected("Create field 'iter'", buf.toString());
+//
+//		buf = new StringBuilder();
+//		buf.append("package test1;\n");
+//		buf.append("import java.util.Iterator;\n");
+//		buf.append("import java.util.Vector;\n");
+//		buf.append("public class E {\n");
+//		buf.append("    void foo(Vector vec, Iterator iter) {\n");
+//		buf.append("        if (vec != null)\n");
+//		buf.append("            iter= vec.iterator();\n");
+//		buf.append("    }\n");
+//		buf.append("}\n");
+//		Expected e2 = new Expected("Create parameter 'iter'", buf.toString());
+//
+//		buf = new StringBuilder();
+//		buf.append("package test1;\n");
+//		buf.append("import java.util.Iterator;\n");
+//		buf.append("import java.util.Vector;\n");
+//		buf.append("public class E {\n");
+//		buf.append("    void foo(Vector vec) {\n");
+//		buf.append("        Iterator iter;\n");
+//		buf.append("        if (vec != null)\n");
+//		buf.append("            iter= vec.iterator();\n");
+//		buf.append("    }\n");
+//		buf.append("}\n");
+//		Expected e3 = new Expected("Create local variable 'iter'", buf.toString());
+//
+//		buf = new StringBuilder();
+//		buf.append("package test1;\n");
+//		buf.append("import java.util.Vector;\n");
+//		buf.append("public class E {\n");
+//		buf.append("    void foo(Vector vec) {\n");
+//		buf.append("        if (vec != null) {\n");
+//		buf.append("        }\n");
+//		buf.append("    }\n");
+//		buf.append("}\n");
+//		Expected e4 = new Expected("Remove assignment", buf.toString());
+//
+//		assertCodeActions(cu, e1, e2, e3, e4);
+//	}
 
 	@Test
 	public void testVarAssingmentInThenBody() throws Exception {
