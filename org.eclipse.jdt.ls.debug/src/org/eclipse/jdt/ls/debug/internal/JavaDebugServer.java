@@ -31,15 +31,15 @@ import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 import com.google.gson.JsonObject;
 
-public class DebugServer implements IDebugServer {
+public class JavaDebugServer implements IDebugServer {
 	private ServerSocket _serverSocket = null;
-	private DebugSession debugSession = null;
+	private DebugSession _debugSession = null;
 
-	public DebugServer() {
+	public JavaDebugServer() {
 		try {
 			_serverSocket = new ServerSocket(0);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Logger.logError(e);
 		}
 	}
 
@@ -80,16 +80,16 @@ public class DebugServer implements IDebugServer {
 								try {
 									if (command.equals("initialize")) {
 										String adapterID = JsonUtils.getString(arguments, "adapterID", "");
-										debugSession = new DebugSession(true, false, responder);
-										if (debugSession == null) {
+										_debugSession = new DebugSession(true, false, responder);
+										if (_debugSession == null) {
 											responder.setBody(new ErrorResponseBody(new Message(1103,
 													"initialize: can't create debug session for adapter '{_id}'",
 													JsonUtils.fromJson("{ _id: " + adapterID + "}", JsonObject.class))));
 										}
 									}
 
-									if (debugSession != null) {
-										DebugResult dr = debugSession.Dispatch(command, arguments);
+									if (_debugSession != null) {
+										DebugResult dr = _debugSession.Dispatch(command, arguments);
 										if (dr != null) {
 											responder.setBody(dr.body);
 
@@ -105,18 +105,18 @@ public class DebugServer implements IDebugServer {
 										dispatcher.stop();
 									}
 								} catch (Exception e) {
-									e.printStackTrace();
+									Logger.logError(e);
 								}
 							}
 						});
 					} catch (IOException e1) {
-						e1.printStackTrace();
+						Logger.logError(e1);
 					} finally {
 						if (_serverSocket != null) {
 							try {
 								_serverSocket.close();
 							} catch (IOException e) {
-								e.printStackTrace();
+								Logger.logError(e);
 							}
 						}
 					}

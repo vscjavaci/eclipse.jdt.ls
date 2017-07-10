@@ -20,6 +20,7 @@ import org.eclipse.jdt.ls.core.internal.JDTUtils;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpointManager;
 import org.eclipse.jdt.ls.debug.internal.core.breakpoints.JavaLineBreakpoint;
+import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 public class DebugUtils {
 
@@ -36,7 +37,7 @@ public class DebugUtils {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.logError(e);
 		}
 	}
 

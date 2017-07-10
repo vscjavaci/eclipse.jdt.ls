@@ -69,7 +69,7 @@ public class DispatcherProtocol {
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			Logger.logError(e);
 		}
 	}
 
@@ -151,7 +151,6 @@ public class DispatcherProtocol {
 		message.seq = this._sequenceNumber++;
 
 		String jsonMessage = JsonUtils.toJson(message);
-		//		System.err.print(jsonMessage);
 		char[] jsonBytes = jsonMessage.toCharArray();
 
 		String header = String.format("Content-Length: %d%s", jsonBytes.length, TWO_CRLF);
@@ -167,8 +166,7 @@ public class DispatcherProtocol {
 			this._writer.write(data, 0, data.length);
 			this._writer.flush();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.logError(e);
 		}
 	}
 
@@ -226,8 +224,6 @@ public class DispatcherProtocol {
 		public void setBody(Object body) {
 			this._response.body = body;
 			if (body instanceof ErrorResponseBody) {
-				//				ErrorResponseBody e = (ErrorResponseBody) body;
-				//				Message message = e.error;
 				this._response.success = false;
 				this._response.message = "Error response body";
 			} else {

@@ -33,11 +33,13 @@ import org.eclipse.jdt.ls.debug.internal.core.breakpoints.JavaLineBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.impl.DebugContext;
 import org.eclipse.jdt.ls.debug.internal.core.impl.JDIThread;
 import org.eclipse.jdt.ls.debug.internal.core.impl.JDIVMTarget;
+import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 import com.google.gson.JsonObject;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.Location;
+import com.sun.jdi.Method;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VMDisconnectedException;
@@ -55,9 +57,9 @@ public class DebugSession implements IDebugSession {
 	protected boolean _clientPathsAreURI = true;
 
 	private IResponder _responder;
-	private boolean vmStarted = false;
+	private boolean _vmStarted = false;
 	private IVMTarget _vmTarget;
-	private JDIFactory jdiFactory = new JDIFactory();
+	private IdCollection<StackFrame> _frameCollection = new IdCollection<>();
 
 	public DebugSession(boolean debuggerLinesStartAt1, boolean debuggerPathsAreURI, IResponder responder) {
 		this._debuggerLinesStartAt1 = debuggerLinesStartAt1;
@@ -178,7 +180,7 @@ public class DebugSession implements IDebugSession {
 						JsonUtils.fromJson("{ _request:" + command + "}", JsonObject.class));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.logError(e);
 		}
 		return null;
 	}
@@ -220,7 +222,7 @@ public class DebugSession implements IDebugSession {
 		if (mainClass.endsWith(".java")) {
 			mainClass = mainClass.substring(0, mainClass.length() - 5);
 		}
-		System.out.println("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
+		Logger.log("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
 		try {
 			IDebugContext debugContext = new DebugContext();
 			debugContext.getDebugEventHub().addDebugEventSetListener(new DebugEventListener());
@@ -228,7 +230,7 @@ public class DebugSession implements IDebugSession {
 			VirtualMachine vm = launcher.launchJVM(mainClass, classpath);
 			_vmTarget = new JDIVMTarget(debugContext, vm, false);
 		} catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
-			e.printStackTrace();
+			Logger.logError(e);
 			return new DebugResult(3001, "Cannot launch jvm.", null);
 		}
 		return new DebugResult();
@@ -236,7 +238,6 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public DebugResult Attach(Requests.AttachArguments arguments) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -247,7 +248,6 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public DebugResult SetFunctionBreakpoints(Requests.SetFunctionBreakpointsArguments arguments) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -268,7 +268,6 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public DebugResult SetExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments) {
-		// TODO Add breakpoint to BreakpointManager
 		return null;
 	}
 
@@ -294,9 +293,7 @@ public class DebugSession implements IDebugSession {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			// return new DebugResult(new Results.StackTraceResponseBody(result,
-			// 0));
+			Logger.logError(e);
 		}
 		return new DebugResult();
 	}
@@ -311,9 +308,7 @@ public class DebugSession implements IDebugSession {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			// return new DebugResult(new Results.StackTraceResponseBody(result,
-			// 0));
+			Logger.logError(e);
 		}
 		return new DebugResult();
 	}
@@ -328,16 +323,13 @@ public class DebugSession implements IDebugSession {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			// return new DebugResult(new Results.StackTraceResponseBody(result,
-			// 0));
+			Logger.logError(e);
 		}
 		return new DebugResult();
 	}
 
 	@Override
 	public DebugResult Pause(Requests.PauseArguments arguments) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -346,8 +338,8 @@ public class DebugSession implements IDebugSession {
 		if (shutdown) {
 			return new DebugResult(new Results.ThreadsResponseBody(new ArrayList<Types.Thread>()));
 		}
-		if (!this.vmStarted) {
-			this.vmStarted = true;
+		if (!this._vmStarted) {
+			this._vmStarted = true;
 			this._vmTarget.getVM().resume();
 		}
 		ArrayList<Types.Thread> threads = new ArrayList<>();
@@ -385,12 +377,17 @@ public class DebugSession implements IDebugSession {
 
 					for (int i = 0; i < arguments.levels; i++) {
 						StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
-						result.add(jdiFactory.createStackFrame(stackFrame, cwd));
+						int frameId = _frameCollection.create(stackFrame);
+						Location location = stackFrame.location();
+						Method method = location.method();
+						Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(),
+									new Types.Source(cwd + "\\" + location.sourceName(), 0), location.lineNumber(), 0);
+						result.add(newFrame);
 					}
 				}
 			}
-		} catch (IncompatibleThreadStateException e) {
-			e.printStackTrace();
+		} catch (IncompatibleThreadStateException | AbsentInformationException e) {
+			Logger.logError(e);
 		}
 		return new DebugResult(new Results.StackTraceResponseBody(result, result.size()));
 	}
@@ -398,103 +395,28 @@ public class DebugSession implements IDebugSession {
 	@Override
 	public DebugResult Scopes(Requests.ScopesArguments arguments) {
 		List<Types.Scope> scps = new ArrayList<>();
-		// JDIStackFrame stackFrame = StackFrameFactory.getStackFrame(frameId);
-		// if (stackFrame != null) {
-		// try {
-		// IJavaVariable[] localVariables = stackFrame.getLocalVariables();
-		// for (IJavaVariable var : localVariables) {
-		// int rf = StackFrameFactory.createVarReference(var);
-		// scps.add(new Types.Scope("Local", rf, false));
-		// }
-		// } catch (DebugException e) {
-		// e.printStackTrace();
-		// }
-		// }
-		//
 		scps.add(new Types.Scope("Local", 1000000 + arguments.frameId, false));
 		return new DebugResult(new Results.ScopesResponseBody(scps));
 	}
 
-//	private static java.util.Map<Long, JDIObjectValue> stackFrameMap = new HashMap<>();
-//
-//	private Types.Variable createVariable(String name, IJavaValue iValue) throws DebugException {
-//		if (iValue.isNull()) {
-//			try {
-//				new Types.Variable(name, "null", iValue.getReferenceTypeName(), 0, null);
-//			} catch (DebugException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
-//		if (iValue instanceof JDIObjectValue && !iValue.getReferenceTypeName().equals("java.lang.String")) {
-//			String type = iValue.getReferenceTypeName();
-//			int refId = (int) ((JDIObjectValue) iValue).getUniqueId();
-//			String id = "" + refId;
-//			Types.Variable variable = new Types.Variable(name, type + ":(id=" + id + ")", type, refId, null);
-//			if (iValue instanceof JDIArrayValue) {
-//				variable.indexedVariables = ((JDIArrayValue) iValue).getLength();
-//			}
-//			stackFrameMap.put(((JDIObjectValue) iValue).getUniqueId(), (JDIObjectValue) iValue);
-//			return variable;
-//		} else {
-//			return new Types.Variable(name, iValue.getValueString(), iValue.getReferenceTypeName(), 0, null);
-//		}
-//	}
-
 	@Override
 	public DebugResult Variables(Requests.VariablesArguments arguments) {
 		List<Types.Variable> list = new ArrayList<>();
-
-//		if (stackFrameMap.containsKey((long) reference)) {
-//			JDIObjectValue ivalue = stackFrameMap.get((long) reference);
-//			if (ivalue instanceof JDIArrayValue) {
-//				try {
-//					list.add(new Types.Variable("length", "" + ((JDIArrayValue) ivalue).getLength(), "int", 0, null));
-//					for (int i = 0; i < ((JDIArrayValue) ivalue).getLength(); i++) {
-//						com.vscode.javadebug.core.IJavaValue ele = ((JDIArrayValue) ivalue).getValue(i);
-//						list.add(createVariable("" + i, ele));
-//						// list.add(new Types.Variable("" + i, "" + "int", 0,
-//						// null));
-//					}
-//				} catch (DebugException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//
-//			}
-//			return new DebugResult(new Results.VariablesResponseBody(list));
-//		}
-//		reference -= 1000000;
-//		JDIStackFrame stackFrame = StackFrameFactory.getStackFrame(reference);
-//
-//		try {
-//			for (IJavaVariable localVar : stackFrame.getLocalVariables()) {
-//				list.add(createVariable(localVar.getName(), (IJavaValue) localVar.getValue()));
-//				// if (localVar.getR)
-//
-//			}
-//		} catch (DebugException e) {
-//			e.printStackTrace();
-//		}
-
 		return new DebugResult(new Results.VariablesResponseBody(list));
 	}
 
 	@Override
 	public DebugResult SetVariable(Requests.SetVariableArguments arguments) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public DebugResult Source(Requests.SourceArguments arguments) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public DebugResult Evaluate(Requests.EvaluateArguments arguments) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -602,7 +524,7 @@ public class DebugSession implements IDebugSession {
 									bpThread.uniqueID());
 							_responder.addEvent(stopevent.type, stopevent);
 						} catch (AbsentInformationException e) {
-							e.printStackTrace();
+							Logger.logError(e);
 						}
 						break;
 					case STEP_EVENT:
@@ -615,7 +537,7 @@ public class DebugSession implements IDebugSession {
 									stepLocation.lineNumber(), 0, "", stepThread.uniqueID());
 							_responder.addEvent(stopevent.type, stopevent);
 						} catch (AbsentInformationException e) {
-							e.printStackTrace();
+							Logger.logError(e);
 						}
 						break;
 					default:

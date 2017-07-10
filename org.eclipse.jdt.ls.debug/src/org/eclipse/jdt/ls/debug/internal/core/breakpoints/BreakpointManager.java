@@ -18,6 +18,7 @@ import java.util.List;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpointManager;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugContext;
+import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 public class BreakpointManager implements IBreakpointManager {
 	/**
@@ -46,7 +47,7 @@ public class BreakpointManager implements IBreakpointManager {
 					try {
 						breakpoint.addToVMTarget(_debugContext.getVMTarget());
 					} catch (Exception e) {
-						e.printStackTrace();
+						Logger.logError(e);
 					}
 				}
 			
@@ -66,7 +67,7 @@ public class BreakpointManager implements IBreakpointManager {
 						_breakpoints.remove(breakpoint);
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
+					Logger.logError(e);
 				}
 			}
 		}

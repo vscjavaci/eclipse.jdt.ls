@@ -14,6 +14,7 @@ package org.eclipse.jdt.ls.debug.internal.core.breakpoints;
 import java.util.List;
 
 import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
+import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
@@ -60,7 +61,7 @@ public class JavaLineBreakpoint extends JavaBreakpoint {
 		try {
 			locations = type.locationsOfLine("Java", null, lineNumber);
 		} catch (AbsentInformationException e) {
-			e.printStackTrace();
+			Logger.logError(e);
 			return null;
 		}
 		return locations;
