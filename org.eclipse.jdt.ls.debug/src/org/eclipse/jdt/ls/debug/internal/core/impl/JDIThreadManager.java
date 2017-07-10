@@ -37,12 +37,12 @@ import com.sun.jdi.request.EventRequestManager;
  *
  */
 public class JDIThreadManager implements IThreadManager {
-	private List<IThread> _threads;
-	private JDIVMTarget _target;
+	private List<IThread> threads;
+	private JDIVMTarget target;
 
 	public JDIThreadManager(JDIVMTarget target) {
-		_target = target;
-		_threads = Collections.synchronizedList(new ArrayList<IThread>(5));
+		this.target = target;
+		this.threads = Collections.synchronizedList(new ArrayList<IThread>(5));
 		initialize();
 	}
 	
@@ -53,7 +53,7 @@ public class JDIThreadManager implements IThreadManager {
 
 		// Adds all of pre-existings threads to this debug target.
 		List<ThreadReference> threads = null;
-		VirtualMachine vm = _target.getVM();
+		VirtualMachine vm = this.target.getVM();
 		if (vm != null) {
 			// try {
 			// String name = vm.name();
@@ -76,13 +76,13 @@ public class JDIThreadManager implements IThreadManager {
 	}
 	
 	public IThread[] getThreads() {
-		synchronized (_threads) {
-			return _threads.toArray(new IThread[0]);
+		synchronized (this.threads) {
+			return this.threads.toArray(new IThread[0]);
 		}
 	}
 	
 	public IThread findThread(ThreadReference threadReference) {
-		for (IThread thread : _threads) {
+		for (IThread thread : this.threads) {
 			if (thread.getUnderlyingThread().equals(threadReference)) {
 				return thread;
 			}
@@ -91,9 +91,9 @@ public class JDIThreadManager implements IThreadManager {
 	}
 
 	public IThread createThread(ThreadReference threadReference) {
-		IThread jdiThread = new JDIThread(_target, threadReference);
-		synchronized (_threads) {
-			_threads.add(jdiThread);
+		IThread jdiThread = new JDIThread(this.target, threadReference);
+		synchronized (this.threads) {
+			this.threads.add(jdiThread);
 		}
 		jdiThread.fireCreationEvent();
 		return jdiThread;
@@ -102,17 +102,17 @@ public class JDIThreadManager implements IThreadManager {
 	
 	class ThreadStartHandler implements IJDIEventListener {
 
-		protected EventRequest _request;
+		protected EventRequest request;
 
 		protected ThreadStartHandler() {
-			EventRequestManager manager = _target.getEventRequestManager();
+			EventRequestManager manager = target.getEventRequestManager();
 			if (manager != null) {
 				try {
 					EventRequest req = manager.createThreadStartRequest();
 					req.setSuspendPolicy(EventRequest.SUSPEND_NONE);
 					req.enable();
-					_target.addEventListener(req, this);
-					_request = req;
+					target.addEventListener(req, this);
+					this.request = req;
 				} catch (RuntimeException e) {
 					Logger.logError(e);
 				}
@@ -143,9 +143,9 @@ public class JDIThreadManager implements IThreadManager {
 		}
 
 		protected void deleteRequest() {
-			if (_request != null) {
-				_target.removeEventListener(_request);
-				_request = null;
+			if (this.request != null) {
+				target.removeEventListener(this.request);
+				this.request = null;
 			}
 		}
 	}
@@ -153,13 +153,13 @@ public class JDIThreadManager implements IThreadManager {
 	class ThreadDeathHandler implements IJDIEventListener {
 
 		protected ThreadDeathHandler() {
-			EventRequestManager manager = _target.getEventRequestManager();
+			EventRequestManager manager = target.getEventRequestManager();
 			if (manager != null) {
 				try {
 					EventRequest req = manager.createThreadDeathRequest();
 					req.setSuspendPolicy(EventRequest.SUSPEND_NONE);
 					req.enable();
-					_target.addEventListener(req, this);
+					target.addEventListener(req, this);
 				} catch (RuntimeException e) {
 					Logger.logError(e);
 				}
@@ -171,8 +171,8 @@ public class JDIThreadManager implements IThreadManager {
 			ThreadReference ref = ((ThreadDeathEvent) event).thread();
 			IThread thread = findThread(ref);
 			if (thread != null) {
-				synchronized (_threads) {
-					_threads.remove(thread);
+				synchronized (threads) {
+					threads.remove(thread);
 				}
 				thread.fireTerminateEvent();
 			}

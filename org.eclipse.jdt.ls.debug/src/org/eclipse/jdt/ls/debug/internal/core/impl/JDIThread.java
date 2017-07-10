@@ -19,16 +19,16 @@ import com.sun.jdi.ThreadReference;
 
 public class JDIThread extends DebugElement implements IThread {
 
-	private ThreadReference _thread;
+	private ThreadReference thread;
 
 	public JDIThread(IVMTarget target, ThreadReference thread) {
 		super(target);
-		_thread = thread;
+		this.thread = thread;
 	}
 
 	@Override
 	public ThreadReference getUnderlyingThread() {
-		return _thread;
+		return this.thread;
 	}
 
 	@Override

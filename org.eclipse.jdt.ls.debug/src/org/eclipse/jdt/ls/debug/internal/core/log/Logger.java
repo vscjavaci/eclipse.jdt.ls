@@ -12,7 +12,7 @@
 package org.eclipse.jdt.ls.debug.internal.core.log;
 
 public class Logger {
-	private static boolean isDebug = Boolean.getBoolean("jdt.ls.debug");
+	private static final boolean isDebug = Boolean.getBoolean("jdt.ls.debug");
 
 	public static void log(String message) {
 		if (isDebug) {

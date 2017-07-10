@@ -30,22 +30,22 @@ import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
-	private String _typeName;
-	private int _hitCount;
+	private String typeName;
+	private int hitCount;
 
 	public JavaBreakpoint(final String fullQualifiedName, final int hitCount) {
-		_typeName = fullQualifiedName;
-		_hitCount = hitCount;
+		this.typeName = fullQualifiedName;
+		this.hitCount = hitCount;
 	}
 
 	@Override
 	public int getHitCount() {
-		return _hitCount;
+		return this.hitCount;
 	}
 
 	@Override
 	public void setHitCount(int hitCount) {
-		_hitCount = hitCount;
+		this.hitCount = hitCount;
 	}
 
 	@Override
@@ -67,15 +67,15 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
 	}
 
 	public void addToVMTarget(IVMTarget target) {
-		String referenceTypeName = _typeName;
+		String referenceTypeName = this.typeName;
 		String enclosingTypeName = null;
 		// Parse the top enclosing type in which this breakpoint is located.
-		if (_typeName != null) {
-			int index = _typeName.indexOf("$");
+		if (this.typeName != null) {
+			int index = this.typeName.indexOf("$");
 			if (index == -1) {
-				enclosingTypeName = _typeName;
+				enclosingTypeName = this.typeName;
 			} else {
-				enclosingTypeName = _typeName.substring(0, index);
+				enclosingTypeName = this.typeName.substring(0, index);
 			}
 		}
 		if (referenceTypeName == null || enclosingTypeName == null) {
@@ -107,21 +107,9 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
 	}
 
 	/**
-	 * Local types (types defined in methods) are handled specially due to the
-	 * different types that the local type is associated with as well as the
-	 * performance problems of using ReferenceType#nestedTypes. From the Java
-	 * model perspective a local type is defined within a method of a type.
-	 * Therefore the type of a breakpoint placed in a local type is the type
-	 * that encloses the method where the local type was defined. The local type
-	 * is enclosed within the top level type according to the VM. So if "normal"
-	 * attempts to create a request when a breakpoint is being added to a target
-	 * fail, we must be dealing with a local type and therefore resort to
-	 * looking up all of the nested types of the top level enclosing type.
-	 *
+	 *  Handle those local types defined in method.
 	 * @param target
-	 *            the target
 	 * @param enclosingTypeName
-	 *            the type name of the enclosing type
 	 */
 	protected void addToTargetForLocalType(IVMTarget target, String enclosingTypeName) {
 		List<ReferenceType> classes = target.getVM().classesByName(enclosingTypeName);
@@ -157,8 +145,8 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
 	
 	protected void configureRequest(EventRequest request) {
 		request.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
-		if (_hitCount > 0) {
-			request.addCountFilter(_hitCount);
+		if (this.hitCount > 0) {
+			request.addCountFilter(this.hitCount);
 		}
 		request.setEnabled(true);
 	}

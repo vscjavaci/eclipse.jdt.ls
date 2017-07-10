@@ -32,12 +32,12 @@ import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 import com.google.gson.JsonObject;
 
 public class JavaDebugServer implements IDebugServer {
-	private ServerSocket _serverSocket = null;
-	private DebugSession _debugSession = null;
+	private ServerSocket serverSocket = null;
+	private DebugSession debugSession = null;
 
 	public JavaDebugServer() {
 		try {
-			_serverSocket = new ServerSocket(0);
+			this.serverSocket = new ServerSocket(0);
 		} catch (IOException e) {
 			Logger.logError(e);
 		}
@@ -45,15 +45,16 @@ public class JavaDebugServer implements IDebugServer {
 
 	@Override
 	public int getPort() {
-		if (_serverSocket != null) {
-			return _serverSocket.getLocalPort();
+		if (this.serverSocket != null) {
+			return this.serverSocket.getLocalPort();
 		}
 		return -1;
 	}
 
 	@Override
 	public void execute() {
-		if (_serverSocket != null) {
+		if (this.serverSocket != null) {
+			// Execute eventLoop in a new thread.
 			new Thread(new Runnable() {
 
 				@Override
@@ -61,8 +62,8 @@ public class JavaDebugServer implements IDebugServer {
 					int serverPort = -1;
 					try {
 						// It's blocking here to waiting for incoming socket connection. 
-						Socket clientSocket = _serverSocket.accept();
-						serverPort =  _serverSocket.getLocalPort();
+						Socket clientSocket = serverSocket.accept();
+						serverPort =  serverSocket.getLocalPort();
 						Logger.log("Start debugserver on socket port " + serverPort);
 						BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 						PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -80,16 +81,16 @@ public class JavaDebugServer implements IDebugServer {
 								try {
 									if (command.equals("initialize")) {
 										String adapterID = JsonUtils.getString(arguments, "adapterID", "");
-										_debugSession = new DebugSession(true, false, responder);
-										if (_debugSession == null) {
+										debugSession = new DebugSession(true, false, responder);
+										if (debugSession == null) {
 											responder.setBody(new ErrorResponseBody(new Message(1103,
 													"initialize: can't create debug session for adapter '{_id}'",
 													JsonUtils.fromJson("{ _id: " + adapterID + "}", JsonObject.class))));
 										}
 									}
 
-									if (_debugSession != null) {
-										DebugResult dr = _debugSession.Dispatch(command, arguments);
+									if (debugSession != null) {
+										DebugResult dr = debugSession.Dispatch(command, arguments);
 										if (dr != null) {
 											responder.setBody(dr.body);
 
@@ -112,9 +113,9 @@ public class JavaDebugServer implements IDebugServer {
 					} catch (IOException e1) {
 						Logger.logError(e1);
 					} finally {
-						if (_serverSocket != null) {
+						if (serverSocket != null) {
 							try {
-								_serverSocket.close();
+								serverSocket.close();
 							} catch (IOException e) {
 								Logger.logError(e);
 							}

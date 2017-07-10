@@ -25,26 +25,26 @@ import com.sun.jdi.event.VMStartEvent;
 
 public class JDIVMTarget extends DebugElement implements IVMTarget {
 
-	private VirtualMachine _jvm;
-	private boolean _resumeOnStartup;
-	private IDebugContext _debugContext;
-	private JDIEventHub _vmEventHub;
-	private JDIThreadManager _vmThreadManager;
+	private VirtualMachine jvm;
+	private boolean resumeOnStartup;
+	private IDebugContext debugContext;
+	private JDIEventHub vmEventHub;
+	private JDIThreadManager vmThreadManager;
 	
 	public JDIVMTarget(IDebugContext context, VirtualMachine jvm, boolean resumeOnStartup) {
 		super(null);
-		_jvm = jvm;
-		_resumeOnStartup = resumeOnStartup;
-		_debugContext = context;
-		_debugContext.setVMTarget(this);
+		this.jvm = jvm;
+		this.resumeOnStartup = resumeOnStartup;
+		this.debugContext = context;
+		this.debugContext.setVMTarget(this);
 		initialize();
 	}
 
 	public void initialize() {
-		_vmEventHub = new JDIEventHub(this);
-		_vmThreadManager = new JDIThreadManager(this);
+		this.vmEventHub = new JDIEventHub(this);
+		this.vmThreadManager = new JDIThreadManager(this);
 		
-		Thread t = new Thread(_vmEventHub, "VirtualMachineEventHub");
+		Thread t = new Thread(vmEventHub, "VirtualMachineEventHub");
 		t.setDaemon(true);
 		t.start();
 	}
@@ -56,25 +56,25 @@ public class JDIVMTarget extends DebugElement implements IVMTarget {
 
 	@Override
 	public VirtualMachine getVM() {
-		return _jvm;
+		return this.jvm;
 	}
 
 	@Override
 	public IJDIEventHub getEventHub() {
-		return _vmEventHub;
+		return this.vmEventHub;
 	}
 	
 	public IThreadManager getThreadManager() {
-		return _vmThreadManager;
+		return this.vmThreadManager;
 	}
 	
 	@Override
 	public IThread[] getThreads() {
-		return _vmThreadManager.getThreads();
+		return this.vmThreadManager.getThreads();
 	}
 	
 	public IDebugContext getDebugContext() {
-		return _debugContext;
+		return this.debugContext;
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class JDIVMTarget extends DebugElement implements IVMTarget {
 	}
 
 	public void resume() {
-		_resumeOnStartup = true;
+		this.resumeOnStartup = true;
 		VirtualMachine vm = getVM();
 		if (vm != null) {
 			vm.resume();

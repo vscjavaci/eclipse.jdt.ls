@@ -21,30 +21,30 @@ import org.eclipse.jdt.ls.debug.internal.core.breakpoints.BreakpointManager;
  *
  */
 public class DebugContext implements IDebugContext {
-	private BreakpointManager _breakpointManager = null;
-	private DebugEventHub _debugEventHub = null;
-	private IVMTarget _vmTarget;
+	private BreakpointManager breakpointManager = null;
+	private DebugEventHub debugEventHub = null;
+	private IVMTarget vmTarget;
 	
 	public DebugContext() {
-		_breakpointManager = new BreakpointManager(this);
-		_debugEventHub = new DebugEventHub();
+		this.breakpointManager = new BreakpointManager(this);
+		this.debugEventHub = new DebugEventHub();
 	}
 
 	@Override
 	public IBreakpointManager getBreakpointManager() {
-		return _breakpointManager;
+		return this.breakpointManager;
 	}
 
 	@Override
 	public IDebugEventHub getDebugEventHub() {
-		return _debugEventHub;
+		return this.debugEventHub;
 	}
 	
 	public void setVMTarget(IVMTarget vmTarget) {
-		_vmTarget = vmTarget;
+		this.vmTarget = vmTarget;
 	}
 	
 	public IVMTarget getVMTarget() {
-		return _vmTarget;
+		return vmTarget;
 	}
 }

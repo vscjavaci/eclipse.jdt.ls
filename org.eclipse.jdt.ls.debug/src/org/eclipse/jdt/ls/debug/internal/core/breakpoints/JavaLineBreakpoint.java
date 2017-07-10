@@ -23,15 +23,15 @@ import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public class JavaLineBreakpoint extends JavaBreakpoint {
-	private int _lineNumber;
+	private int lineNumber;
 
 	public JavaLineBreakpoint(final String fullQualifiedName, final int lineNumber, final int hitCount) {
 		super(fullQualifiedName, hitCount);
-		_lineNumber = lineNumber;
+		this.lineNumber = lineNumber;
 	}
 
 	public int getLineNumber() {
-		return _lineNumber;
+		return this.lineNumber;
 	}
 
 	@Override

@@ -51,20 +51,22 @@ import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.event.ThreadDeathEvent;
 
 public class DebugSession implements IDebugSession {
-	protected boolean _debuggerLinesStartAt1;
-	protected boolean _debuggerPathsAreURI;
-	protected boolean _clientLinesStartAt1 = true;
-	protected boolean _clientPathsAreURI = true;
+	protected boolean debuggerLinesStartAt1;
+	protected boolean debuggerPathsAreURI;
+	protected boolean clientLinesStartAt1 = true;
+	protected boolean clientPathsAreURI = true;
 
-	private IResponder _responder;
-	private boolean _vmStarted = false;
-	private IVMTarget _vmTarget;
-	private IdCollection<StackFrame> _frameCollection = new IdCollection<>();
+	private String cwd;
+	private IResponder responder;
+	private boolean vmStarted = false;
+	private boolean shutdown = false;
+	private IVMTarget vmTarget;
+	private IdCollection<StackFrame> frameCollection = new IdCollection<>();
 
 	public DebugSession(boolean debuggerLinesStartAt1, boolean debuggerPathsAreURI, IResponder responder) {
-		this._debuggerLinesStartAt1 = debuggerLinesStartAt1;
-		this._debuggerPathsAreURI = debuggerPathsAreURI;
-		this._responder = responder;
+		this.debuggerLinesStartAt1 = debuggerLinesStartAt1;
+		this.debuggerPathsAreURI = debuggerPathsAreURI;
+		this.responder = responder;
 	}
 
 	@Override
@@ -72,7 +74,7 @@ public class DebugSession implements IDebugSession {
 		if (this.shutdown) {
 			return new DebugResult();
 		}
-		System.out.println("Dispatch command:" + command);
+		Logger.log("Dispatch command:" + command);
 		try {
 			switch (command) {
 			case "initialize":
@@ -187,14 +189,14 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public DebugResult Initialize(Requests.InitializeArguments arguments) {
-		this._clientLinesStartAt1 = arguments.linesStartAt1;
+		this.clientLinesStartAt1 = arguments.linesStartAt1;
 		String pathFormat = arguments.pathFormat;
 		if (pathFormat != null) {
 			switch (pathFormat) {
 			case "uri":
-				this._clientPathsAreURI = true;
+				this.clientPathsAreURI = true;
 			default:
-				this._clientPathsAreURI = false;
+				this.clientPathsAreURI = false;
 			}
 		}
 		Capabilities caps = new Capabilities();
@@ -209,11 +211,9 @@ public class DebugSession implements IDebugSession {
 		return result;
 	}
 
-	private String cwd;
-
 	@Override
 	public DebugResult Launch(Requests.LaunchArguments arguments) {
-		cwd = arguments.cwd;
+		this.cwd = arguments.cwd;
 		String mainClass = arguments.startupClass;
 		String[] classPathArray  = arguments.classPath;
 		String classpath = String.join(System.getProperty("path.separator"), classPathArray);
@@ -228,7 +228,7 @@ public class DebugSession implements IDebugSession {
 			debugContext.getDebugEventHub().addDebugEventSetListener(new DebugEventListener());
 			Launcher launcher = new Launcher();
 			VirtualMachine vm = launcher.launchJVM(mainClass, classpath);
-			_vmTarget = new JDIVMTarget(debugContext, vm, false);
+			this.vmTarget = new JDIVMTarget(debugContext, vm, false);
 		} catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
 			Logger.logError(e);
 			return new DebugResult(3001, "Cannot launch jvm.", null);
@@ -253,7 +253,7 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public SetBreakpointsResponseBody SetBreakpoints(Requests.SetBreakpointArguments arguments) {
-		IBreakpointManager bpManager = _vmTarget.getDebugContext().getBreakpointManager();
+		IBreakpointManager bpManager = this.vmTarget.getDebugContext().getBreakpointManager();
 		DebugUtils.addBreakpoint(arguments.source, arguments.breakpoints, bpManager);
 		List<Types.Breakpoint> res = new ArrayList<>();
 		int i = 1;
@@ -273,7 +273,7 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public DebugResult Continue(Requests.ContinueArguments arguments) {
-		for (IThread ithread : this._vmTarget.getThreads()) {
+		for (IThread ithread : this.vmTarget.getThreads()) {
 			JDIThread jdiThread = (JDIThread) ithread;
 			if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
 				jdiThread.resume();
@@ -286,7 +286,7 @@ public class DebugSession implements IDebugSession {
 	@Override
 	public DebugResult Next(Requests.NextArguments arguments) {
 		try {
-			for (IThread ithread : this._vmTarget.getThreads()) {
+			for (IThread ithread : this.vmTarget.getThreads()) {
 				JDIThread jdiThread = (JDIThread) ithread;
 				if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
 					jdiThread.stepOver();
@@ -301,7 +301,7 @@ public class DebugSession implements IDebugSession {
 	@Override
 	public DebugResult StepIn(Requests.StepInArguments arguments) {
 		try {
-			for (IThread ithread : this._vmTarget.getThreads()) {
+			for (IThread ithread : this.vmTarget.getThreads()) {
 				JDIThread jdiThread = (JDIThread) ithread;
 				if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
 					jdiThread.stepInto();
@@ -316,7 +316,7 @@ public class DebugSession implements IDebugSession {
 	@Override
 	public DebugResult StepOut(Requests.StepOutArguments arguments) {
 		try {
-			for (IThread ithread : this._vmTarget.getThreads()) {
+			for (IThread ithread : this.vmTarget.getThreads()) {
 				JDIThread jdiThread = (JDIThread) ithread;
 				if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
 					jdiThread.stepOver();
@@ -335,16 +335,16 @@ public class DebugSession implements IDebugSession {
 
 	@Override
 	public DebugResult Threads() {
-		if (shutdown) {
+		if (this.shutdown) {
 			return new DebugResult(new Results.ThreadsResponseBody(new ArrayList<Types.Thread>()));
 		}
-		if (!this._vmStarted) {
-			this._vmStarted = true;
-			this._vmTarget.getVM().resume();
+		if (!this.vmStarted) {
+			this.vmStarted = true;
+			this.vmTarget.getVM().resume();
 		}
 		ArrayList<Types.Thread> threads = new ArrayList<>();
 		try {
-			for (IThread thread : this._vmTarget.getThreads()) {
+			for (IThread thread : this.vmTarget.getThreads()) {
 				JDIThread jdiThread = (JDIThread) thread;
 				ThreadReference rThread = jdiThread.getUnderlyingThread();
 				threads.add(new Types.Thread(rThread.uniqueID(), rThread.name()));
@@ -362,7 +362,7 @@ public class DebugSession implements IDebugSession {
 			return new DebugResult(new Results.StackTraceResponseBody(result, 0));
 		}
 		try {
-			for (IThread ithread : _vmTarget.getThreads()) {
+			for (IThread ithread : this.vmTarget.getThreads()) {
 				JDIThread jdiThread = (JDIThread) ithread;
 				if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
 					List<StackFrame> stackFrames = jdiThread.getUnderlyingThread().frames();
@@ -377,11 +377,12 @@ public class DebugSession implements IDebugSession {
 
 					for (int i = 0; i < arguments.levels; i++) {
 						StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
-						int frameId = _frameCollection.create(stackFrame);
+						int frameId = this.frameCollection.create(stackFrame);
 						Location location = stackFrame.location();
 						Method method = location.method();
+						// TODO Will use LS to get real source path of the class.
 						Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(),
-									new Types.Source(cwd + "\\" + location.sourceName(), 0), location.lineNumber(), 0);
+									new Types.Source(this.cwd + "\\" + location.sourceName(), 0), location.lineNumber(), 0);
 						result.add(newFrame);
 					}
 				}
@@ -421,18 +422,18 @@ public class DebugSession implements IDebugSession {
 	}
 
 	protected int ConvertDebuggerLineToClient(int line) {
-		if (_debuggerLinesStartAt1) {
-			return _clientLinesStartAt1 ? line : line - 1;
+		if (this.debuggerLinesStartAt1) {
+			return this.clientLinesStartAt1 ? line : line - 1;
 		} else {
-			return _clientLinesStartAt1 ? line + 1 : line;
+			return this.clientLinesStartAt1 ? line + 1 : line;
 		}
 	}
 
 	protected int ConvertClientLineToDebugger(int line) {
-		if (_debuggerLinesStartAt1) {
-			return _clientLinesStartAt1 ? line : line + 1;
+		if (this.debuggerLinesStartAt1) {
+			return this.clientLinesStartAt1 ? line : line + 1;
 		} else {
-			return _clientLinesStartAt1 ? line - 1 : line;
+			return this.clientLinesStartAt1 ? line - 1 : line;
 		}
 	}
 
@@ -441,15 +442,15 @@ public class DebugSession implements IDebugSession {
 	}
 
 	protected String ConvertDebuggerPathToClient(String path) {
-		if (_debuggerPathsAreURI) {
-			if (_clientPathsAreURI) {
+		if (this.debuggerPathsAreURI) {
+			if (this.clientPathsAreURI) {
 				return path;
 			} else {
 				URI uri = Paths.get(path).toUri();
 				return uri.getPath();
 			}
 		} else {
-			if (_clientPathsAreURI) {
+			if (this.clientPathsAreURI) {
 				return Paths.get(path).toUri().getPath();
 
 			} else {
@@ -463,22 +464,20 @@ public class DebugSession implements IDebugSession {
 			return null;
 		}
 
-		if (_debuggerPathsAreURI) {
-			if (_clientPathsAreURI) {
+		if (this.debuggerPathsAreURI) {
+			if (this.clientPathsAreURI) {
 				return clientPath;
 			} else {
 				return Paths.get(clientPath).toUri().getPath();
 			}
 		} else {
-			if (_clientPathsAreURI) {
+			if (this.clientPathsAreURI) {
 				return Paths.get(clientPath).toUri().getPath();
 			} else {
 				return clientPath;
 			}
 		}
 	}
-
-	private boolean shutdown = false;
 
 	public class DebugEventListener implements IDebugEventSetListener {
 
@@ -495,8 +494,8 @@ public class DebugSession implements IDebugSession {
 						if (!shutdown) {
 							Events.ExitedEvent exitedEvent = new Events.ExitedEvent(0);
 							Events.TerminatedEvent terminatedEvent = new Events.TerminatedEvent();
-							_responder.addEvent(exitedEvent.type, exitedEvent);
-							_responder.addEvent(terminatedEvent.type, terminatedEvent);
+							responder.addEvent(exitedEvent.type, exitedEvent);
+							responder.addEvent(terminatedEvent.type, terminatedEvent);
 						}
 						shutdown = true;
 						break;
@@ -505,13 +504,13 @@ public class DebugSession implements IDebugSession {
 							IThread jdiThread = (IThread) source;
 							ThreadReference startThread = jdiThread.getUnderlyingThread();
 							Events.ThreadEvent threadEvent = new Events.ThreadEvent("started", startThread.uniqueID());
-							_responder.addEvent(threadEvent.type, threadEvent);
+							responder.addEvent(threadEvent.type, threadEvent);
 						}
 						break;
 					case THREADDEATH_EVENT:
 						ThreadReference deathThread = ((ThreadDeathEvent) source).thread();
 						Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
-						_responder.addEvent(threadDeathEvent.type, threadDeathEvent);
+						responder.addEvent(threadDeathEvent.type, threadDeathEvent);
 						break;
 					case BREAKPOINT_EVENT: 
 						BreakpointEvent bpEvent = (BreakpointEvent) source;
@@ -522,7 +521,7 @@ public class DebugSession implements IDebugSession {
 							Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint",
 									new Types.Source(cwd + "/" + bpLocation.sourcePath(), 0), bpLocation.lineNumber(), 0, "",
 									bpThread.uniqueID());
-							_responder.addEvent(stopevent.type, stopevent);
+							responder.addEvent(stopevent.type, stopevent);
 						} catch (AbsentInformationException e) {
 							Logger.logError(e);
 						}
@@ -535,7 +534,7 @@ public class DebugSession implements IDebugSession {
 						try {
 							stopevent = new Events.StoppedEvent("step", new Types.Source(cwd + "/" + stepLocation.sourcePath(), 0),
 									stepLocation.lineNumber(), 0, "", stepThread.uniqueID());
-							_responder.addEvent(stopevent.type, stopevent);
+							responder.addEvent(stopevent.type, stopevent);
 						} catch (AbsentInformationException e) {
 							Logger.logError(e);
 						}

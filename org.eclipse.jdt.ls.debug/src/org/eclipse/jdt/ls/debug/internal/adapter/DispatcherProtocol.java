@@ -25,46 +25,46 @@ import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 import com.google.gson.JsonObject;
 
 public class DispatcherProtocol {
-	private static int BUFFER_SIZE = 4096;
-	private static String TWO_CRLF = "\r\n\r\n";
-	private static Pattern CONTENT_LENGTH_MATCHER = Pattern.compile("Content-Length: (\\d+)");
+	private static final int BUFFER_SIZE = 4096;
+	private static final String TWO_CRLF = "\r\n\r\n";
+	private static final Pattern CONTENT_LENGTH_MATCHER = Pattern.compile("Content-Length: (\\d+)");
 
-	private Reader _reader;
-	private Writer _writer;
+	private Reader reader;
+	private Writer writer;
 
-	private CharBuffer _rawData;
-	private boolean _terminateSession = false;
-	private int _bodyLength = -1;
-	private int _sequenceNumber = 1;
+	private CharBuffer rawData;
+	private boolean terminateSession = false;
+	private int bodyLength = -1;
+	private int sequenceNumber = 1;
 
-	private Object _lock = new Object();
-	private boolean _isDispatchingData;
-	private IHandler _handler;
+	private Object lock = new Object();
+	private boolean isDispatchingData;
+	private IHandler handler;
 
-	private ConcurrentLinkedQueue<Messages.DispatcherEvent> _eventQueue;
+	private ConcurrentLinkedQueue<Messages.DispatcherEvent> eventQueue;
 
 	public DispatcherProtocol(Reader reader, Writer writer) {
-		this._reader = reader;
-		this._writer = writer;
-		this._bodyLength = -1;
-		this._sequenceNumber = 1;
-		this._rawData = new CharBuffer();
-		this._eventQueue = new ConcurrentLinkedQueue<>();
+		this.reader = reader;
+		this.writer = writer;
+		this.bodyLength = -1;
+		this.sequenceNumber = 1;
+		this.rawData = new CharBuffer();
+		this.eventQueue = new ConcurrentLinkedQueue<>();
 	}
 
 	public void eventLoop(IHandler handler) {
-		this._handler = handler;
+		this.handler = handler;
 
 		char[] buffer = new char[BUFFER_SIZE];
 		try {
-			while (!this._terminateSession) {
-				int read = this._reader.read(buffer, 0, BUFFER_SIZE);
+			while (!this.terminateSession) {
+				int read = this.reader.read(buffer, 0, BUFFER_SIZE);
 				if (read == 0) {
 					break;
 				}
 
 				if (read > 0) {
-					this._rawData.append(buffer, read);
+					this.rawData.append(buffer, read);
 					this.processData();
 				}
 			}
@@ -74,7 +74,7 @@ public class DispatcherProtocol {
 	}
 
 	public void stop() {
-		this._terminateSession = true;
+		this.terminateSession = true;
 	}
 
 	public void sendEvent(String eventType, Object body) {
@@ -82,9 +82,9 @@ public class DispatcherProtocol {
 	}
 
 	public void sendEventLater(String eventType, Object body) {
-		synchronized(this._lock) {
-			if (this._isDispatchingData) {
-				this._eventQueue.offer(new Messages.DispatcherEvent(eventType, body));
+		synchronized(this.lock) {
+			if (this.isDispatchingData) {
+				this.eventQueue.offer(new Messages.DispatcherEvent(eventType, body));
 			} else {
 				sendMessage(new Messages.DispatcherEvent(eventType, body));
 			}
@@ -93,20 +93,20 @@ public class DispatcherProtocol {
 
 	private void processData() {
 		while (true) {
-			if (this._bodyLength >= 0) {
-				if (this._rawData.length() >= this._bodyLength) {
-					char[] buf = this._rawData.removeFirst(this._bodyLength);
-					this._bodyLength = -1;
+			if (this.bodyLength >= 0) {
+				if (this.rawData.length() >= this.bodyLength) {
+					char[] buf = this.rawData.removeFirst(this.bodyLength);
+					this.bodyLength = -1;
 					dispatch(new String(buf));
 				}
 			} else {
-				String body = this._rawData.getString();
+				String body = this.rawData.getString();
 				int idx = body.indexOf(TWO_CRLF);
 				if (idx != -1) {
 					Matcher matcher = CONTENT_LENGTH_MATCHER.matcher(body);
 					if (matcher.find()) {
-						this._bodyLength = Integer.parseInt(matcher.group(1));
-						this._rawData.removeFirst(idx + TWO_CRLF.length());
+						this.bodyLength = Integer.parseInt(matcher.group(1));
+						this.rawData.removeFirst(idx + TWO_CRLF.length());
 						continue;
 					}
 				}
@@ -121,9 +121,9 @@ public class DispatcherProtocol {
 			Logger.log(request);
 			Messages.DispatcherRequest dispatchRequest = JsonUtils.fromJson(request, Messages.DispatcherRequest.class);
 			if (dispatchRequest.type.equals("request")) {
-				if (this._handler != null) {
-					synchronized(this._lock) {
-						this._isDispatchingData = true;
+				if (this.handler != null) {
+					synchronized(this.lock) {
+						this.isDispatchingData = true;
 					}
 					int seq = dispatchRequest.seq;
 					String command = dispatchRequest.command;
@@ -131,24 +131,24 @@ public class DispatcherProtocol {
 					Messages.DispatcherResponse response = new Messages.DispatcherResponse(seq, command);
 					DispatchResponder responder = new DispatchResponder(this, response);
 
-					this._handler.run(command, arguments, responder);
+					this.handler.run(command, arguments, responder);
 
 					sendMessage(response);
 				}
 			}
 		} finally {
-			synchronized(this._lock) {
-				this._isDispatchingData = false;
+			synchronized(this.lock) {
+				this.isDispatchingData = false;
 			}
 
-			while (this._eventQueue.peek() != null) {
-				sendMessage(this._eventQueue.poll());
+			while (this.eventQueue.peek() != null) {
+				sendMessage(this.eventQueue.poll());
 			}
 		}
 	}
 
 	private void sendMessage(Messages.DispatcherMessage message) {
-		message.seq = this._sequenceNumber++;
+		message.seq = this.sequenceNumber++;
 
 		String jsonMessage = JsonUtils.toJson(message);
 		char[] jsonBytes = jsonMessage.toCharArray();
@@ -163,41 +163,41 @@ public class DispatcherProtocol {
 		try {
 			Logger.log("\n[[RESPONSE]]");
 			Logger.log(new String(data));
-			this._writer.write(data, 0, data.length);
-			this._writer.flush();
+			this.writer.write(data, 0, data.length);
+			this.writer.flush();
 		} catch (IOException e) {
 			Logger.logError(e);
 		}
 	}
 
 	class CharBuffer {
-		private char[] _buffer;
+		private char[] buffer;
 
 		public CharBuffer() {
-			this._buffer = new char[0];
+			this.buffer = new char[0];
 		}
 
 		public int length() {
-			return this._buffer.length;
+			return this.buffer.length;
 		}
 
 		public String getString() {
-			return new String(this._buffer);
+			return new String(this.buffer);
 		}
 
 		public void append(char[] b, int length) {
-			char[] newBuffer = new char[this._buffer.length + length];
-			System.arraycopy(_buffer, 0, newBuffer, 0, this._buffer.length);
-			System.arraycopy(b, 0, newBuffer, this._buffer.length, length);
-			this._buffer = newBuffer;
+			char[] newBuffer = new char[this.buffer.length + length];
+			System.arraycopy(buffer, 0, newBuffer, 0, this.buffer.length);
+			System.arraycopy(b, 0, newBuffer, this.buffer.length, length);
+			this.buffer = newBuffer;
 		}
 
 		public char[] removeFirst(int n) {
 			char[] b= new char[n];
-			System.arraycopy(this._buffer, 0, b, 0, n);
-			char[] newBuffer = new char[this._buffer.length - n];
-			System.arraycopy(this._buffer, n, newBuffer, 0, this._buffer.length - n);
-			this._buffer = newBuffer;
+			System.arraycopy(this.buffer, 0, b, 0, n);
+			char[] newBuffer = new char[this.buffer.length - n];
+			System.arraycopy(this.buffer, n, newBuffer, 0, this.buffer.length - n);
+			this.buffer = newBuffer;
 			return b;
 		}
 	}
@@ -212,31 +212,31 @@ public class DispatcherProtocol {
 	}
 
 	static class DispatchResponder implements IResponder {
-		private DispatcherProtocol _protocol;
-		private Messages.DispatcherResponse _response;
+		private DispatcherProtocol protocol;
+		private Messages.DispatcherResponse response;
 
 		public DispatchResponder(DispatcherProtocol protocol, Messages.DispatcherResponse response) {
-			this._protocol = protocol;
-			this._response = response;
+			this.protocol = protocol;
+			this.response = response;
 		}
 
 		@Override
 		public void setBody(Object body) {
-			this._response.body = body;
+			this.response.body = body;
 			if (body instanceof ErrorResponseBody) {
-				this._response.success = false;
-				this._response.message = "Error response body";
+				this.response.success = false;
+				this.response.message = "Error response body";
 			} else {
-				this._response.success = true;
+				this.response.success = true;
 				if (body instanceof InitializeResponseBody) {
-					this._response.body = ((InitializeResponseBody) body).body;
+					this.response.body = ((InitializeResponseBody) body).body;
 				}
 			}
 		}
 
 		@Override
 		public void addEvent(String type, Object body) {
-			this._protocol.sendEventLater(type, body);
+			this.protocol.sendEventLater(type, body);
 		}
 
 	}

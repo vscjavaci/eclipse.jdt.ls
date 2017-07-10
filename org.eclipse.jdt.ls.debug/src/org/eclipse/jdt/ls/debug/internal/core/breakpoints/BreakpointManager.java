@@ -24,12 +24,12 @@ public class BreakpointManager implements IBreakpointManager {
 	/**
 	 * A collection of breakpoints registered with this manager.
 	 */
-	private List<IBreakpoint> _breakpoints;
-	private IDebugContext _debugContext;
+	private List<IBreakpoint> breakpoints;
+	private IDebugContext debugContext;
 
 	public BreakpointManager(IDebugContext debugContext) {
-		_breakpoints = Collections.synchronizedList(new ArrayList<>(5));
-		_debugContext = debugContext;
+		this.breakpoints = Collections.synchronizedList(new ArrayList<>(5));
+		this.debugContext = debugContext;
 	}
 
 	public void addBreakpoint(IBreakpoint breakpoint) {
@@ -38,14 +38,14 @@ public class BreakpointManager implements IBreakpointManager {
 
 	public void addBreakpoints(IBreakpoint[] breakpoints) {
 		for (IBreakpoint breakpoint : breakpoints) {
-			synchronized (_breakpoints) {
-				_breakpoints.add(breakpoint);
+			synchronized (this.breakpoints) {
+				this.breakpoints.add(breakpoint);
 			}
 		}
 		if (breakpoints != null && breakpoints.length > 0) {
-				for (IBreakpoint breakpoint : _breakpoints) {
+				for (IBreakpoint breakpoint : breakpoints) {
 					try {
-						breakpoint.addToVMTarget(_debugContext.getVMTarget());
+						breakpoint.addToVMTarget(this.debugContext.getVMTarget());
 					} catch (Exception e) {
 						Logger.logError(e);
 					}
@@ -60,11 +60,11 @@ public class BreakpointManager implements IBreakpointManager {
 
 	public void removeBreakpoints(IBreakpoint[] breakpoints) {
 		for (IBreakpoint breakpoint : breakpoints) {
-			if (_breakpoints.contains(breakpoint)) {
+			if (this.breakpoints.contains(breakpoint)) {
 				try {
-					breakpoint.removeFromVMTarget(_debugContext.getVMTarget());;
-					synchronized (_breakpoints) {
-						_breakpoints.remove(breakpoint);
+					breakpoint.removeFromVMTarget(debugContext.getVMTarget());;
+					synchronized (breakpoints) {
+						this.breakpoints.remove(breakpoint);
 					}
 				} catch (Exception e) {
 					Logger.logError(e);
@@ -74,6 +74,6 @@ public class BreakpointManager implements IBreakpointManager {
 	}
 
 	public IBreakpoint[] getBreakpoints() {
-		return _breakpoints.toArray(new IBreakpoint[0]);
+		return this.breakpoints.toArray(new IBreakpoint[0]);
 	}
 }

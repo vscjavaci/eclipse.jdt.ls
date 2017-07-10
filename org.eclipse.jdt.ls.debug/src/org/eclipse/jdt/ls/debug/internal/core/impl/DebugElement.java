@@ -23,15 +23,15 @@ import com.sun.jdi.request.EventRequestManager;
 
 public abstract class DebugElement implements IDebugElement {
 
-	private IVMTarget _target;
+	private IVMTarget target;
 
 	public DebugElement(IVMTarget target) {
-		_target = target;
+		this.target = target;
 	}
 
 	@Override
 	public IVMTarget getVMTarget() {
-		return _target;
+		return this.target;
 	}
 
 	@Override

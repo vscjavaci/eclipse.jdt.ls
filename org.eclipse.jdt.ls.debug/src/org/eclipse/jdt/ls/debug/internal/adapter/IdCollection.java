@@ -17,37 +17,37 @@ import java.util.HashMap;
  *
  */
 public class IdCollection<T> {
-	private int _startId;
-	private int _nextId;
-	private HashMap<Integer, T> _idMap;
+	private int startId;
+	private int nextId;
+	private HashMap<Integer, T> idMap;
 	
 	public IdCollection() {
 		this(1);
 	}
 	
 	public IdCollection(int startId) {
-		_startId = startId;
-		_nextId = startId;
-		_idMap = new HashMap<>();
+		this.startId = startId;
+		this.nextId = startId;
+		this.idMap = new HashMap<>();
 	}
 	
 	public void reset() {
-		_nextId = _startId;
-		_idMap.clear();
+		this.nextId = this.startId;
+		this.idMap.clear();
 	}
 	
 	public int create(T value) {
-		int id = _nextId++;
-		_idMap.put(id, value);
+		int id = this.nextId++;
+		this.idMap.put(id, value);
 		return id;
 		
 	}
 	
 	public T get(int id) {
-		return _idMap.get(id);
+		return this.idMap.get(id);
 	}
 	
 	public T remove(int id) {
-		return _idMap.remove(id);
+		return this.idMap.remove(id);
 	}
 }

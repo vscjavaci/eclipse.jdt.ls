@@ -31,36 +31,36 @@ import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequest;
 
 public class JDIEventHub implements IJDIEventHub {
-	private JDIVMTarget _target;
-	private HashMap<EventRequest, IJDIEventListener> _eventHandlers;
-	private boolean _shutdown = false;
+	private JDIVMTarget target;
+	private HashMap<EventRequest, IJDIEventListener> eventHandlers;
+	private boolean shutdown = false;
 
 	public JDIEventHub(JDIVMTarget target) {
-		_target = target;
-		_eventHandlers = new HashMap<>(10);
+		this.target = target;
+		this.eventHandlers = new HashMap<>(10);
 	}
 
 	@Override
 	public void addJDIEventListener(EventRequest request, IJDIEventListener listener) {
-		_eventHandlers.put(request, listener);
+		this.eventHandlers.put(request, listener);
 	}
 
 	@Override
 	public void removeJDIEventListener(EventRequest request) {
-		_eventHandlers.remove(request);
+		this.eventHandlers.remove(request);
 	}
 
 	public boolean isShutdown() {
-		return _shutdown;
+		return this.shutdown;
 	}
 
 	public void shutdown() {
-		_shutdown = true;
+		this.shutdown = true;
 	}
 
 	@Override
 	public void run() {
-		VirtualMachine jvm = _target.getVM();
+		VirtualMachine jvm = this.target.getVM();
 		if (jvm != null) {
 			EventQueue eventQueue = jvm.eventQueue();
 			EventSet eventSet = null;
@@ -108,22 +108,22 @@ public class JDIEventHub implements IJDIEventHub {
 				return;
 			}
 			Event event = eventIter.nextEvent();
-			IJDIEventListener listener = _eventHandlers.get(event.request());
+			IJDIEventListener listener = this.eventHandlers.get(event.request());
 			if (listener != null) {
 				vote = true;
-				resume = listener.handleEvent(event, _target, !resume, eventSet) && resume;
+				resume = listener.handleEvent(event, this.target, !resume, eventSet) && resume;
 				continue;
 			}
 
 			// Dispatch VM start/end events
 			if (event instanceof VMDeathEvent) {
-				_target.handleVMDeath((VMDeathEvent) event);
+				this.target.handleVMDeath((VMDeathEvent) event);
 				shutdown(); // stop listening for events
 			} else if (event instanceof VMDisconnectEvent) {
-				_target.handleVMDisconnect((VMDisconnectEvent) event);
+				this.target.handleVMDisconnect((VMDisconnectEvent) event);
 				shutdown(); // stop listening for events
 			} else if (event instanceof VMStartEvent) {
-				_target.handleVMStart((VMStartEvent) event);
+				target.handleVMStart((VMStartEvent) event);
 			} else {
 				// not handled
 			}
