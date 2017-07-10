@@ -22,8 +22,8 @@ public class StartDebugSessionHandler {
 
 	public CompletableFuture<String> startDebugServer(String type) {
 		return CompletableFutures.computeAsync(cm -> {
-			if (type.equals("vscode.java.debugsession")) {
-				// Find some Java DebugServer implementation and start it.
+			if (type != null && type.equals("vscode.java.debugsession")) {
+				// Find the Java DebugServer implementation and start it.
 				IConfigurationElement[] elements = Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSIONPOINT_ID);
 				try {
 					for (IConfigurationElement e : elements) {
