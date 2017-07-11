@@ -1,7 +1,14 @@
 language: java
 dist: trusty
 sudo: false
+
 script: 
-- mvn -B -U -fae -e -Pserver-distro clean verify
+- ./mvnw -B -U -fae -e -Pserver-distro clean verify
+
 jdk:
 - oraclejdk8
+
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
