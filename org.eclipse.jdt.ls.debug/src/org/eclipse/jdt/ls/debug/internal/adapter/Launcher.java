@@ -27,16 +27,6 @@ public class Launcher {
     public Launcher() {
     }
 
-    // public void launchJVM(String mainClass, String classpath) throws
-    // CoreException {
-    // IVMInstall vmInstall = JavaRuntime.getDefaultVMInstall();
-    // vmDebugger = new VMDebugger(vmInstall);
-    // VMRunnerConfiguration vmConfig = new VMRunnerConfiguration(mainClass,
-    // classpath.split(";"));
-    // ILaunch launch = new Launch(null, ILaunchManager.DEBUG_MODE, null);
-    // vmDebugger.run(vmConfig, launch, null);
-    // }
-
     /**
      * Launches and returns a new java virtual machine with the given mainclass and classpath options.
      */

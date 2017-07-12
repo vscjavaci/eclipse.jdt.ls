@@ -73,12 +73,12 @@ public class JDIEventHub implements IJDIEventHub {
                 }
 
                 if (!isShutdown() && eventSet != null) {
-                    final EventSet temp = eventSet;
+                    final EventSet currentEventSet = eventSet;
                     executor.submit(new Runnable() {
 
                         @Override
                         public void run() {
-                            dispatch(temp);
+                            dispatch(currentEventSet);
                         }
 
                     });

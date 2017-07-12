@@ -55,12 +55,6 @@ public class JDIThreadManager implements IThreadManager {
         List<ThreadReference> threads = null;
         VirtualMachine vm = this.target.getVM();
         if (vm != null) {
-            // try {
-            // String name = vm.name();
-            // fSupportsDisableGC = !name.equals("Classic VM"); //$NON-NLS-1$
-            // } catch (RuntimeException e) {
-            // Logger.logError(e);
-            // }
             try {
                 threads = vm.allThreads();
             } catch (RuntimeException e) {
