@@ -13,9 +13,6 @@ package org.eclipse.jdt.ls.debug.internal.adapter;
 
 import java.util.HashMap;
 
-/**
- *
- */
 public class IdCollection<T> {
     private int startId;
     private int nextId;
@@ -25,6 +22,10 @@ public class IdCollection<T> {
         this(1);
     }
 
+    /**
+     * Constructs a new id generator with the given startId as the start id number.
+     * @param startId - the start id number
+     */
     public IdCollection(int startId) {
         this.startId = startId;
         this.nextId = startId;
@@ -36,6 +37,9 @@ public class IdCollection<T> {
         this.idMap.clear();
     }
 
+    /**
+     * Creates a id number for the given value.
+     */
     public int create(T value) {
         int id = this.nextId++;
         this.idMap.put(id, value);

@@ -15,10 +15,9 @@ import java.util.List;
 
 import org.eclipse.jdt.ls.debug.internal.core.EventType;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpoint;
-import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
 import org.eclipse.jdt.ls.debug.internal.core.IJDIEventListener;
+import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
 import org.eclipse.jdt.ls.debug.internal.core.impl.DebugEvent;
-import org.eclipse.jdt.ls.debug.internal.core.impl.JDIVMTarget;
 
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
@@ -66,6 +65,9 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
         return false;
     }
 
+    /**
+     * Registers the breakpoint to the specified VM target.
+     */
     public void addToVMTarget(IVMTarget target) {
         String referenceTypeName = this.typeName;
         String enclosingTypeName = null;
@@ -109,10 +111,10 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
     }
 
     /**
-     * Handle those local types defined in method.
+     * Handles those local types defined in method.
      * 
-     * @param target
-     * @param enclosingTypeName
+     * @param target - VM target
+     * @param enclosingTypeName - the full qualified name
      */
     protected void addToTargetForLocalType(IVMTarget target, String enclosingTypeName) {
         List<ReferenceType> classes = target.getVM().classesByName(enclosingTypeName);

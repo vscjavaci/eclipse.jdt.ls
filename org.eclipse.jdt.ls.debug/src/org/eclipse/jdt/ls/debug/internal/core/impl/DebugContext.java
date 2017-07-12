@@ -17,9 +17,6 @@ import org.eclipse.jdt.ls.debug.internal.core.IDebugEventHub;
 import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
 import org.eclipse.jdt.ls.debug.internal.core.breakpoints.BreakpointManager;
 
-/**
- *
- */
 public class DebugContext implements IDebugContext {
     private BreakpointManager breakpointManager = null;
     private DebugEventHub debugEventHub = null;

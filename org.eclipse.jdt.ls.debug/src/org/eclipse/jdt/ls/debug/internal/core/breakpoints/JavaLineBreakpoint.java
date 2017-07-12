@@ -50,11 +50,8 @@ public class JavaLineBreakpoint extends JavaBreakpoint {
         for (Location location : locations) {
             requests[i] = manager.createBreakpointRequest(location);
             configureRequest(requests[i]);
-            target.getEventHub().addJDIEventListener(requests[i], this); // register
-                                                                         // event
-                                                                         // listener
-                                                                         // to
-                                                                         // EventHub
+            // register event listener to EventHub
+            target.getEventHub().addJDIEventListener(requests[i], this); 
             i++;
         }
         return true;

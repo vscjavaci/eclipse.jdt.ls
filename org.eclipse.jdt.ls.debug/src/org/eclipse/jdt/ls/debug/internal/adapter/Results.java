@@ -16,8 +16,11 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 
+/**
+ * The response content types defined by VSCode Debug Protocol.
+ */
 public class Results {
-    /*
+    /**
      * This monomorphic class is used to return results from a debugger request
      * or to return errors. In addition events can be attached that are fired
      * after the request results have been returned to the caller.
@@ -25,18 +28,16 @@ public class Results {
     public static class DebugResult {
         public boolean success; // boolean indicating success
         public ResponseBody body; // depending on value of success either the
-                                  // result or an error
         public List<Events.DebugEvent> events; // send this event after
-                                               // returning the result
 
-        /*
+        /**
          * A success result without additional data.
          */
         public DebugResult() {
             this.success = true;
         }
 
-        /*
+        /**
          * A success result with as additional event.
          */
         public DebugResult(Events.DebugEvent ev) {
@@ -44,7 +45,7 @@ public class Results {
             add(ev);
         }
 
-        /*
+        /**
          * A result with a response body. If body is a ErrorResponseBody then
          * Success will be set to false.
          */
@@ -56,7 +57,7 @@ public class Results {
             }
         }
 
-        /*
+        /**
          * A failure result with a full error message.
          */
         public DebugResult(int id, String format, JsonObject arguments) {
@@ -64,7 +65,7 @@ public class Results {
             this.body = new ErrorResponseBody(new Types.Message(id, format, arguments));
         }
 
-        /*
+        /**
          * Add a DebugEvent to this request result. Events are fired after the
          * result is returned to the caller of the request.
          */
@@ -78,7 +79,7 @@ public class Results {
         }
     }
 
-    /*
+    /**
      * subclasses of ResponseBody are serialized as the response body. Don't
      * change their instance variables since that will break the OpenDebug
      * protocol.
@@ -108,6 +109,11 @@ public class Results {
 
         public int totalFrames;
 
+        /**
+         * Constructs an StackTraceResponseBody with the given stack frame list.
+         * @param frames - a {@link Types.StackFrame} list
+         * @param total - the total frame number
+         */
         public StackTraceResponseBody(List<Types.StackFrame> frames, int total) {
             if (frames == null) {
                 stackFrames = new Types.StackFrame[0];
@@ -122,6 +128,10 @@ public class Results {
     public static class ScopesResponseBody extends ResponseBody {
         public Types.Scope[] scopes;
 
+        /**
+         * Constructs a ScopesResponseBody with the Scope list.
+         * @param scps - a {@link Types.Scope} list
+         */
         public ScopesResponseBody(List<Types.Scope> scps) {
             if (scps == null) {
                 scopes = new Types.Scope[0];
@@ -134,6 +144,10 @@ public class Results {
     public static class VariablesResponseBody extends ResponseBody {
         public Types.Variable[] variables;
 
+        /**
+         * Constructs a VariablesResponseBody with the given variable list.
+         * @param vars - a {@link Types.Variable} list
+         */
         public VariablesResponseBody(List<Types.Variable> vars) {
             if (vars == null) {
                 variables = new Types.Variable[0];
@@ -162,6 +176,10 @@ public class Results {
     public static class ThreadsResponseBody extends ResponseBody {
         public Types.Thread[] threads;
 
+        /**
+         * Constructs a ThreadsResponseBody with the given thread list.
+         * @param vars - a {@link Types.Thread} list
+         */
         public ThreadsResponseBody(List<Types.Thread> vars) {
             if (vars == null) {
                 threads = new Types.Thread[0];
@@ -176,6 +194,9 @@ public class Results {
         public int variablesReference;
         public String type;
 
+        /**
+         * Constructor.
+         */
         public EvaluateResponseBody(String value, int reff, String type) {
             this.result = value;
             this.variablesReference = reff;
@@ -186,6 +207,10 @@ public class Results {
     public static class SetBreakpointsResponseBody extends ResponseBody {
         public Types.Breakpoint[] breakpoints;
 
+        /**
+         * Constructs a SetBreakpointsResponssseBody with the given breakpoint list.
+         * @param bpts - a {@link Types.Breakpoint} list
+         */
         public SetBreakpointsResponseBody(List<Types.Breakpoint> bpts) {
             if (bpts == null) {
                 breakpoints = new Types.Breakpoint[0];

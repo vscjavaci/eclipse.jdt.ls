@@ -16,12 +16,21 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 
+/**
+ * The data types defined by VSCode Debug Protocol.
+ */
 public class Types {
     public static class Message {
         public int id;
         public String format;
         public JsonObject variables;
 
+        /**
+         * Constructs a message with the given information.
+         * @param id - message id
+         * @param format - a format string
+         * @param variables - arguments referenced by the format specifiers in the format string.
+         */
         public Message(int id, String format, JsonObject variables) {
             this.id = id;
             this.format = format;
@@ -36,6 +45,14 @@ public class Types {
         public int column;
         public String name;
 
+        /**
+         * Constructs a StackFrame with the given information.
+         * @param id - the stack frame id
+         * @param name - the stack frame name
+         * @param src - source info of the stack frame
+         * @param ln - line number of the stack frame
+         * @param col - column number of the stack frame
+         */
         public StackFrame(int id, String name, Source src, int ln, int col) {
             this.id = id;
             this.name = name;
@@ -50,6 +67,9 @@ public class Types {
         public int variablesReference;
         public boolean expensive;
 
+        /**
+         * Constructor.
+         */
         public Scope(String name, int rf, boolean exp) {
             this.name = name;
             this.variablesReference = rf;
@@ -65,6 +85,9 @@ public class Types {
         public int indexedVariables;
         public String evaluateName;
 
+        /**
+         * Constructor.
+         */
         public Variable(String name, String val, String type, int rf, String evaluateName) {
             this.name = name;
             this.value = val;
@@ -78,6 +101,9 @@ public class Types {
         public long id;
         public String name;
 
+        /**
+         * Constructor.
+         */
         public Thread(long l, String name) {
             this.id = l;
             if (name == null || name.length() == 0) {
@@ -96,12 +122,18 @@ public class Types {
         public Source() {
         }
 
+        /**
+         * Constructor.
+         */
         public Source(String name, String path, int rf) {
             this.name = name;
             this.path = path;
             this.sourceReference = rf;
         }
 
+        /**
+         * Constructor.
+         */
         public Source(String path, int rf) {
             this.name = Paths.get(path).getFileName().toString();
             this.path = path;
@@ -115,6 +147,9 @@ public class Types {
         public int line;
         public String message;
 
+        /**
+         * Constructor.
+         */
         public Breakpoint(int id, boolean verified, int line, String message) {
             this.id = id;
             this.verified = verified;
@@ -131,6 +166,9 @@ public class Types {
         public SourceBreakpoint() {
         }
 
+        /**
+         * Constructor.
+         */
         public SourceBreakpoint(int line, String condition, int hitCondition) {
             this.line = line;
             this.condition = condition;
@@ -154,11 +192,13 @@ public class Types {
     public static class ExceptionBreakpointFilter {
         public static final String Filter_All = "all";
         public static final String Filter_UserUnhandled = "user-unhandled";
-        String _filter;
 
         public String label;
         public String filter;
 
+        /**
+         * Constructor.
+         */
         public void setFilter(String value) {
             if (!Filter_All.equals(value) && !Filter_UserUnhandled.equals(value)) {
                 return;

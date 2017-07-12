@@ -31,6 +31,12 @@ public class JDIVMTarget extends DebugElement implements IVMTarget {
     private JDIEventHub vmEventHub;
     private JDIThreadManager vmThreadManager;
 
+    /**
+     * Constructor.
+     * @param context - the debug session context
+     * @param jvm - the debuggee VM
+     * @param resumeOnStartup - whether the VM should be resumed on startup
+     */
     public JDIVMTarget(IDebugContext context, VirtualMachine jvm, boolean resumeOnStartup) {
         super(null);
         this.jvm = jvm;
@@ -40,7 +46,7 @@ public class JDIVMTarget extends DebugElement implements IVMTarget {
         initialize();
     }
 
-    public void initialize() {
+    protected void initialize() {
         this.vmEventHub = new JDIEventHub(this);
         this.vmThreadManager = new JDIThreadManager(this);
 
@@ -99,6 +105,9 @@ public class JDIVMTarget extends DebugElement implements IVMTarget {
         fireCreationEvent();
     }
 
+    /**
+     * Resume the debuggee VM.
+     */
     public void resume() {
         this.resumeOnStartup = true;
         VirtualMachine vm = getVM();

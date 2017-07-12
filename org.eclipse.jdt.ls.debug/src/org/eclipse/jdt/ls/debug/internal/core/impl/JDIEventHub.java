@@ -133,7 +133,9 @@ public class JDIEventHub implements IJDIEventHub {
             try {
                 eventSet.resume();
             } catch (VMDisconnectedException e) {
+                // empty
             } catch (RuntimeException e) {
+                // empty
             }
         }
     }

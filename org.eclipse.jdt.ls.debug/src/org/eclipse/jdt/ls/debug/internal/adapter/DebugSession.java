@@ -63,6 +63,9 @@ public class DebugSession implements IDebugSession {
     private IVMTarget vmTarget;
     private IdCollection<StackFrame> frameCollection = new IdCollection<>();
 
+    /**
+     * Constructs a DebugSession instance.
+     */
     public DebugSession(boolean debuggerLinesStartAt1, boolean debuggerPathsAreURI, IResponder responder) {
         this.debuggerLinesStartAt1 = debuggerLinesStartAt1;
         this.debuggerPathsAreURI = debuggerPathsAreURI;
@@ -198,11 +201,12 @@ public class DebugSession implements IDebugSession {
         String pathFormat = arguments.pathFormat;
         if (pathFormat != null) {
             switch (pathFormat) {
-            case "uri":
-                this.clientPathsAreURI = true;
-            default:
-                this.clientPathsAreURI = false;
-            }
+                case "uri":
+                    this.clientPathsAreURI = true;
+                    break;
+                default:
+                    this.clientPathsAreURI = false;
+                }
         }
         Capabilities caps = new Capabilities();
         // caps.supportsConfigurationDoneRequest = true;
@@ -235,7 +239,7 @@ public class DebugSession implements IDebugSession {
             VirtualMachine vm = launcher.launchJVM(mainClass, classpath);
             this.vmTarget = new JDIVMTarget(debugContext, vm, false);
         } catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
-            Logger.logException("Launching debugee vm exception", e);
+            Logger.logException("Launching debuggee vm exception", e);
             return new DebugResult(3001, "Cannot launch jvm.", null);
         }
         return new DebugResult();
@@ -351,8 +355,8 @@ public class DebugSession implements IDebugSession {
         try {
             for (IThread thread : this.vmTarget.getThreads()) {
                 JDIThread jdiThread = (JDIThread) thread;
-                ThreadReference rThread = jdiThread.getUnderlyingThread();
-                threads.add(new Types.Thread(rThread.uniqueID(), rThread.name()));
+                ThreadReference tr = jdiThread.getUnderlyingThread();
+                threads.add(new Types.Thread(tr.uniqueID(), tr.name()));
             }
             return new DebugResult(new Results.ThreadsResponseBody(threads));
         } catch (VMDisconnectedException ex) {

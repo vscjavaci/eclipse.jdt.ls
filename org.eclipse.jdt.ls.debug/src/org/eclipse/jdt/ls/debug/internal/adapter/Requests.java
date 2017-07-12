@@ -12,7 +12,7 @@
 package org.eclipse.jdt.ls.debug.internal.adapter;
 
 /**
- *
+ * The request arguments types defined by VSCode Debug Protocol.
  */
 public class Requests {
 

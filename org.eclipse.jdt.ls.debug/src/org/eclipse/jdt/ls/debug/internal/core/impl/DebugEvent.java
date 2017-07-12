@@ -16,6 +16,10 @@ import java.util.EventObject;
 import org.eclipse.jdt.ls.debug.internal.core.EventType;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugEvent;
 
+/**
+ * Debug Event used for communication between the submodules of debugger.
+ * It's different with the JDI Event from Virtual Machine.
+ */
 public class DebugEvent extends EventObject implements IDebugEvent {
     private static final long serialVersionUID = 1L;
     private EventType kind;

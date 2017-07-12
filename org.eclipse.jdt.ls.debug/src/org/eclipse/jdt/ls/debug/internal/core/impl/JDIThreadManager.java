@@ -33,13 +33,13 @@ import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
-/**
- *
- */
 public class JDIThreadManager implements IThreadManager {
     private List<IThread> threads;
     private JDIVMTarget target;
 
+    /**
+     * Constructor.
+     */
     public JDIThreadManager(JDIVMTarget target) {
         this.target = target;
         this.threads = Collections.synchronizedList(new ArrayList<IThread>(5));
@@ -75,12 +75,18 @@ public class JDIThreadManager implements IThreadManager {
         }
     }
 
+    /**
+     * Gets all threads belonging to the debuggee VM.
+     */
     public IThread[] getThreads() {
         synchronized (this.threads) {
             return this.threads.toArray(new IThread[0]);
         }
     }
 
+    /**
+     * Finds the corresponding JDIThread instance with the underlying thread.
+     */
     public IThread findThread(ThreadReference threadReference) {
         for (IThread thread : this.threads) {
             if (thread.getUnderlyingThread().equals(threadReference)) {
@@ -90,6 +96,9 @@ public class JDIThreadManager implements IThreadManager {
         return null;
     }
 
+    /**
+     * Creates an JDIThread for the underlying thread.
+     */
     public IThread createThread(ThreadReference threadReference) {
         IThread jdiThread = new JDIThread(this.target, threadReference);
         synchronized (this.threads) {

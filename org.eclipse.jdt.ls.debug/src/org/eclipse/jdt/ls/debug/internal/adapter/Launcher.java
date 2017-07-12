@@ -37,6 +37,9 @@ public class Launcher {
     // vmDebugger.run(vmConfig, launch, null);
     // }
 
+    /**
+     * Launches and returns a new java virtual machine with the given mainclass and classpath options.
+     */
     public VirtualMachine launchJVM(String mainClass, String classpath)
             throws IOException, IllegalConnectorArgumentsException, VMStartException {
         List<LaunchingConnector> list = Bootstrap.virtualMachineManager().launchingConnectors();

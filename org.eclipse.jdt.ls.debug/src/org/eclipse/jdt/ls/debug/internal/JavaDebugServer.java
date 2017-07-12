@@ -36,6 +36,10 @@ public class JavaDebugServer implements IDebugServer {
     private Socket connection = null;
     private DispatcherProtocol dispatcher = null;
 
+    /**
+     * Constructs a JavaDebugServer instance which will launch a ServerSocket to 
+     * listen for incoming socket connection.
+     */
     public JavaDebugServer() {
         try {
             this.serverSocket = new ServerSocket(0, 1);

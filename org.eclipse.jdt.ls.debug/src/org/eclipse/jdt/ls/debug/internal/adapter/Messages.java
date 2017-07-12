@@ -13,6 +13,9 @@ package org.eclipse.jdt.ls.debug.internal.adapter;
 
 import com.google.gson.JsonObject;
 
+/**
+ * The response types defined by VSCode Debug Protocol.
+ */
 public class Messages {
 
     public static class DispatcherMessage {
@@ -28,6 +31,9 @@ public class Messages {
         public String command;
         public JsonObject arguments;
 
+        /**
+         * Constructor.
+         */
         public DispatcherRequest(int id, String cmd, JsonObject arg) {
             super("request");
             this.seq = id;
@@ -49,18 +55,27 @@ public class Messages {
             super("response");
         }
 
+        /**
+         * Constructor.
+         */
         public DispatcherResponse(String msg) {
             super("response");
             this.success = false;
             this.message = msg;
         }
 
+        /**
+         * Constructor.
+         */
         public DispatcherResponse(boolean succ, String message) {
             super("response");
             this.success = succ;
             this.message = message;
         }
 
+        /**
+         * Constructor.
+         */
         public DispatcherResponse(DispatcherResponse m) {
             super("response");
             this.seq = m.seq;
@@ -73,6 +88,9 @@ public class Messages {
             this.refs = m.refs;
         }
 
+        /**
+         * Constructor.
+         */
         public DispatcherResponse(int rseq, String cmd) {
             super("response");
             this.request_seq = rseq;
@@ -88,6 +106,9 @@ public class Messages {
             super("event");
         }
 
+        /**
+         * Constructor.
+         */
         public DispatcherEvent(DispatcherEvent m) {
             super("event");
             this.seq = m.seq;
@@ -95,6 +116,9 @@ public class Messages {
             this.body = m.body;
         }
 
+        /**
+         * Constructor.
+         */
         public DispatcherEvent(String type, Object body) {
             super("event");
             this.event = type;

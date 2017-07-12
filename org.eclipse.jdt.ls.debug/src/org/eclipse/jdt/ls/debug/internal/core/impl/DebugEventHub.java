@@ -26,6 +26,9 @@ public class DebugEventHub implements IDebugEventHub {
         this.eventListeners = Collections.synchronizedList(new ArrayList<>(5));
     }
 
+    /**
+     * Notifies a DebugEvent array to listeners.
+     */
     public void fireDebugEventSet(IDebugEvent[] events) {
         if (events == null || this.eventListeners.isEmpty()) {
             return;
@@ -36,12 +39,18 @@ public class DebugEventHub implements IDebugEventHub {
         }
     }
 
+    /**
+     * Adds a new DebugEvent Listener to DebugEvent Hub.
+     */
     public void addDebugEventSetListener(IDebugEventSetListener listener) {
         synchronized (this.eventListeners) {
             this.eventListeners.add(listener);
         }
     }
 
+    /**
+     * Removes the listener from the DebugEvent Hub.
+     */
     public void removeDebugEventSetListener(IDebugEventSetListener listener) {
         synchronized (this.eventListeners) {
             this.eventListeners.remove(listener);

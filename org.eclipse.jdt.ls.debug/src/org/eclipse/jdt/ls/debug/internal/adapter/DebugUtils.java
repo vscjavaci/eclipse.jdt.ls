@@ -24,6 +24,9 @@ import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 public class DebugUtils {
 
+    /**
+     * Converts VSCode source breakpoint to java breakpoint.
+     */
     public static void addBreakpoint(Types.Source source, Types.SourceBreakpoint[] lines, IBreakpointManager manager) {
         Path sourcePath = Paths.get(source.path);
         ICompilationUnit element = JDTUtils.resolveCompilationUnit(sourcePath.toUri());

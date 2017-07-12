@@ -46,6 +46,13 @@ public class JsonUtils {
         return gson.toJson(src, typeOfSrc);
     }
 
+    /**
+     * Get the integer value for the specified property from the json Object.
+     * @param args - the json object
+     * @param property - the key
+     * @param defaultValue - if key doesn't exist in the json object, then return the default value
+     * @return the value as an integer number
+     */
     public static int getInt(JsonObject args, String property, int defaultValue) {
         try {
             return args.getAsInt();
@@ -55,6 +62,13 @@ public class JsonUtils {
         return defaultValue;
     }
 
+    /**
+     * Get the string value for the specified property from the json Object.
+     * @param args - the json object
+     * @param property - the key
+     * @param defaultValue - if key doesn't exist in the json object, then return the default value
+     * @return the value as a string
+     */
     public static String getString(JsonObject args, String property, String defaultValue) {
         String value = null;
         try {
@@ -73,6 +87,13 @@ public class JsonUtils {
         return value;
     }
 
+    /**
+     * Get the boolean value for the specified property from the json Object.
+     * @param args - the json object
+     * @param property - the key
+     * @param defaultValue - if key doesn't exist in the json object, then return the default value
+     * @return the value as boolean
+     */
     public static boolean getBoolean(JsonObject args, String property, boolean defaultValue) {
         try {
             JsonElement obj = args.get(property);
@@ -83,6 +104,12 @@ public class JsonUtils {
         return defaultValue;
     }
 
+    /**
+     * Extracts a list of property values from a json array object.
+     * @param args - the json array element
+     * @param property - the key
+     * @return an string array
+     */
     public static String[] getStringArray(JsonElement args, String property) {
         if (args instanceof JsonArray) {
             JsonArray array = (JsonArray) args;

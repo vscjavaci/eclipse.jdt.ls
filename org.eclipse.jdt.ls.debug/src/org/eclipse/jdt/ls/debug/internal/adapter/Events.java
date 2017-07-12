@@ -13,6 +13,9 @@ package org.eclipse.jdt.ls.debug.internal.adapter;
 
 import java.util.HashMap;
 
+/**
+ * The event types defined by VSCode Debug Protocol.
+ */
 public class Events {
     public static class DebugEvent {
         public String type;
@@ -41,6 +44,9 @@ public class Events {
         public String text;
         public boolean allThreadsStopped;
 
+        /**
+         * Constructor.
+         */
         public StoppedEvent(String reason, Types.Source src, int ln, int col, String text, long id) {
             super("stopped");
             this.reason = reason;
@@ -72,6 +78,9 @@ public class Events {
         public String reason;
         public long threadId;
 
+        /**
+         * Constructor.
+         */
         public ThreadEvent(String reason, long id) {
             super("thread");
             this.reason = reason;
@@ -88,6 +97,9 @@ public class Events {
         public String output;
         public HashMap<String, Object> data;
 
+        /**
+         * Constructor.
+         */
         public OutputEvent(Category category, String output, HashMap<String, Object> data) {
             super("output");
             this.category = category;
@@ -100,6 +112,9 @@ public class Events {
         public String reason;
         public Types.Breakpoint breakpoint;
 
+        /**
+         * Constructor.
+         */
         public BreakpointEvent(String reason, Types.Breakpoint breakpoint) {
             super("breakpoint");
             this.reason = reason;

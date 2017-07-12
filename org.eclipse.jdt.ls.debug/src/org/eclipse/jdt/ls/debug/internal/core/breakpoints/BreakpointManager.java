@@ -36,6 +36,9 @@ public class BreakpointManager implements IBreakpointManager {
         addBreakpoints(new IBreakpoint[] { breakpoint });
     }
 
+    /**
+     * Adds new breakpoints to breakpoint manager.
+     */
     public void addBreakpoints(IBreakpoint[] breakpoints) {
         for (IBreakpoint breakpoint : breakpoints) {
             synchronized (this.breakpoints) {
@@ -58,6 +61,9 @@ public class BreakpointManager implements IBreakpointManager {
         removeBreakpoints(new IBreakpoint[] { breakpoint });
     }
 
+    /**
+     * Removes the specified breakpoints from breakpoint manager.
+     */
     public void removeBreakpoints(IBreakpoint[] breakpoints) {
         for (IBreakpoint breakpoint : breakpoints) {
             if (this.breakpoints.contains(breakpoint)) {

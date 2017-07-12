@@ -11,9 +11,6 @@
 
 package org.eclipse.jdt.ls.debug.internal.core;
 
-/**
- *
- */
 public interface IThreadManager {
     IThread[] getThreads();
 }
