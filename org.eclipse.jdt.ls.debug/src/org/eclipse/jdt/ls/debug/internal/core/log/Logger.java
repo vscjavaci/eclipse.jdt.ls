@@ -11,17 +11,19 @@
 
 package org.eclipse.jdt.ls.debug.internal.core.log;
 
+import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
+
 public class Logger {
-	private static final boolean isDebug = Boolean.getBoolean("jdt.ls.debug");
+    public static void logInfo(String message) {
+        JavaDebuggerServerPlugin.logInfo(message);
+    }
 
-	public static void log(String message) {
-		if (isDebug) {
-			System.out.println(message);			
-		}
-	}
+    public static void logException(String message, Exception e) {
+        JavaDebuggerServerPlugin.logException(message, e);
+    }
 
-	public static void logError(Exception e) {
-		e.printStackTrace();
-	}
-
+    public static void logError(String error) {
+        JavaDebuggerServerPlugin.logError(error);
+    }
+    
 }

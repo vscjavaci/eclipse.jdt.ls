@@ -20,31 +20,31 @@ import org.eclipse.jdt.ls.debug.internal.core.IDebugEventHub;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugEventSetListener;
 
 public class DebugEventHub implements IDebugEventHub {
-	private List<IDebugEventSetListener> eventListeners;
+    private List<IDebugEventSetListener> eventListeners;
 
-	public DebugEventHub() {
-		this.eventListeners = Collections.synchronizedList(new ArrayList<>(5));
-	}
+    public DebugEventHub() {
+        this.eventListeners = Collections.synchronizedList(new ArrayList<>(5));
+    }
 
-	public void fireDebugEventSet(IDebugEvent[] events) {
-		if (events == null || this.eventListeners.isEmpty()) {
-			return;
-		}
+    public void fireDebugEventSet(IDebugEvent[] events) {
+        if (events == null || this.eventListeners.isEmpty()) {
+            return;
+        }
 
-		for (IDebugEventSetListener listener : this.eventListeners) {
-			listener.handleDebugEvents(events);
-		}
-	}
+        for (IDebugEventSetListener listener : this.eventListeners) {
+            listener.handleDebugEvents(events);
+        }
+    }
 
-	public void addDebugEventSetListener(IDebugEventSetListener listener) {
-		synchronized (this.eventListeners) {
-			this.eventListeners.add(listener);
-		}
-	}
+    public void addDebugEventSetListener(IDebugEventSetListener listener) {
+        synchronized (this.eventListeners) {
+            this.eventListeners.add(listener);
+        }
+    }
 
-	public void removeDebugEventSetListener(IDebugEventSetListener listener) {
-		synchronized (this.eventListeners) {
-			this.eventListeners.remove(listener);
-		}
-	}
+    public void removeDebugEventSetListener(IDebugEventSetListener listener) {
+        synchronized (this.eventListeners) {
+            this.eventListeners.remove(listener);
+        }
+    }
 }

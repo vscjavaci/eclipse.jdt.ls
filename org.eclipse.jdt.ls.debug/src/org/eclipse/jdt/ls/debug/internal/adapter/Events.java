@@ -14,99 +14,96 @@ package org.eclipse.jdt.ls.debug.internal.adapter;
 import java.util.HashMap;
 
 public class Events {
-	public static class DebugEvent {
-		public String type;
+    public static class DebugEvent {
+        public String type;
 
-		public DebugEvent(String type) {
-			this.type = type;
-		}
-	}
+        public DebugEvent(String type) {
+            this.type = type;
+        }
+    }
 
-	public static class DebugProtocolCallbacks {
+    public static class DebugProtocolCallbacks {
 
-	}
+    }
 
-	public static class InitializedEvent extends DebugEvent {
-		public InitializedEvent() {
-			super("initialized");
-		}
-	}
+    public static class InitializedEvent extends DebugEvent {
+        public InitializedEvent() {
+            super("initialized");
+        }
+    }
 
-	public static class StoppedEvent extends DebugEvent {
-		public long threadId;
-		public String reason;
-		public Types.Source source;
-		public int line;
-		public int column;
-		public String text;
-		public boolean allThreadsStopped;
+    public static class StoppedEvent extends DebugEvent {
+        public long threadId;
+        public String reason;
+        public Types.Source source;
+        public int line;
+        public int column;
+        public String text;
+        public boolean allThreadsStopped;
 
-		public StoppedEvent(String reason, Types.Source src, int ln, int col, String text, long id) {
-			super("stopped");
-			this.reason = reason;
-			this.source = src;
-			this.line = ln;
-			this.column = col;
-			this.text = text;
-			this.threadId = id;
-			this.allThreadsStopped = false;
-		}
-	}
+        public StoppedEvent(String reason, Types.Source src, int ln, int col, String text, long id) {
+            super("stopped");
+            this.reason = reason;
+            this.source = src;
+            this.line = ln;
+            this.column = col;
+            this.text = text;
+            this.threadId = id;
+            this.allThreadsStopped = false;
+        }
+    }
 
-	public static class ExitedEvent extends DebugEvent {
-		public int exitCode;
+    public static class ExitedEvent extends DebugEvent {
+        public int exitCode;
 
-		public ExitedEvent(int code) {
-			super("exited");
-			this.exitCode = code;
-		}
-	}
+        public ExitedEvent(int code) {
+            super("exited");
+            this.exitCode = code;
+        }
+    }
 
-	public static class TerminatedEvent extends DebugEvent {
-		public TerminatedEvent() {
-			super("terminated");
-		}
-	}
+    public static class TerminatedEvent extends DebugEvent {
+        public TerminatedEvent() {
+            super("terminated");
+        }
+    }
 
-	public static class ThreadEvent extends DebugEvent {
-		public String reason;
-		public long threadId;
+    public static class ThreadEvent extends DebugEvent {
+        public String reason;
+        public long threadId;
 
-		public ThreadEvent(String reason, long id) {
-			super("thread");
-			this.reason = reason;
-			this.threadId = id;
-		}
-	}
+        public ThreadEvent(String reason, long id) {
+            super("thread");
+            this.reason = reason;
+            this.threadId = id;
+        }
+    }
 
-	public static class OutputEvent extends DebugEvent {
-		public enum Category {
-			console,
-			stdout,
-			stderr,
-			telemetry
-		}
+    public static class OutputEvent extends DebugEvent {
+        public enum Category {
+            console, stdout, stderr, telemetry
+        }
 
-		public Category category;
-		public String output;
-		public HashMap<String, Object> data;
+        public Category category;
+        public String output;
+        public HashMap<String, Object> data;
 
-		public OutputEvent(Category category, String output, HashMap<String, Object> data) {
-			super("output");
-			this.category = category;
-			this.output = output;
-			this.data = data;
-		}
-	}
+        public OutputEvent(Category category, String output, HashMap<String, Object> data) {
+            super("output");
+            this.category = category;
+            this.output = output;
+            this.data = data;
+        }
+    }
 
-	public static class BreakpointEvent extends DebugEvent {
-		public String reason;
-		public Types.Breakpoint breakpoint;
+    public static class BreakpointEvent extends DebugEvent {
+        public String reason;
+        public Types.Breakpoint breakpoint;
 
-		public BreakpointEvent(String reason, Types.Breakpoint breakpoint) {
-			super("breakpoint");
-			this.reason = reason;
-			this.breakpoint = breakpoint;
-		}
-	}
+        public BreakpointEvent(String reason, Types.Breakpoint breakpoint) {
+            super("breakpoint");
+            this.reason = reason;
+            this.breakpoint = breakpoint;
+        }
+    }
 }

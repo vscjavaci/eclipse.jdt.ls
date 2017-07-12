@@ -14,10 +14,15 @@ package org.eclipse.jdt.ls.debug.internal.core;
 import com.sun.jdi.ThreadReference;
 
 public interface IThread {
-	public ThreadReference getUnderlyingThread();
-	public void fireCreationEvent();
-	public void fireTerminateEvent();
-	public void stepInto();
-	public void stepOver();
-	public void resume();
+    public ThreadReference getUnderlyingThread();
+
+    public void fireCreationEvent();
+
+    public void fireTerminateEvent();
+
+    public void stepInto();
+
+    public void stepOver();
+
+    public void resume();
 }

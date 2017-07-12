@@ -23,46 +23,46 @@ import com.sun.jdi.request.EventRequestManager;
 
 public abstract class DebugElement implements IDebugElement {
 
-	private IVMTarget target;
+    private IVMTarget target;
 
-	public DebugElement(IVMTarget target) {
-		this.target = target;
-	}
+    public DebugElement(IVMTarget target) {
+        this.target = target;
+    }
 
-	@Override
-	public IVMTarget getVMTarget() {
-		return this.target;
-	}
+    @Override
+    public IVMTarget getVMTarget() {
+        return this.target;
+    }
 
-	@Override
-	public VirtualMachine getVM() {
-		return ((JDIVMTarget) getVMTarget()).getVM();
-	}
+    @Override
+    public VirtualMachine getVM() {
+        return ((JDIVMTarget) getVMTarget()).getVM();
+    }
 
-	public EventRequestManager getEventRequestManager() {
-		VirtualMachine vm = getVM();
-		if (vm == null) {
-			return null;
-		}
-		return vm.eventRequestManager();
-	}
+    public EventRequestManager getEventRequestManager() {
+        VirtualMachine vm = getVM();
+        if (vm == null) {
+            return null;
+        }
+        return vm.eventRequestManager();
+    }
 
-	public void addEventListener(EventRequest request, IJDIEventListener listener) {
-		IJDIEventHub eventHub = ((JDIVMTarget) getVMTarget()).getEventHub();
-		if (eventHub != null) {
-			eventHub.addJDIEventListener(request, listener);
-		}
-	}
+    public void addEventListener(EventRequest request, IJDIEventListener listener) {
+        IJDIEventHub eventHub = ((JDIVMTarget) getVMTarget()).getEventHub();
+        if (eventHub != null) {
+            eventHub.addJDIEventListener(request, listener);
+        }
+    }
 
-	public void removeEventListener(EventRequest request) {
-		IJDIEventHub eventHub = ((JDIVMTarget) getVMTarget()).getEventHub();
-		if (eventHub != null) {
-			eventHub.removeJDIEventListener(request);
-		}
-	}
+    public void removeEventListener(EventRequest request) {
+        IJDIEventHub eventHub = ((JDIVMTarget) getVMTarget()).getEventHub();
+        if (eventHub != null) {
+            eventHub.removeJDIEventListener(request);
+        }
+    }
 
-	public void fireEvent(IDebugEvent event) {
-		DebugEventHub eventHub = (DebugEventHub) getVMTarget().getDebugContext().getDebugEventHub();
-		eventHub.fireDebugEventSet(new IDebugEvent[] { event });
-	}
+    public void fireEvent(IDebugEvent event) {
+        DebugEventHub eventHub = (DebugEventHub) getVMTarget().getDebugContext().getDebugEventHub();
+        eventHub.fireDebugEventSet(new IDebugEvent[] { event });
+    }
 }

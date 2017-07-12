@@ -8,9 +8,10 @@
 * Contributors:
 *     Microsoft Corporation - initial API and implementation
 *******************************************************************************/
-package org.eclipse.jdt.ls.core.internal.debug;
+package org.eclipse.jdt.ls.core.debug;
 
 public interface IDebugServer {
 	int getPort();
-	void execute();
+	void start();
+	void stop();
 }

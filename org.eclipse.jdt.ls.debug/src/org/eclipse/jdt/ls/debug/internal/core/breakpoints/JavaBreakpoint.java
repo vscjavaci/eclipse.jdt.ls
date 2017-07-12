@@ -30,124 +30,127 @@ import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
-	private String typeName;
-	private int hitCount;
+    private String typeName;
+    private int hitCount;
 
-	public JavaBreakpoint(final String fullQualifiedName, final int hitCount) {
-		this.typeName = fullQualifiedName;
-		this.hitCount = hitCount;
-	}
+    public JavaBreakpoint(final String fullQualifiedName, final int hitCount) {
+        this.typeName = fullQualifiedName;
+        this.hitCount = hitCount;
+    }
 
-	@Override
-	public int getHitCount() {
-		return this.hitCount;
-	}
+    @Override
+    public int getHitCount() {
+        return this.hitCount;
+    }
 
-	@Override
-	public void setHitCount(int hitCount) {
-		this.hitCount = hitCount;
-	}
+    @Override
+    public void setHitCount(int hitCount) {
+        this.hitCount = hitCount;
+    }
 
-	@Override
-	public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
-		if (event instanceof ClassPrepareEvent) {
-			return handleClassPrepareEvent((ClassPrepareEvent) event, target, suspendVote);
-		}
-		return handleBreakpointEvent(event, target, suspendVote);
-	}
-	
-	public boolean handleClassPrepareEvent(ClassPrepareEvent event, IVMTarget target, boolean suspendVote) {
-		createRequest(target, event.referenceType());
-		return true;
-	}
-	
-	public boolean handleBreakpointEvent(Event event, IVMTarget target, boolean suspendVote) {
-		target.fireEvent(new DebugEvent(event, EventType.BREAKPOINT_EVENT));
-		return false;
-	}
+    @Override
+    public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
+        if (event instanceof ClassPrepareEvent) {
+            return handleClassPrepareEvent((ClassPrepareEvent) event, target, suspendVote);
+        }
+        return handleBreakpointEvent(event, target, suspendVote);
+    }
 
-	public void addToVMTarget(IVMTarget target) {
-		String referenceTypeName = this.typeName;
-		String enclosingTypeName = null;
-		// Parse the top enclosing type in which this breakpoint is located.
-		if (this.typeName != null) {
-			int index = this.typeName.indexOf("$");
-			if (index == -1) {
-				enclosingTypeName = this.typeName;
-			} else {
-				enclosingTypeName = this.typeName.substring(0, index);
-			}
-		}
-		if (referenceTypeName == null || enclosingTypeName == null) {
-			return;
-		}
+    public boolean handleClassPrepareEvent(ClassPrepareEvent event, IVMTarget target, boolean suspendVote) {
+        createRequest(target, event.referenceType());
+        return true;
+    }
 
-		if (referenceTypeName.indexOf("$") == -1) {
-			target.getEventHub().addJDIEventListener(createClassPrepareRequest(referenceTypeName, null, target), this);
-			// intercept local and anonymous inner classes
-			target.getEventHub().addJDIEventListener(createClassPrepareRequest(enclosingTypeName + "$*", null, target), this);
-		} else {
-			target.getEventHub().addJDIEventListener(createClassPrepareRequest(referenceTypeName, null, target), this);
-			// intercept local and anonymous inner classes
-			target.getEventHub().addJDIEventListener(createClassPrepareRequest(enclosingTypeName + "$*", referenceTypeName, target), this);
-		}
-		
-		VirtualMachine vm = target.getVM();
-		List<ReferenceType> classes = vm.classesByName(referenceTypeName);
-		boolean success = false;
-		for (ReferenceType type : classes) {
-			if (createRequest(target, type)) {
-				success = true;
-			}
-		}
-		
-		if (!success) {
-			addToTargetForLocalType(target, enclosingTypeName);
-		}
-	}
+    public boolean handleBreakpointEvent(Event event, IVMTarget target, boolean suspendVote) {
+        target.fireEvent(new DebugEvent(event, EventType.BREAKPOINT_EVENT));
+        return false;
+    }
 
-	/**
-	 *  Handle those local types defined in method.
-	 * @param target
-	 * @param enclosingTypeName
-	 */
-	protected void addToTargetForLocalType(IVMTarget target, String enclosingTypeName) {
-		List<ReferenceType> classes = target.getVM().classesByName(enclosingTypeName);
-		for (ReferenceType type : classes) {
-			for (ReferenceType nestedType : type.nestedTypes()) {
-				if (createRequest(target, nestedType)) {
-					break;
-				}
-			}
-		}
-	}
-	
-	public void removeFromVMTarget(IVMTarget target) {
+    public void addToVMTarget(IVMTarget target) {
+        String referenceTypeName = this.typeName;
+        String enclosingTypeName = null;
+        // Parse the top enclosing type in which this breakpoint is located.
+        if (this.typeName != null) {
+            int index = this.typeName.indexOf("$");
+            if (index == -1) {
+                enclosingTypeName = this.typeName;
+            } else {
+                enclosingTypeName = this.typeName.substring(0, index);
+            }
+        }
+        if (referenceTypeName == null || enclosingTypeName == null) {
+            return;
+        }
 
-	}
-	
-	protected ClassPrepareRequest createClassPrepareRequest(String classPattern, String classExclusionPattern,
-			IVMTarget target) {
-		EventRequestManager manager = target.getVM().eventRequestManager();
-		ClassPrepareRequest req = manager.createClassPrepareRequest();
-		if (classPattern != null) {
-			req.addClassFilter(classPattern);
-		}
-		if (classExclusionPattern != null) {
-			req.addClassExclusionFilter(classExclusionPattern);
-		}
-		req.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
-		req.enable();
-		return req;
-	}
-	
-	protected abstract boolean createRequest(IVMTarget target, ReferenceType type);
-	
-	protected void configureRequest(EventRequest request) {
-		request.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
-		if (this.hitCount > 0) {
-			request.addCountFilter(this.hitCount);
-		}
-		request.setEnabled(true);
-	}
+        if (referenceTypeName.indexOf("$") == -1) {
+            target.getEventHub().addJDIEventListener(createClassPrepareRequest(referenceTypeName, null, target), this);
+            // intercept local and anonymous inner classes
+            target.getEventHub().addJDIEventListener(createClassPrepareRequest(enclosingTypeName + "$*", null, target),
+                    this);
+        } else {
+            target.getEventHub().addJDIEventListener(createClassPrepareRequest(referenceTypeName, null, target), this);
+            // intercept local and anonymous inner classes
+            target.getEventHub().addJDIEventListener(
+                    createClassPrepareRequest(enclosingTypeName + "$*", referenceTypeName, target), this);
+        }
+
+        VirtualMachine vm = target.getVM();
+        List<ReferenceType> classes = vm.classesByName(referenceTypeName);
+        boolean success = false;
+        for (ReferenceType type : classes) {
+            if (createRequest(target, type)) {
+                success = true;
+            }
+        }
+
+        if (!success) {
+            addToTargetForLocalType(target, enclosingTypeName);
+        }
+    }
+
+    /**
+     * Handle those local types defined in method.
+     * 
+     * @param target
+     * @param enclosingTypeName
+     */
+    protected void addToTargetForLocalType(IVMTarget target, String enclosingTypeName) {
+        List<ReferenceType> classes = target.getVM().classesByName(enclosingTypeName);
+        for (ReferenceType type : classes) {
+            for (ReferenceType nestedType : type.nestedTypes()) {
+                if (createRequest(target, nestedType)) {
+                    break;
+                }
+            }
+        }
+    }
+
+    public void removeFromVMTarget(IVMTarget target) {
+
+    }
+
+    protected ClassPrepareRequest createClassPrepareRequest(String classPattern, String classExclusionPattern,
+            IVMTarget target) {
+        EventRequestManager manager = target.getVM().eventRequestManager();
+        ClassPrepareRequest req = manager.createClassPrepareRequest();
+        if (classPattern != null) {
+            req.addClassFilter(classPattern);
+        }
+        if (classExclusionPattern != null) {
+            req.addClassExclusionFilter(classExclusionPattern);
+        }
+        req.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
+        req.enable();
+        return req;
+    }
+
+    protected abstract boolean createRequest(IVMTarget target, ReferenceType type);
+
+    protected void configureRequest(EventRequest request) {
+        request.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
+        if (this.hitCount > 0) {
+            request.addCountFilter(this.hitCount);
+        }
+        request.setEnabled(true);
+    }
 }

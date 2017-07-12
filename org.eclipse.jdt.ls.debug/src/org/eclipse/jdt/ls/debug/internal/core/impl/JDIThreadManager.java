@@ -37,147 +37,146 @@ import com.sun.jdi.request.EventRequestManager;
  *
  */
 public class JDIThreadManager implements IThreadManager {
-	private List<IThread> threads;
-	private JDIVMTarget target;
+    private List<IThread> threads;
+    private JDIVMTarget target;
 
-	public JDIThreadManager(JDIVMTarget target) {
-		this.target = target;
-		this.threads = Collections.synchronizedList(new ArrayList<IThread>(5));
-		initialize();
-	}
-	
-	protected void initialize() {
-		// register event handlers for thread creation, thread termination.
-		new ThreadStartHandler();
-		new ThreadDeathHandler();
+    public JDIThreadManager(JDIVMTarget target) {
+        this.target = target;
+        this.threads = Collections.synchronizedList(new ArrayList<IThread>(5));
+        initialize();
+    }
 
-		// Adds all of pre-existings threads to this debug target.
-		List<ThreadReference> threads = null;
-		VirtualMachine vm = this.target.getVM();
-		if (vm != null) {
-			// try {
-			// String name = vm.name();
-			// fSupportsDisableGC = !name.equals("Classic VM"); //$NON-NLS-1$
-			// } catch (RuntimeException e) {
-			// Logger.logError(e);
-			// }
-			try {
-				threads = vm.allThreads();
-			} catch (RuntimeException e) {
-				Logger.logError(e);
-			}
-			if (threads != null) {
-				Iterator<ThreadReference> initialThreads = threads.iterator();
-				while (initialThreads.hasNext()) {
-					createThread(initialThreads.next());
-				}
-			}
-		}
-	}
-	
-	public IThread[] getThreads() {
-		synchronized (this.threads) {
-			return this.threads.toArray(new IThread[0]);
-		}
-	}
-	
-	public IThread findThread(ThreadReference threadReference) {
-		for (IThread thread : this.threads) {
-			if (thread.getUnderlyingThread().equals(threadReference)) {
-				return thread;
-			}
-		}
-		return null;
-	}
+    protected void initialize() {
+        // register event handlers for thread creation, thread termination.
+        new ThreadStartHandler();
+        new ThreadDeathHandler();
 
-	public IThread createThread(ThreadReference threadReference) {
-		IThread jdiThread = new JDIThread(this.target, threadReference);
-		synchronized (this.threads) {
-			this.threads.add(jdiThread);
-		}
-		jdiThread.fireCreationEvent();
-		return jdiThread;
-	}
-	
-	
-	class ThreadStartHandler implements IJDIEventListener {
+        // Adds all of pre-existings threads to this debug target.
+        List<ThreadReference> threads = null;
+        VirtualMachine vm = this.target.getVM();
+        if (vm != null) {
+            // try {
+            // String name = vm.name();
+            // fSupportsDisableGC = !name.equals("Classic VM"); //$NON-NLS-1$
+            // } catch (RuntimeException e) {
+            // Logger.logError(e);
+            // }
+            try {
+                threads = vm.allThreads();
+            } catch (RuntimeException e) {
+                Logger.logException("Get allThreads exception", e);
+            }
+            if (threads != null) {
+                Iterator<ThreadReference> initialThreads = threads.iterator();
+                while (initialThreads.hasNext()) {
+                    createThread(initialThreads.next());
+                }
+            }
+        }
+    }
 
-		protected EventRequest request;
+    public IThread[] getThreads() {
+        synchronized (this.threads) {
+            return this.threads.toArray(new IThread[0]);
+        }
+    }
 
-		protected ThreadStartHandler() {
-			EventRequestManager manager = target.getEventRequestManager();
-			if (manager != null) {
-				try {
-					EventRequest req = manager.createThreadStartRequest();
-					req.setSuspendPolicy(EventRequest.SUSPEND_NONE);
-					req.enable();
-					target.addEventListener(req, this);
-					this.request = req;
-				} catch (RuntimeException e) {
-					Logger.logError(e);
-				}
-			}
-		}
+    public IThread findThread(ThreadReference threadReference) {
+        for (IThread thread : this.threads) {
+            if (thread.getUnderlyingThread().equals(threadReference)) {
+                return thread;
+            }
+        }
+        return null;
+    }
 
-		@Override
-		public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
-			ThreadReference thread = ((ThreadStartEvent) event).thread();
-			try {
-				// https://bugs.eclipse.org/bugs/show_bug.cgi?id=443727
-				// the backing ThreadReference could be read in as null
-				if (thread == null || thread.isCollected()) {
-					return false;
-				}
-			} catch (VMDisconnectedException exception) {
-				return false;
-			} catch (ObjectCollectedException e) {
-				return false;
-			}
-			IThread jdiThread = findThread(thread);
-			if (jdiThread == null) {
-				jdiThread = createThread(thread);
-			} else {
-				// TODO
-			}
-			return true;
-		}
+    public IThread createThread(ThreadReference threadReference) {
+        IThread jdiThread = new JDIThread(this.target, threadReference);
+        synchronized (this.threads) {
+            this.threads.add(jdiThread);
+        }
+        jdiThread.fireCreationEvent();
+        return jdiThread;
+    }
 
-		protected void deleteRequest() {
-			if (this.request != null) {
-				target.removeEventListener(this.request);
-				this.request = null;
-			}
-		}
-	}
+    class ThreadStartHandler implements IJDIEventListener {
 
-	class ThreadDeathHandler implements IJDIEventListener {
+        protected EventRequest request;
 
-		protected ThreadDeathHandler() {
-			EventRequestManager manager = target.getEventRequestManager();
-			if (manager != null) {
-				try {
-					EventRequest req = manager.createThreadDeathRequest();
-					req.setSuspendPolicy(EventRequest.SUSPEND_NONE);
-					req.enable();
-					target.addEventListener(req, this);
-				} catch (RuntimeException e) {
-					Logger.logError(e);
-				}
-			}
-		}
+        protected ThreadStartHandler() {
+            EventRequestManager manager = target.getEventRequestManager();
+            if (manager != null) {
+                try {
+                    EventRequest req = manager.createThreadStartRequest();
+                    req.setSuspendPolicy(EventRequest.SUSPEND_NONE);
+                    req.enable();
+                    target.addEventListener(req, this);
+                    this.request = req;
+                } catch (RuntimeException e) {
+                    Logger.logException("Create ThreadStartRequest exception", e);
+                }
+            }
+        }
 
-		@Override
-		public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
-			ThreadReference ref = ((ThreadDeathEvent) event).thread();
-			IThread thread = findThread(ref);
-			if (thread != null) {
-				synchronized (threads) {
-					threads.remove(thread);
-				}
-				thread.fireTerminateEvent();
-			}
-			return true;
-		}
+        @Override
+        public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
+            ThreadReference thread = ((ThreadStartEvent) event).thread();
+            try {
+                // https://bugs.eclipse.org/bugs/show_bug.cgi?id=443727
+                // the backing ThreadReference could be read in as null
+                if (thread == null || thread.isCollected()) {
+                    return false;
+                }
+            } catch (VMDisconnectedException exception) {
+                return false;
+            } catch (ObjectCollectedException e) {
+                return false;
+            }
+            IThread jdiThread = findThread(thread);
+            if (jdiThread == null) {
+                jdiThread = createThread(thread);
+            } else {
+                // TODO
+            }
+            return true;
+        }
 
-	}
+        protected void deleteRequest() {
+            if (this.request != null) {
+                target.removeEventListener(this.request);
+                this.request = null;
+            }
+        }
+    }
+
+    class ThreadDeathHandler implements IJDIEventListener {
+
+        protected ThreadDeathHandler() {
+            EventRequestManager manager = target.getEventRequestManager();
+            if (manager != null) {
+                try {
+                    EventRequest req = manager.createThreadDeathRequest();
+                    req.setSuspendPolicy(EventRequest.SUSPEND_NONE);
+                    req.enable();
+                    target.addEventListener(req, this);
+                } catch (RuntimeException e) {
+                    Logger.logException("Create ThreadDeathRequest exception", e);
+                }
+            }
+        }
+
+        @Override
+        public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
+            ThreadReference ref = ((ThreadDeathEvent) event).thread();
+            IThread thread = findThread(ref);
+            if (thread != null) {
+                synchronized (threads) {
+                    threads.remove(thread);
+                }
+                thread.fireTerminateEvent();
+            }
+            return true;
+        }
+
+    }
 }

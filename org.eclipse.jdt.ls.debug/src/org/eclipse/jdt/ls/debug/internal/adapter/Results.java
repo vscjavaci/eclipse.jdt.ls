@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
 * Copyright (c) 2017 Microsoft Corporation and others.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
@@ -17,206 +17,181 @@ import java.util.List;
 import com.google.gson.JsonObject;
 
 public class Results {
-	/*
-	 * This monomorphic class is used to return results from a debugger request or to return errors.
-	 * In addition events can be attached that are fired after the request results have been returned to the caller.
-	 */
-	public static class DebugResult
-	{
-		public boolean success; // boolean indicating success
-		public ResponseBody body;   // depending on value of success either the result or an error
-		public List<Events.DebugEvent> events; // send this event after returning the result
+    /*
+     * This monomorphic class is used to return results from a debugger request
+     * or to return errors. In addition events can be attached that are fired
+     * after the request results have been returned to the caller.
+     */
+    public static class DebugResult {
+        public boolean success; // boolean indicating success
+        public ResponseBody body; // depending on value of success either the
+                                  // result or an error
+        public List<Events.DebugEvent> events; // send this event after
+                                               // returning the result
 
-		/*
-		 * A success result without additional data.
-		 */
-		public DebugResult()
-		{
-			this.success = true;
-		}
+        /*
+         * A success result without additional data.
+         */
+        public DebugResult() {
+            this.success = true;
+        }
 
-		/*
-		 * A success result with as additional event.
-		 */
-		public DebugResult(Events.DebugEvent ev)
-		{
-			this.success = true;
-			add(ev);
-		}
+        /*
+         * A success result with as additional event.
+         */
+        public DebugResult(Events.DebugEvent ev) {
+            this.success = true;
+            add(ev);
+        }
 
-		/*
-		 * A result with a response body. If body is a ErrorResponseBody then Success will be set to false.
-		 */
-		public DebugResult(ResponseBody body)
-		{
-			this.success = true;
-			this.body = body;
-			if (body instanceof ErrorResponseBody)
-			{
-				this.success = false;
-			}
-		}
+        /*
+         * A result with a response body. If body is a ErrorResponseBody then
+         * Success will be set to false.
+         */
+        public DebugResult(ResponseBody body) {
+            this.success = true;
+            this.body = body;
+            if (body instanceof ErrorResponseBody) {
+                this.success = false;
+            }
+        }
 
-		/*
-		 * A failure result with a full error message.
-		 */
-		public DebugResult(int id, String format, JsonObject arguments)
-		{
-			this.success = false;
-			this.body = new ErrorResponseBody(new Types.Message(id, format, arguments));
-		}
+        /*
+         * A failure result with a full error message.
+         */
+        public DebugResult(int id, String format, JsonObject arguments) {
+            this.success = false;
+            this.body = new ErrorResponseBody(new Types.Message(id, format, arguments));
+        }
 
-		/*
-		 * Add a DebugEvent to this request result.
-		 * Events are fired after the result is returned to the caller of the request.
-		 */
-		public void add(Events.DebugEvent ev)
-		{
-			if (ev != null)
-			{
-				if (this.events == null)
-				{
-					this.events = new ArrayList<>();
-				}
-				this.events.add(ev);
-			}
-		}
-	}
+        /*
+         * Add a DebugEvent to this request result. Events are fired after the
+         * result is returned to the caller of the request.
+         */
+        public void add(Events.DebugEvent ev) {
+            if (ev != null) {
+                if (this.events == null) {
+                    this.events = new ArrayList<>();
+                }
+                this.events.add(ev);
+            }
+        }
+    }
 
-	/*
-	 * subclasses of ResponseBody are serialized as the response body.
-	 * Don't change their instance variables since that will break the OpenDebug protocol.
-	 */
-	public static class ResponseBody
-	{
-		// empty
-	}
+    /*
+     * subclasses of ResponseBody are serialized as the response body. Don't
+     * change their instance variables since that will break the OpenDebug
+     * protocol.
+     */
+    public static class ResponseBody {
+        // empty
+    }
 
-	public static class InitializeResponseBody extends ResponseBody
-	{
-		public Types.Capabilities body;
+    public static class InitializeResponseBody extends ResponseBody {
+        public Types.Capabilities body;
 
-		public InitializeResponseBody(Types.Capabilities capabilities)
-		{
-			body = capabilities;
-		}
-	}
+        public InitializeResponseBody(Types.Capabilities capabilities) {
+            body = capabilities;
+        }
+    }
 
-	public static class ErrorResponseBody extends ResponseBody
-	{
-		public Types.Message error;
+    public static class ErrorResponseBody extends ResponseBody {
+        public Types.Message error;
 
-		public ErrorResponseBody(Types.Message m)
-		{
-			error = m;
-		}
-	}
+        public ErrorResponseBody(Types.Message m) {
+            error = m;
+        }
+    }
 
-	public static class StackTraceResponseBody extends ResponseBody
-	{
-		public Types.StackFrame[] stackFrames;
+    public static class StackTraceResponseBody extends ResponseBody {
+        public Types.StackFrame[] stackFrames;
 
-		public int totalFrames;
+        public int totalFrames;
 
-		public StackTraceResponseBody(List<Types.StackFrame> frames, int total)
-		{
-			if (frames == null) {
-				stackFrames = new Types.StackFrame[0];
-			} else {
-				stackFrames = frames.toArray(new Types.StackFrame[0]);
-			}
+        public StackTraceResponseBody(List<Types.StackFrame> frames, int total) {
+            if (frames == null) {
+                stackFrames = new Types.StackFrame[0];
+            } else {
+                stackFrames = frames.toArray(new Types.StackFrame[0]);
+            }
 
-			totalFrames = total;
-		}
-	}
+            totalFrames = total;
+        }
+    }
 
-	public static class ScopesResponseBody extends ResponseBody
-	{
-		public Types.Scope[] scopes;
+    public static class ScopesResponseBody extends ResponseBody {
+        public Types.Scope[] scopes;
 
-		public ScopesResponseBody(List<Types.Scope> scps)
-		{
-			if (scps == null) {
-				scopes = new Types.Scope[0];
-			} else {
-				scopes = scps.toArray(new Types.Scope[0]);
-			}
-		}
-	}
+        public ScopesResponseBody(List<Types.Scope> scps) {
+            if (scps == null) {
+                scopes = new Types.Scope[0];
+            } else {
+                scopes = scps.toArray(new Types.Scope[0]);
+            }
+        }
+    }
 
-	public static class VariablesResponseBody extends ResponseBody
-	{
-		public Types.Variable[] variables;
+    public static class VariablesResponseBody extends ResponseBody {
+        public Types.Variable[] variables;
 
-		public VariablesResponseBody(List<Types.Variable> vars)
-		{
-			if (vars == null) {
-				variables = new Types.Variable[0];
-			} else {
-				variables = vars.toArray(new Types.Variable[0]);
-			}
-		}
-	}
+        public VariablesResponseBody(List<Types.Variable> vars) {
+            if (vars == null) {
+                variables = new Types.Variable[0];
+            } else {
+                variables = vars.toArray(new Types.Variable[0]);
+            }
+        }
+    }
 
-	public static class SetVariablesResponseBody extends ResponseBody
-	{
-		public String value;
+    public static class SetVariablesResponseBody extends ResponseBody {
+        public String value;
 
-		public SetVariablesResponseBody(String val)
-		{
-			value = val;
-		}
-	}
+        public SetVariablesResponseBody(String val) {
+            value = val;
+        }
+    }
 
-	public static class SourceResponseBody extends ResponseBody
-	{
-		public String content;
+    public static class SourceResponseBody extends ResponseBody {
+        public String content;
 
-		public SourceResponseBody(String cont)
-		{
-			content = cont;
-		}
-	}
+        public SourceResponseBody(String cont) {
+            content = cont;
+        }
+    }
 
-	public static class ThreadsResponseBody extends ResponseBody
-	{
-		public Types.Thread[] threads;
+    public static class ThreadsResponseBody extends ResponseBody {
+        public Types.Thread[] threads;
 
-		public ThreadsResponseBody(List<Types.Thread> vars)
-		{
-			if (vars == null) {
-				threads = new Types.Thread[0];
-			} else {
-				threads = vars.toArray(new Types.Thread[0]);
-			}
-		}
-	}
+        public ThreadsResponseBody(List<Types.Thread> vars) {
+            if (vars == null) {
+                threads = new Types.Thread[0];
+            } else {
+                threads = vars.toArray(new Types.Thread[0]);
+            }
+        }
+    }
 
-	public static class EvaluateResponseBody extends ResponseBody
-	{
-		public String result;
-		public int variablesReference;
-		public String type;
+    public static class EvaluateResponseBody extends ResponseBody {
+        public String result;
+        public int variablesReference;
+        public String type;
 
-		public EvaluateResponseBody(String value, int reff, String type)
-		{
-			this.result = value;
-			this.variablesReference = reff;
-			this.type = type;
-		}
-	}
+        public EvaluateResponseBody(String value, int reff, String type) {
+            this.result = value;
+            this.variablesReference = reff;
+            this.type = type;
+        }
+    }
 
-	public static class SetBreakpointsResponseBody extends ResponseBody
-	{
-		public Types.Breakpoint[] breakpoints;
+    public static class SetBreakpointsResponseBody extends ResponseBody {
+        public Types.Breakpoint[] breakpoints;
 
-		public SetBreakpointsResponseBody(List<Types.Breakpoint> bpts)
-		{
-			if (bpts == null) {
-				breakpoints = new Types.Breakpoint[0];
-			} else {
-				breakpoints = bpts.toArray(new Types.Breakpoint[0]);
-			}
-		}
-	}
+        public SetBreakpointsResponseBody(List<Types.Breakpoint> bpts) {
+            if (bpts == null) {
+                breakpoints = new Types.Breakpoint[0];
+            } else {
+                breakpoints = bpts.toArray(new Types.Breakpoint[0]);
+            }
+        }
+    }
 }

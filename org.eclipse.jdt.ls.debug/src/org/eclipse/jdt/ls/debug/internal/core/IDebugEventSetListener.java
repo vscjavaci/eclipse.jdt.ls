@@ -12,5 +12,5 @@
 package org.eclipse.jdt.ls.debug.internal.core;
 
 public interface IDebugEventSetListener {
-	public void handleDebugEvents(IDebugEvent[] events);
+    public void handleDebugEvents(IDebugEvent[] events);
 }

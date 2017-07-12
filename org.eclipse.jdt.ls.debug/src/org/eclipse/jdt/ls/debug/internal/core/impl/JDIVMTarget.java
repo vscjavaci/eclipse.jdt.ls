@@ -25,85 +25,85 @@ import com.sun.jdi.event.VMStartEvent;
 
 public class JDIVMTarget extends DebugElement implements IVMTarget {
 
-	private VirtualMachine jvm;
-	private boolean resumeOnStartup;
-	private IDebugContext debugContext;
-	private JDIEventHub vmEventHub;
-	private JDIThreadManager vmThreadManager;
-	
-	public JDIVMTarget(IDebugContext context, VirtualMachine jvm, boolean resumeOnStartup) {
-		super(null);
-		this.jvm = jvm;
-		this.resumeOnStartup = resumeOnStartup;
-		this.debugContext = context;
-		this.debugContext.setVMTarget(this);
-		initialize();
-	}
+    private VirtualMachine jvm;
+    private boolean resumeOnStartup;
+    private IDebugContext debugContext;
+    private JDIEventHub vmEventHub;
+    private JDIThreadManager vmThreadManager;
 
-	public void initialize() {
-		this.vmEventHub = new JDIEventHub(this);
-		this.vmThreadManager = new JDIThreadManager(this);
-		
-		Thread t = new Thread(vmEventHub, "VirtualMachineEventHub");
-		t.setDaemon(true);
-		t.start();
-	}
+    public JDIVMTarget(IDebugContext context, VirtualMachine jvm, boolean resumeOnStartup) {
+        super(null);
+        this.jvm = jvm;
+        this.resumeOnStartup = resumeOnStartup;
+        this.debugContext = context;
+        this.debugContext.setVMTarget(this);
+        initialize();
+    }
 
-	@Override
-	public IVMTarget getVMTarget() {
-		return this;
-	}
+    public void initialize() {
+        this.vmEventHub = new JDIEventHub(this);
+        this.vmThreadManager = new JDIThreadManager(this);
 
-	@Override
-	public VirtualMachine getVM() {
-		return this.jvm;
-	}
+        Thread t = new Thread(vmEventHub, "VirtualMachineEventHub");
+        t.setDaemon(true);
+        t.start();
+    }
 
-	@Override
-	public IJDIEventHub getEventHub() {
-		return this.vmEventHub;
-	}
-	
-	public IThreadManager getThreadManager() {
-		return this.vmThreadManager;
-	}
-	
-	@Override
-	public IThread[] getThreads() {
-		return this.vmThreadManager.getThreads();
-	}
-	
-	public IDebugContext getDebugContext() {
-		return this.debugContext;
-	}
+    @Override
+    public IVMTarget getVMTarget() {
+        return this;
+    }
 
-	@Override
-	public void fireCreationEvent() {
-		fireEvent(new DebugEvent(this, EventType.VMSTART_EVENT));
-	}
+    @Override
+    public VirtualMachine getVM() {
+        return this.jvm;
+    }
 
-	@Override
-	public void fireTerminateEvent() {
-		fireEvent(new DebugEvent(this, EventType.VMDEATH_EVENT));
-	}
+    @Override
+    public IJDIEventHub getEventHub() {
+        return this.vmEventHub;
+    }
 
-	public void handleVMDeath(VMDeathEvent event) {
-		fireTerminateEvent();
-	}
+    public IThreadManager getThreadManager() {
+        return this.vmThreadManager;
+    }
 
-	public void handleVMDisconnect(VMDisconnectEvent event) {
-		fireTerminateEvent();
-	}
+    @Override
+    public IThread[] getThreads() {
+        return this.vmThreadManager.getThreads();
+    }
 
-	public void handleVMStart(VMStartEvent event) {
-		fireCreationEvent();
-	}
+    public IDebugContext getDebugContext() {
+        return this.debugContext;
+    }
 
-	public void resume() {
-		this.resumeOnStartup = true;
-		VirtualMachine vm = getVM();
-		if (vm != null) {
-			vm.resume();
-		}
-	}
+    @Override
+    public void fireCreationEvent() {
+        fireEvent(new DebugEvent(this, EventType.VMSTART_EVENT));
+    }
+
+    @Override
+    public void fireTerminateEvent() {
+        fireEvent(new DebugEvent(this, EventType.VMDEATH_EVENT));
+    }
+
+    public void handleVMDeath(VMDeathEvent event) {
+        fireTerminateEvent();
+    }
+
+    public void handleVMDisconnect(VMDisconnectEvent event) {
+        fireTerminateEvent();
+    }
+
+    public void handleVMStart(VMStartEvent event) {
+        fireCreationEvent();
+    }
+
+    public void resume() {
+        this.resumeOnStartup = true;
+        VirtualMachine vm = getVM();
+        if (vm != null) {
+            vm.resume();
+        }
+    }
 }

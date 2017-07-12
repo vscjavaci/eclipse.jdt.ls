@@ -14,6 +14,7 @@ package org.eclipse.jdt.ls.debug.internal.core;
 import com.sun.jdi.request.EventRequest;
 
 public interface IJDIEventHub extends Runnable {
-	public void addJDIEventListener(EventRequest request, IJDIEventListener listener);
-	public void removeJDIEventListener(EventRequest request);
+    public void addJDIEventListener(EventRequest request, IJDIEventListener listener);
+
+    public void removeJDIEventListener(EventRequest request);
 }

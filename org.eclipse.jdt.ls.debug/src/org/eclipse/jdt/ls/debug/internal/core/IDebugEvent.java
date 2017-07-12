@@ -12,6 +12,7 @@
 package org.eclipse.jdt.ls.debug.internal.core;
 
 public interface IDebugEvent {
-	public Object getSource();
-	public EventType getKind();
+    public Object getSource();
+
+    public EventType getKind();
 }

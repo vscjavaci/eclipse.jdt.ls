@@ -24,25 +24,27 @@ import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.connect.VMStartException;
 
 public class Launcher {
-	public Launcher() {
-	}
+    public Launcher() {
+    }
 
-//	public void launchJVM(String mainClass, String classpath) throws CoreException {
-//		IVMInstall vmInstall = JavaRuntime.getDefaultVMInstall();
-//		vmDebugger = new VMDebugger(vmInstall);
-//		VMRunnerConfiguration vmConfig = new VMRunnerConfiguration(mainClass, classpath.split(";"));
-//		ILaunch launch = new Launch(null, ILaunchManager.DEBUG_MODE, null);
-//		vmDebugger.run(vmConfig, launch, null);
-//	}
+    // public void launchJVM(String mainClass, String classpath) throws
+    // CoreException {
+    // IVMInstall vmInstall = JavaRuntime.getDefaultVMInstall();
+    // vmDebugger = new VMDebugger(vmInstall);
+    // VMRunnerConfiguration vmConfig = new VMRunnerConfiguration(mainClass,
+    // classpath.split(";"));
+    // ILaunch launch = new Launch(null, ILaunchManager.DEBUG_MODE, null);
+    // vmDebugger.run(vmConfig, launch, null);
+    // }
 
-	public VirtualMachine launchJVM(String mainClass, String classpath)
-			throws IOException, IllegalConnectorArgumentsException, VMStartException {
-		List<LaunchingConnector> list = Bootstrap.virtualMachineManager().launchingConnectors();
-		LaunchingConnector launchingConnector = list.get(0);
-		Map<String, Connector.Argument> subargs = launchingConnector.defaultArguments();
-		subargs.get("options").setValue("-cp " + classpath);
-		subargs.get("suspend").setValue("true");
-		subargs.get("main").setValue(mainClass); // class
-		return launchingConnector.launch(subargs);
-	}
+    public VirtualMachine launchJVM(String mainClass, String classpath)
+            throws IOException, IllegalConnectorArgumentsException, VMStartException {
+        List<LaunchingConnector> list = Bootstrap.virtualMachineManager().launchingConnectors();
+        LaunchingConnector launchingConnector = list.get(0);
+        Map<String, Connector.Argument> subargs = launchingConnector.defaultArguments();
+        subargs.get("options").setValue("-cp " + classpath);
+        subargs.get("suspend").setValue("true");
+        subargs.get("main").setValue(mainClass); // class
+        return launchingConnector.launch(subargs);
+    }
 }

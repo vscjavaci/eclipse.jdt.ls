@@ -23,47 +23,51 @@ import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
 
 public class JavaLineBreakpoint extends JavaBreakpoint {
-	private int lineNumber;
+    private int lineNumber;
 
-	public JavaLineBreakpoint(final String fullQualifiedName, final int lineNumber, final int hitCount) {
-		super(fullQualifiedName, hitCount);
-		this.lineNumber = lineNumber;
-	}
+    public JavaLineBreakpoint(final String fullQualifiedName, final int lineNumber, final int hitCount) {
+        super(fullQualifiedName, hitCount);
+        this.lineNumber = lineNumber;
+    }
 
-	public int getLineNumber() {
-		return this.lineNumber;
-	}
+    public int getLineNumber() {
+        return this.lineNumber;
+    }
 
-	@Override
-	protected boolean createRequest(IVMTarget target, ReferenceType type) {
-		int lineNumber = getLineNumber();
-		List<Location> locations = determineLocations(lineNumber, type);
-		if (locations == null || locations.isEmpty()) {
-			return false;
-		}
-		EventRequestManager manager = target.getEventRequestManager();
-		if (manager == null) {
-			return false;
-		}
-		EventRequest[] requests = new EventRequest[locations.size()];
-		int i = 0;
-		for (Location location : locations) {
-			requests[i] = manager.createBreakpointRequest(location);
-			configureRequest(requests[i]);
-			target.getEventHub().addJDIEventListener(requests[i], this); // register event listener to EventHub
-			i++;
-		}
-		return true;
-	}
-	
-	protected List<Location> determineLocations(int lineNumber, ReferenceType type) {
-		List<Location> locations = null;
-		try {
-			locations = type.locationsOfLine("Java", null, lineNumber);
-		} catch (AbsentInformationException e) {
-			Logger.logError(e);
-			return null;
-		}
-		return locations;
-	}
+    @Override
+    protected boolean createRequest(IVMTarget target, ReferenceType type) {
+        int lineNumber = getLineNumber();
+        List<Location> locations = determineLocations(lineNumber, type);
+        if (locations == null || locations.isEmpty()) {
+            return false;
+        }
+        EventRequestManager manager = target.getEventRequestManager();
+        if (manager == null) {
+            return false;
+        }
+        EventRequest[] requests = new EventRequest[locations.size()];
+        int i = 0;
+        for (Location location : locations) {
+            requests[i] = manager.createBreakpointRequest(location);
+            configureRequest(requests[i]);
+            target.getEventHub().addJDIEventListener(requests[i], this); // register
+                                                                         // event
+                                                                         // listener
+                                                                         // to
+                                                                         // EventHub
+            i++;
+        }
+        return true;
+    }
+
+    protected List<Location> determineLocations(int lineNumber, ReferenceType type) {
+        List<Location> locations = null;
+        try {
+            locations = type.locationsOfLine("Java", null, lineNumber);
+        } catch (AbsentInformationException e) {
+            Logger.logException("Get locations info from Class exception", e);
+            return null;
+        }
+        return locations;
+    }
 }

@@ -24,21 +24,22 @@ import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 public class DebugUtils {
 
-	public static void addBreakpoint(Types.Source source, Types.SourceBreakpoint[] lines, IBreakpointManager manager) {
-		Path sourcePath = Paths.get(source.path);
-		ICompilationUnit element = JDTUtils.resolveCompilationUnit(sourcePath.toUri());
-		try {
-			for (Types.SourceBreakpoint bp : lines) {
-				IType type = (IType) element.getElementAt(bp.line);
-				if (type != null) {
-					IBreakpoint linebp = new JavaLineBreakpoint(type.getFullyQualifiedName(), bp.line, -1);
-					// TODO Need some logic here to check the delta breakpoints in BreakpointManager
-					manager.addBreakpoint(linebp);
-				}
-			}
-		} catch (Exception e) {
-			Logger.logError(e);
-		}
-	}
+    public static void addBreakpoint(Types.Source source, Types.SourceBreakpoint[] lines, IBreakpointManager manager) {
+        Path sourcePath = Paths.get(source.path);
+        ICompilationUnit element = JDTUtils.resolveCompilationUnit(sourcePath.toUri());
+        try {
+            for (Types.SourceBreakpoint bp : lines) {
+                IType type = (IType) element.getElementAt(bp.line);
+                if (type != null) {
+                    IBreakpoint linebp = new JavaLineBreakpoint(type.getFullyQualifiedName(), bp.line, -1);
+                    // TODO Need some logic here to check the delta breakpoints
+                    // in BreakpointManager
+                    manager.addBreakpoint(linebp);
+                }
+            }
+        } catch (Exception e) {
+            Logger.logException("Add breakpoint exception", e);
+        }
+    }
 
 }

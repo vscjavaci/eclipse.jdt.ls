@@ -18,7 +18,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.eclipse.jdt.ls.core.internal.debug.IDebugServer;
+import org.eclipse.jdt.ls.core.debug.IDebugServer;
 import org.eclipse.jdt.ls.debug.internal.adapter.DebugSession;
 import org.eclipse.jdt.ls.debug.internal.adapter.DispatcherProtocol;
 import org.eclipse.jdt.ls.debug.internal.adapter.DispatcherProtocol.IResponder;
@@ -32,101 +32,137 @@ import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 import com.google.gson.JsonObject;
 
 public class JavaDebugServer implements IDebugServer {
-	private ServerSocket serverSocket = null;
-	private DebugSession debugSession = null;
+    private ServerSocket serverSocket = null;
+    private Socket connection = null;
+    private DispatcherProtocol dispatcher = null;
 
-	public JavaDebugServer() {
-		try {
-			this.serverSocket = new ServerSocket(0);
-		} catch (IOException e) {
-			Logger.logError(e);
-		}
-	}
+    public JavaDebugServer() {
+        try {
+            this.serverSocket = new ServerSocket(0, 1);
+        } catch (IOException e) {
+            Logger.logException("Create ServerSocket exception", e);
+        }
+    }
 
-	@Override
-	public int getPort() {
-		if (this.serverSocket != null) {
-			return this.serverSocket.getLocalPort();
-		}
-		return -1;
-	}
+    @Override
+    public int getPort() {
+        if (this.serverSocket != null) {
+            return this.serverSocket.getLocalPort();
+        }
+        return -1;
+    }
 
-	@Override
-	public void execute() {
-		if (this.serverSocket != null) {
-			// Execute eventLoop in a new thread.
-			new Thread(new Runnable() {
+    @Override
+    public void start() {
+        if (this.serverSocket != null) {
+            // Execute eventLoop in a new thread.
+            new Thread(new Runnable() {
 
-				@Override
-				public void run() {
-					int serverPort = -1;
-					try {
-						// It's blocking here to waiting for incoming socket connection. 
-						Socket clientSocket = serverSocket.accept();
-						serverPort =  serverSocket.getLocalPort();
-						Logger.log("Start debugserver on socket port " + serverPort);
-						BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-						PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                @Override
+                public void run() {
+                    int serverPort = -1;
+                    try {
+                        // It's blocking here to waiting for incoming socket connection.
+                        connection = serverSocket.accept();
+                        serverPort = serverSocket.getLocalPort();
+                        closeServerSocket(); // Stop listening for further connections.
+                        Logger.logInfo("Start debugserver on socket port " + serverPort);
+                        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                        PrintWriter out = new PrintWriter(connection.getOutputStream(), true);
 
-						// eventLoop
-						DispatcherProtocol dispatcher = new DispatcherProtocol(in, out);
-						dispatcher.eventLoop(new DispatcherProtocol.IHandler() {
+                        dispatcher = new DispatcherProtocol(in, out);
+                        // Hanging here because this eventLoop is a while-loop.
+                        dispatcher.eventLoop(new ProtocolHandler(dispatcher));
+                    } catch (IOException e1) {
+                        Logger.logException("Setup socket connection exception", e1);
+                    } finally {
+                        closeServerSocket();
+                        closeClientSocket();
+                        Logger.logInfo("Close debugserver socket port " + serverPort);
+                    }
+                }
 
-							@Override
-							public void run(String command, JsonObject arguments, IResponder responder) {
-								if (arguments == null) {
-									arguments = new JsonObject();
-								}
+            }).start();
+        }
+    }
 
-								try {
-									if (command.equals("initialize")) {
-										String adapterID = JsonUtils.getString(arguments, "adapterID", "");
-										debugSession = new DebugSession(true, false, responder);
-										if (debugSession == null) {
-											responder.setBody(new ErrorResponseBody(new Message(1103,
-													"initialize: can't create debug session for adapter '{_id}'",
-													JsonUtils.fromJson("{ _id: " + adapterID + "}", JsonObject.class))));
-										}
-									}
+    @Override
+    public void stop() {
+        if (dispatcher != null) {
+            // Exit event dispatcher loop and the DebugServer thread will complete automatically.
+            dispatcher.stop();
+        }
+    }
 
-									if (debugSession != null) {
-										DebugResult dr = debugSession.Dispatch(command, arguments);
-										if (dr != null) {
-											responder.setBody(dr.body);
+    private void closeServerSocket() {
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                Logger.logException("Close ServerSocket exception", e);
+            }
+        }
+        serverSocket = null;
+    }
 
-											if (dr.events != null) {
-												for (DebugEvent e : dr.events) {
-													responder.addEvent(e.type, e);
-												}
-											}
-										}
-									}
+    private void closeClientSocket() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (IOException e) {
+                Logger.logException("Close client socket exception", e);
+            }
+        }
+        connection = null;
+    }
 
-									if (command.equals("disconnect")) {
-										dispatcher.stop();
-									}
-								} catch (Exception e) {
-									Logger.logError(e);
-								}
-							}
-						});
-					} catch (IOException e1) {
-						Logger.logError(e1);
-					} finally {
-						if (serverSocket != null) {
-							try {
-								serverSocket.close();
-							} catch (IOException e) {
-								Logger.logError(e);
-							}
-						}
-					}
-					Logger.log("Close debugserver socket port " + serverPort);
-				}
+    class ProtocolHandler implements DispatcherProtocol.IHandler {
+        private DispatcherProtocol dispatcher = null;
+        private DebugSession debugSession = null;
+        
+        public ProtocolHandler(DispatcherProtocol dispatcher) {
+            this.dispatcher = dispatcher;
+        }
+        
+        @Override
+        public void run(String command, JsonObject arguments, IResponder responder) {
+            if (arguments == null) {
+                arguments = new JsonObject();
+            }
 
-			}).start();
-		}
-	}
+            try {
+                if (command.equals("initialize")) {
+                    String adapterID = JsonUtils.getString(arguments, "adapterID", "");
+                    debugSession = new DebugSession(true, false, responder);
+                    if (debugSession == null) {
+                        responder.setBody(new ErrorResponseBody(new Message(1103,
+                                "initialize: can't create debug session for adapter '{_id}'",
+                                JsonUtils.fromJson("{ _id: " + adapterID + "}",
+                                        JsonObject.class))));
+                    }
+                }
+
+                if (debugSession != null) {
+                    DebugResult dr = debugSession.dispatch(command, arguments);
+                    if (dr != null) {
+                        responder.setBody(dr.body);
+
+                        if (dr.events != null) {
+                            for (DebugEvent e : dr.events) {
+                                responder.addEvent(e.type, e);
+                            }
+                        }
+                    }
+                }
+
+                if (command.equals("disconnect")) {
+                    dispatcher.stop();
+                    debugSession = null;
+                }
+            } catch (Exception e) {
+                Logger.logException("Dispatch debug protocol error", e);
+            }
+        }
+    }
 
 }
-

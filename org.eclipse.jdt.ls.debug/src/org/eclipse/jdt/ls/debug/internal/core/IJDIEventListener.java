@@ -15,5 +15,5 @@ import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventSet;
 
 public interface IJDIEventListener {
-	public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet);
+    public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet);
 }

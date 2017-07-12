@@ -31,111 +31,111 @@ import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.request.EventRequest;
 
 public class JDIEventHub implements IJDIEventHub {
-	private JDIVMTarget target;
-	private HashMap<EventRequest, IJDIEventListener> eventHandlers;
-	private boolean shutdown = false;
+    private JDIVMTarget target;
+    private HashMap<EventRequest, IJDIEventListener> eventHandlers;
+    private boolean shutdown = false;
 
-	public JDIEventHub(JDIVMTarget target) {
-		this.target = target;
-		this.eventHandlers = new HashMap<>(10);
-	}
+    public JDIEventHub(JDIVMTarget target) {
+        this.target = target;
+        this.eventHandlers = new HashMap<>(10);
+    }
 
-	@Override
-	public void addJDIEventListener(EventRequest request, IJDIEventListener listener) {
-		this.eventHandlers.put(request, listener);
-	}
+    @Override
+    public void addJDIEventListener(EventRequest request, IJDIEventListener listener) {
+        this.eventHandlers.put(request, listener);
+    }
 
-	@Override
-	public void removeJDIEventListener(EventRequest request) {
-		this.eventHandlers.remove(request);
-	}
+    @Override
+    public void removeJDIEventListener(EventRequest request) {
+        this.eventHandlers.remove(request);
+    }
 
-	public boolean isShutdown() {
-		return this.shutdown;
-	}
+    public boolean isShutdown() {
+        return this.shutdown;
+    }
 
-	public void shutdown() {
-		this.shutdown = true;
-	}
+    public void shutdown() {
+        this.shutdown = true;
+    }
 
-	@Override
-	public void run() {
-		VirtualMachine jvm = this.target.getVM();
-		if (jvm != null) {
-			EventQueue eventQueue = jvm.eventQueue();
-			EventSet eventSet = null;
-			ExecutorService executor = Executors.newFixedThreadPool(10);
-			while (!isShutdown()) {
-				try {
-					eventSet = eventQueue.remove(1000);
-				} catch (InterruptedException | VMDisconnectedException e) {
-					break;
-				}
+    @Override
+    public void run() {
+        VirtualMachine jvm = this.target.getVM();
+        if (jvm != null) {
+            EventQueue eventQueue = jvm.eventQueue();
+            EventSet eventSet = null;
+            ExecutorService executor = Executors.newFixedThreadPool(10);
+            while (!isShutdown()) {
+                try {
+                    eventSet = eventQueue.remove(1000);
+                } catch (InterruptedException | VMDisconnectedException e) {
+                    break;
+                }
 
-				if (!isShutdown() && eventSet != null) {
-					final EventSet temp = eventSet;
-					executor.submit(new Runnable() {
+                if (!isShutdown() && eventSet != null) {
+                    final EventSet temp = eventSet;
+                    executor.submit(new Runnable() {
 
-						@Override
-						public void run() {
-							dispatch(temp);
-						}
+                        @Override
+                        public void run() {
+                            dispatch(temp);
+                        }
 
-					});
-				}
-			}
-		}
-	}
+                    });
+                }
+            }
+        }
+    }
 
-	private void dispatch(EventSet eventSet) {
-		EventIterator eventIter = eventSet.eventIterator();
-		// print JDI Events
-		StringBuffer buf = new StringBuffer("JDI Event Set: {\n"); //$NON-NLS-1$
-		while (eventIter.hasNext()) {
-			buf.append(eventIter.next());
-			if (eventIter.hasNext()) {
-				buf.append(", ");
-			}
-		}
-		buf.append("}\n");
-		Logger.log(buf.toString());
+    private void dispatch(EventSet eventSet) {
+        EventIterator eventIter = eventSet.eventIterator();
+        // print JDI Events
+        StringBuffer buf = new StringBuffer("JDI Event Set: {\n"); //$NON-NLS-1$
+        while (eventIter.hasNext()) {
+            buf.append(eventIter.next());
+            if (eventIter.hasNext()) {
+                buf.append(", ");
+            }
+        }
+        buf.append("}\n");
+        Logger.logInfo(buf.toString());
 
-		eventIter = eventSet.eventIterator();
-		boolean vote = false;
-		boolean resume = true;
-		while (eventIter.hasNext()) {
-			if (isShutdown()) {
-				return;
-			}
-			Event event = eventIter.nextEvent();
-			IJDIEventListener listener = this.eventHandlers.get(event.request());
-			if (listener != null) {
-				vote = true;
-				resume = listener.handleEvent(event, this.target, !resume, eventSet) && resume;
-				continue;
-			}
+        eventIter = eventSet.eventIterator();
+        boolean vote = false;
+        boolean resume = true;
+        while (eventIter.hasNext()) {
+            if (isShutdown()) {
+                return;
+            }
+            Event event = eventIter.nextEvent();
+            IJDIEventListener listener = this.eventHandlers.get(event.request());
+            if (listener != null) {
+                vote = true;
+                resume = listener.handleEvent(event, this.target, !resume, eventSet) && resume;
+                continue;
+            }
 
-			// Dispatch VM start/end events
-			if (event instanceof VMDeathEvent) {
-				this.target.handleVMDeath((VMDeathEvent) event);
-				shutdown(); // stop listening for events
-			} else if (event instanceof VMDisconnectEvent) {
-				this.target.handleVMDisconnect((VMDisconnectEvent) event);
-				shutdown(); // stop listening for events
-			} else if (event instanceof VMStartEvent) {
-				target.handleVMStart((VMStartEvent) event);
-			} else {
-				// not handled
-			}
-		}
+            // Dispatch VM start/end events
+            if (event instanceof VMDeathEvent) {
+                this.target.handleVMDeath((VMDeathEvent) event);
+                shutdown(); // stop listening for events
+            } else if (event instanceof VMDisconnectEvent) {
+                this.target.handleVMDisconnect((VMDisconnectEvent) event);
+                shutdown(); // stop listening for events
+            } else if (event instanceof VMStartEvent) {
+                target.handleVMStart((VMStartEvent) event);
+            } else {
+                // not handled
+            }
+        }
 
-		if (vote && resume) {
-			try {
-				eventSet.resume();				
-			} catch (VMDisconnectedException e) {
-			} catch (RuntimeException e) {
-			}
-		}
-	}
+        if (vote && resume) {
+            try {
+                eventSet.resume();
+            } catch (VMDisconnectedException e) {
+            } catch (RuntimeException e) {
+            }
+        }
+    }
 
 }

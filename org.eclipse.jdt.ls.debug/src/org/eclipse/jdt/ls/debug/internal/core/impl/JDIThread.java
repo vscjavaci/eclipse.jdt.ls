@@ -19,44 +19,44 @@ import com.sun.jdi.ThreadReference;
 
 public class JDIThread extends DebugElement implements IThread {
 
-	private ThreadReference thread;
+    private ThreadReference thread;
 
-	public JDIThread(IVMTarget target, ThreadReference thread) {
-		super(target);
-		this.thread = thread;
-	}
+    public JDIThread(IVMTarget target, ThreadReference thread) {
+        super(target);
+        this.thread = thread;
+    }
 
-	@Override
-	public ThreadReference getUnderlyingThread() {
-		return this.thread;
-	}
+    @Override
+    public ThreadReference getUnderlyingThread() {
+        return this.thread;
+    }
 
-	@Override
-	public void fireCreationEvent() {
-		fireEvent(new DebugEvent(this, EventType.THREADSTART_EVENT));
-	}
+    @Override
+    public void fireCreationEvent() {
+        fireEvent(new DebugEvent(this, EventType.THREADSTART_EVENT));
+    }
 
-	@Override
-	public void fireTerminateEvent() {
-		fireEvent(new DebugEvent(this, EventType.THREADDEATH_EVENT));
-	}
+    @Override
+    public void fireTerminateEvent() {
+        fireEvent(new DebugEvent(this, EventType.THREADDEATH_EVENT));
+    }
 
-	@Override
-	public void stepInto() {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void stepInto() {
+        // TODO Auto-generated method stub
 
-	@Override
-	public void stepOver() {
-		// TODO Auto-generated method stub
-		
-	}
+    }
 
-	@Override
-	public void resume() {
-		// TODO Auto-generated method stub
-		
-	}
-	
+    @Override
+    public void stepOver() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void resume() {
+        // TODO Auto-generated method stub
+
+    }
+
 }

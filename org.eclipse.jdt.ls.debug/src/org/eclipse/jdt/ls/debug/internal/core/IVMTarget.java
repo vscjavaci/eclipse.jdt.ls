@@ -14,11 +14,17 @@ package org.eclipse.jdt.ls.debug.internal.core;
 import com.sun.jdi.request.EventRequestManager;
 
 public interface IVMTarget extends IDebugElement {
-	public IJDIEventHub getEventHub();
-	public IThreadManager getThreadManager();
-	public IThread[] getThreads();
-	public void fireCreationEvent();
-	public void fireTerminateEvent();
-	public EventRequestManager getEventRequestManager();
-	public IDebugContext getDebugContext();
+    public IJDIEventHub getEventHub();
+
+    public IThreadManager getThreadManager();
+
+    public IThread[] getThreads();
+
+    public void fireCreationEvent();
+
+    public void fireTerminateEvent();
+
+    public EventRequestManager getEventRequestManager();
+
+    public IDebugContext getDebugContext();
 }

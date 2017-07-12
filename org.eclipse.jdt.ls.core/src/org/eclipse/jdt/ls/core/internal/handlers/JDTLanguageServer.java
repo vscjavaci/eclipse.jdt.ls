@@ -27,7 +27,6 @@ import org.eclipse.jdt.core.WorkingCopyOwner;
 import org.eclipse.jdt.ls.core.internal.CancellableProgressMonitor;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection.JavaLanguageClient;
-import org.eclipse.jdt.ls.core.internal.debug.StartDebugSessionHandler;
 import org.eclipse.jdt.ls.core.internal.JavaLanguageServerPlugin;
 import org.eclipse.jdt.ls.core.internal.JavaProtocolExtensions;
 import org.eclipse.jdt.ls.core.internal.LanguageServerWorkingCopyOwner;

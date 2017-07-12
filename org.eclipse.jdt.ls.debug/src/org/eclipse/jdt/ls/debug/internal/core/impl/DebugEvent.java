@@ -17,16 +17,16 @@ import org.eclipse.jdt.ls.debug.internal.core.EventType;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugEvent;
 
 public class DebugEvent extends EventObject implements IDebugEvent {
-	private static final long serialVersionUID = 1L;
-	private EventType kind;
+    private static final long serialVersionUID = 1L;
+    private EventType kind;
 
-	public DebugEvent(Object source, EventType kind) {
-		super(source);
-		this.kind = kind;
-	}
+    public DebugEvent(Object source, EventType kind) {
+        super(source);
+        this.kind = kind;
+    }
 
-	@Override
-	public EventType getKind() {
-		return this.kind;
-	}
+    @Override
+    public EventType getKind() {
+        return this.kind;
+    }
 }

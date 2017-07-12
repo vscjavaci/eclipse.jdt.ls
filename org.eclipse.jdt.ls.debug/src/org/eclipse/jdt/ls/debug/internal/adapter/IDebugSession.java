@@ -17,32 +17,46 @@ import org.eclipse.jdt.ls.debug.internal.adapter.Results.SetBreakpointsResponseB
 import com.google.gson.JsonObject;
 
 public interface IDebugSession {
-	DebugResult Dispatch(String command, JsonObject args);
+    DebugResult dispatch(String command, JsonObject args);
 
-	DebugResult Initialize(Requests.InitializeArguments arguments);
-	DebugResult Launch(Requests.LaunchArguments arguments);
-	DebugResult Attach(Requests.AttachArguments arguments);
-	DebugResult Disconnect();
+    DebugResult initialize(Requests.InitializeArguments arguments);
 
-	DebugResult SetFunctionBreakpoints(Requests.SetFunctionBreakpointsArguments arguments);
+    DebugResult launch(Requests.LaunchArguments arguments);
 
-	// NOTE: This method should never return a failure result, as this causes the launch to be aborted half-way
-	// through. Instead, failures should be returned as unverified breakpoints.
-	SetBreakpointsResponseBody SetBreakpoints(Requests.SetBreakpointArguments arguments);
-	DebugResult SetExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments);
+    DebugResult attach(Requests.AttachArguments arguments);
 
-	DebugResult Continue(Requests.ContinueArguments arguments);
-	DebugResult Next(Requests.NextArguments arguments);
-	DebugResult StepIn(Requests.StepInArguments arguments);
-	DebugResult StepOut(Requests.StepOutArguments arguments);
-	DebugResult Pause(Requests.PauseArguments arguments);
+    DebugResult disconnect();
 
-	DebugResult Threads();
-	DebugResult StackTrace(Requests.StackTraceArguments arguments);
-	DebugResult Scopes(Requests.ScopesArguments arguments);
-	DebugResult Variables(Requests.VariablesArguments arguments);
-	DebugResult SetVariable(Requests.SetVariableArguments arguments);
-	DebugResult Source(Requests.SourceArguments arguments);
+    DebugResult setFunctionBreakpoints(Requests.SetFunctionBreakpointsArguments arguments);
 
-	DebugResult Evaluate(Requests.EvaluateArguments arguments);
+    // NOTE: This method should never return a failure result, as this causes
+    // the launch to be aborted half-way
+    // through. Instead, failures should be returned as unverified breakpoints.
+    SetBreakpointsResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments);
+
+    DebugResult setExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments);
+
+    DebugResult resume(Requests.ContinueArguments arguments);
+
+    DebugResult next(Requests.NextArguments arguments);
+
+    DebugResult stepIn(Requests.StepInArguments arguments);
+
+    DebugResult stepOut(Requests.StepOutArguments arguments);
+
+    DebugResult pause(Requests.PauseArguments arguments);
+
+    DebugResult threads();
+
+    DebugResult stackTrace(Requests.StackTraceArguments arguments);
+
+    DebugResult scopes(Requests.ScopesArguments arguments);
+
+    DebugResult variables(Requests.VariablesArguments arguments);
+
+    DebugResult setVariable(Requests.SetVariableArguments arguments);
+
+    DebugResult source(Requests.SourceArguments arguments);
+
+    DebugResult evaluate(Requests.EvaluateArguments arguments);
 }

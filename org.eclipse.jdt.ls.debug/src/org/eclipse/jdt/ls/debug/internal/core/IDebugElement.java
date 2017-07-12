@@ -14,7 +14,9 @@ package org.eclipse.jdt.ls.debug.internal.core;
 import com.sun.jdi.VirtualMachine;
 
 public interface IDebugElement {
-	public IVMTarget getVMTarget();
-	public VirtualMachine getVM();
-	public void fireEvent(IDebugEvent event);
+    public IVMTarget getVMTarget();
+
+    public VirtualMachine getVM();
+
+    public void fireEvent(IDebugEvent event);
 }

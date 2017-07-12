@@ -15,8 +15,11 @@ package org.eclipse.jdt.ls.debug.internal.core;
  *
  */
 public interface IDebugContext {
-	public IBreakpointManager getBreakpointManager();
-	public IDebugEventHub getDebugEventHub();
-	public IVMTarget getVMTarget();
-	public void setVMTarget(IVMTarget vmTarget);
+    public IBreakpointManager getBreakpointManager();
+
+    public IDebugEventHub getDebugEventHub();
+
+    public IVMTarget getVMTarget();
+
+    public void setVMTarget(IVMTarget vmTarget);
 }

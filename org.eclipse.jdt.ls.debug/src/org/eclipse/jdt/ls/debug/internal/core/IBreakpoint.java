@@ -12,8 +12,11 @@
 package org.eclipse.jdt.ls.debug.internal.core;
 
 public interface IBreakpoint {
-	public int getHitCount();
-	public void setHitCount(int hitCount);
-	public void addToVMTarget(IVMTarget vmTarget);
-	public void removeFromVMTarget(IVMTarget vmTarget);
+    public int getHitCount();
+
+    public void setHitCount(int hitCount);
+
+    public void addToVMTarget(IVMTarget vmTarget);
+
+    public void removeFromVMTarget(IVMTarget vmTarget);
 }
