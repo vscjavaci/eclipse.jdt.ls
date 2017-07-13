@@ -52,8 +52,10 @@ public abstract class DebugElement implements IDebugElement {
 
     /**
      * Registers an JDIEventListener to the event hub of debuggee VM.
-     * @param request - event request
-     * @param listener - event listener
+     * @param request
+     *              event request
+     * @param listener
+     *              event listener
      */
     public void addEventListener(EventRequest request, IJDIEventListener listener) {
         IJDIEventHub eventHub = ((JDIVMTarget) getVMTarget()).getEventHub();
@@ -64,7 +66,8 @@ public abstract class DebugElement implements IDebugElement {
 
     /**
      * Removes the listener of the specified request from the event hub.
-     * @param request - event request
+     * @param request
+     *              event request
      */
     public void removeEventListener(EventRequest request) {
         IJDIEventHub eventHub = ((JDIVMTarget) getVMTarget()).getEventHub();

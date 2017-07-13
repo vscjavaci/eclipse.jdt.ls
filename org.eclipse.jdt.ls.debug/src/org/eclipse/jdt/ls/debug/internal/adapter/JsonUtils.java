@@ -48,9 +48,12 @@ public class JsonUtils {
 
     /**
      * Get the integer value for the specified property from the json Object.
-     * @param args - the json object
-     * @param property - the key
-     * @param defaultValue - if key doesn't exist in the json object, then return the default value
+     * @param args
+     *              the json object
+     * @param property
+     *              the key
+     * @param defaultValue
+     *              if key doesn't exist in the json object, then return the default value
      * @return the value as an integer number
      */
     public static int getInt(JsonObject args, String property, int defaultValue) {
@@ -64,9 +67,12 @@ public class JsonUtils {
 
     /**
      * Get the string value for the specified property from the json Object.
-     * @param args - the json object
-     * @param property - the key
-     * @param defaultValue - if key doesn't exist in the json object, then return the default value
+     * @param args
+     *              the json object
+     * @param property
+     *              the key
+     * @param defaultValue
+     *              if key doesn't exist in the json object, then return the default value
      * @return the value as a string
      */
     public static String getString(JsonObject args, String property, String defaultValue) {
@@ -89,9 +95,12 @@ public class JsonUtils {
 
     /**
      * Get the boolean value for the specified property from the json Object.
-     * @param args - the json object
-     * @param property - the key
-     * @param defaultValue - if key doesn't exist in the json object, then return the default value
+     * @param args
+     *              the json object
+     * @param property
+     *              the key
+     * @param defaultValue
+     *              if key doesn't exist in the json object, then return the default value
      * @return the value as boolean
      */
     public static boolean getBoolean(JsonObject args, String property, boolean defaultValue) {
@@ -106,8 +115,10 @@ public class JsonUtils {
 
     /**
      * Extracts a list of property values from a json array object.
-     * @param args - the json array element
-     * @param property - the key
+     * @param args
+     *              the json array element
+     * @param property
+     *              the key
      * @return an string array
      */
     public static String[] getStringArray(JsonElement args, String property) {

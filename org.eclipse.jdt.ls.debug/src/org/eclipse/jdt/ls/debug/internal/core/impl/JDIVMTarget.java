@@ -33,9 +33,12 @@ public class JDIVMTarget extends DebugElement implements IVMTarget {
 
     /**
      * Constructor.
-     * @param context - the debug session context
-     * @param jvm - the debuggee VM
-     * @param resumeOnStartup - whether the VM should be resumed on startup
+     * @param context
+     *              the debug session context
+     * @param jvm
+     *              the debuggee VM
+     * @param resumeOnStartup
+     *              whether the VM should be resumed on startup
      */
     public JDIVMTarget(IDebugContext context, VirtualMachine jvm, boolean resumeOnStartup) {
         super(null);

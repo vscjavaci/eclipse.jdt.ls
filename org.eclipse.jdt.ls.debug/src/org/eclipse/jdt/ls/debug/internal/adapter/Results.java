@@ -111,8 +111,10 @@ public class Results {
 
         /**
          * Constructs an StackTraceResponseBody with the given stack frame list.
-         * @param frames - a {@link Types.StackFrame} list
-         * @param total - the total frame number
+         * @param frames
+         *              a {@link Types.StackFrame} list
+         * @param total
+         *              the total frame number
          */
         public StackTraceResponseBody(List<Types.StackFrame> frames, int total) {
             if (frames == null) {
@@ -130,7 +132,8 @@ public class Results {
 
         /**
          * Constructs a ScopesResponseBody with the Scope list.
-         * @param scps - a {@link Types.Scope} list
+         * @param scps
+         *              a {@link Types.Scope} list
          */
         public ScopesResponseBody(List<Types.Scope> scps) {
             if (scps == null) {
@@ -146,7 +149,8 @@ public class Results {
 
         /**
          * Constructs a VariablesResponseBody with the given variable list.
-         * @param vars - a {@link Types.Variable} list
+         * @param vars
+         *              a {@link Types.Variable} list
          */
         public VariablesResponseBody(List<Types.Variable> vars) {
             if (vars == null) {
@@ -178,7 +182,8 @@ public class Results {
 
         /**
          * Constructs a ThreadsResponseBody with the given thread list.
-         * @param vars - a {@link Types.Thread} list
+         * @param vars
+         *            a {@link Types.Thread} list
          */
         public ThreadsResponseBody(List<Types.Thread> vars) {
             if (vars == null) {
@@ -209,7 +214,8 @@ public class Results {
 
         /**
          * Constructs a SetBreakpointsResponssseBody with the given breakpoint list.
-         * @param bpts - a {@link Types.Breakpoint} list
+         * @param bpts
+         *            a {@link Types.Breakpoint} list
          */
         public SetBreakpointsResponseBody(List<Types.Breakpoint> bpts) {
             if (bpts == null) {

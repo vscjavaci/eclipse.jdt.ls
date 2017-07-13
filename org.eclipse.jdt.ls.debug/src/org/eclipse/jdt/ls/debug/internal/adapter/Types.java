@@ -27,9 +27,12 @@ public class Types {
 
         /**
          * Constructs a message with the given information.
-         * @param id - message id
-         * @param format - a format string
-         * @param variables - arguments referenced by the format specifiers in the format string.
+         * @param id
+         *          message id
+         * @param format
+         *          a format string
+         * @param variables
+         *          arguments referenced by the format specifiers in the format string.
          */
         public Message(int id, String format, JsonObject variables) {
             this.id = id;
@@ -47,11 +50,16 @@ public class Types {
 
         /**
          * Constructs a StackFrame with the given information.
-         * @param id - the stack frame id
-         * @param name - the stack frame name
-         * @param src - source info of the stack frame
-         * @param ln - line number of the stack frame
-         * @param col - column number of the stack frame
+         * @param id
+         *          the stack frame id
+         * @param name
+         *          the stack frame name
+         * @param src
+         *          source info of the stack frame
+         * @param ln
+         *          line number of the stack frame
+         * @param col
+         *          column number of the stack frame
          */
         public StackFrame(int id, String name, Source src, int ln, int col) {
             this.id = id;

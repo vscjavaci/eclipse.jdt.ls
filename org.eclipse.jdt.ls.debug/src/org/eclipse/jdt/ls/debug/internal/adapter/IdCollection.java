@@ -24,7 +24,8 @@ public class IdCollection<T> {
 
     /**
      * Constructs a new id generator with the given startId as the start id number.
-     * @param startId - the start id number
+     * @param startId
+     *              the start id number
      */
     public IdCollection(int startId) {
         this.startId = startId;

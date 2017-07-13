@@ -113,8 +113,10 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
     /**
      * Handles those local types defined in method.
      * 
-     * @param target - VM target
-     * @param enclosingTypeName - the full qualified name
+     * @param target
+     *              VM target
+     * @param enclosingTypeName
+     *              the full qualified name
      */
     protected void addToTargetForLocalType(IVMTarget target, String enclosingTypeName) {
         List<ReferenceType> classes = target.getVM().classesByName(enclosingTypeName);

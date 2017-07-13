@@ -33,7 +33,8 @@ public class JavaDebuggerServerPlugin implements BundleActivator {
     
     /**
      * Log the specific status with the plugin's logger.
-     * @param status - status to log
+     * @param status
+     *              status to log
      */
     public static void log(IStatus status) {
         if (context != null) {
@@ -43,7 +44,8 @@ public class JavaDebuggerServerPlugin implements BundleActivator {
 
     /**
      * Log the {@link CoreException} with the plugin's logger.
-     * @param e - {@link CoreException} to log
+     * @param e
+     *         {@link CoreException} to log
      */
     public static void log(CoreException e) {
         log(e.getStatus());
@@ -51,7 +53,8 @@ public class JavaDebuggerServerPlugin implements BundleActivator {
 
     /**
      * Log the error message with the plugin's logger.
-     * @param message - error message to log
+     * @param message
+     *               error message to log
      */
     public static void logError(String message) {
         if (context != null) {
@@ -61,7 +64,8 @@ public class JavaDebuggerServerPlugin implements BundleActivator {
 
     /**
      * Log the info message with the plugin's logger.
-     * @param message - message to log
+     * @param message
+     *               message to log
      */
     public static void logInfo(String message) {
         if (context != null) {
@@ -71,8 +75,10 @@ public class JavaDebuggerServerPlugin implements BundleActivator {
 
     /**
      * Log the exception with the plugin's logger.
-     * @param message - message to log
-     * @param ex - Exception to log
+     * @param message
+     *               message to log
+     * @param ex
+     *          Exception to log
      */
     public static void logException(String message, Throwable ex) {
         if (context != null) {

@@ -45,8 +45,10 @@ public class DispatcherProtocol {
 
     /**
      * Constructs a DispatcherProtocol instance based on the given reader and writer.
-     * @param reader - the input reader
-     * @param writer - the output writer
+     * @param reader
+     *              the input reader
+     * @param writer
+     *              the output writer
      */
     public DispatcherProtocol(Reader reader, Writer writer) {
         this.reader = reader;
@@ -59,7 +61,8 @@ public class DispatcherProtocol {
 
     /**
      * A while-loop to parse input data and send output data constantly.
-     * @param handler - dispatch handler
+     * @param handler
+     *              dispatch handler
      */
     public void eventLoop(IHandler handler) {
         this.handler = handler;
@@ -91,8 +94,10 @@ public class DispatcherProtocol {
 
     /**
      * Sends the event to writer immediately.
-     * @param eventType - event type
-     * @param body - event content
+     * @param eventType
+     *              event type
+     * @param body
+     *              event content
      */
     public void sendEvent(String eventType, Object body) {
         sendMessage(new Messages.DispatcherEvent(eventType, body));
@@ -101,8 +106,10 @@ public class DispatcherProtocol {
     /**
      * If the the dispatcher is idle, then send the event immediately.
      * Else add the new event to an eventQueue first and send them when dispatcher becomes idle again.
-     * @param eventType - event type
-     * @param body - event content
+     * @param eventType
+     *              event type
+     * @param body 
+     *              event content
      */
     public void sendEventLater(String eventType, Object body) {
         synchronized (this.lock) {
