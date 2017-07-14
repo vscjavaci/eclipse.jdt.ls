@@ -11,6 +11,8 @@
 
 package org.eclipse.jdt.ls.debug.internal.core.breakpoints;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.jdt.ls.debug.internal.core.EventType;
@@ -31,10 +33,19 @@ import com.sun.jdi.request.EventRequestManager;
 public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
     private String typeName;
     private int hitCount;
+    protected HashMap<IVMTarget, List<EventRequest>> requestsByTarget;
 
+    /**
+     * Constructor.
+     * @param fullQualifiedName
+     *                the full qualified name
+     * @param hitCount
+     *                the hit count number  
+     */
     public JavaBreakpoint(final String fullQualifiedName, final int hitCount) {
         this.typeName = fullQualifiedName;
         this.hitCount = hitCount;
+        this.requestsByTarget = new HashMap<>(1);
     }
 
     @Override
@@ -85,15 +96,14 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
         }
 
         if (referenceTypeName.indexOf("$") == -1) {
-            target.getEventHub().addJDIEventListener(createClassPrepareRequest(referenceTypeName, null, target), this);
+            this.registerRequest(createClassPrepareRequest(referenceTypeName, null, target), target);
             // intercept local and anonymous inner classes
-            target.getEventHub().addJDIEventListener(createClassPrepareRequest(enclosingTypeName + "$*", null, target),
-                    this);
+            this.registerRequest(createClassPrepareRequest(enclosingTypeName + "$*", null, target), target);
         } else {
-            target.getEventHub().addJDIEventListener(createClassPrepareRequest(referenceTypeName, null, target), this);
+            this.registerRequest(createClassPrepareRequest(referenceTypeName, null, target), target);
             // intercept local and anonymous inner classes
-            target.getEventHub().addJDIEventListener(
-                    createClassPrepareRequest(enclosingTypeName + "$*", referenceTypeName, target), this);
+            this.registerRequest(
+                    createClassPrepareRequest(enclosingTypeName + "$*", referenceTypeName, target), target);
         }
 
         VirtualMachine vm = target.getVM();
@@ -129,8 +139,25 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
         }
     }
 
+    /**
+     * Remove the breakpoint from debuggee VM.
+     */
     public void removeFromVMTarget(IVMTarget target) {
-
+        List<EventRequest> list = this.requestsByTarget.get(target);
+        if (list == null) {
+            return ;
+        }
+        for (EventRequest request : list) {
+            try {
+                EventRequestManager manager = target.getEventRequestManager();
+                if (manager != null) {
+                    manager.deleteEventRequest(request);
+                }
+            } finally {
+                target.getEventHub().removeJDIEventListener(request);
+            }
+        }
+        this.requestsByTarget.remove(target);
     }
 
     protected ClassPrepareRequest createClassPrepareRequest(String classPattern, String classExclusionPattern,
@@ -156,5 +183,21 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
             request.addCountFilter(this.hitCount);
         }
         request.setEnabled(true);
+    }
+    
+    protected void registerRequest(EventRequest request, IVMTarget target) {
+        if (request == null) {
+            return;
+        }
+        
+        List<EventRequest> list = this.requestsByTarget.get(target);
+        if (list == null) {
+            list = new ArrayList<>();
+            this.requestsByTarget.put(target, list);
+        }
+        // cache EventRequest.
+        list.add(request);
+        // register event listener to EventHub.
+        target.getEventHub().addJDIEventListener(request, this);
     }
 }

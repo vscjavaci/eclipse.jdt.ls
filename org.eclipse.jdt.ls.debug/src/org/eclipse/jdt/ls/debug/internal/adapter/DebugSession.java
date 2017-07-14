@@ -57,6 +57,7 @@ public class DebugSession implements IDebugSession {
     protected boolean clientPathsAreURI = true;
 
     private String cwd;
+    private String[] sourcePath;
     private IResponder responder;
     private boolean vmStarted = false;
     private boolean shutdown = false;
@@ -214,6 +215,7 @@ public class DebugSession implements IDebugSession {
         // caps.supportsSetVariable = true;
         // caps.supportsConditionalBreakpoints = false;
         // caps.supportsEvaluateForHovers = true;
+        caps.supportsDelayedStackTraceLoading = true;
         caps.exceptionBreakpointFilters = new ArrayList<>();
         DebugResult result = new DebugResult(new Results.InitializeResponseBody(caps));
         result.add(new Events.InitializedEvent());
@@ -227,17 +229,23 @@ public class DebugSession implements IDebugSession {
         String[] classPathArray = arguments.classPath;
         String classpath = String.join(System.getProperty("path.separator"), classPathArray);
         classpath = classpath.replaceAll("\\\\", "/");
-
+        if (arguments.sourcePath == null || arguments.sourcePath.length == 0) {
+            this.sourcePath = new String[] { cwd };
+        } else {
+            this.sourcePath = new String[arguments.sourcePath.length];
+            System.arraycopy(arguments.sourcePath, 0, this.sourcePath, 0, arguments.sourcePath.length);
+        }
+        
         if (mainClass.endsWith(".java")) {
             mainClass = mainClass.substring(0, mainClass.length() - 5);
         }
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
         try {
             IDebugContext debugContext = new DebugContext();
-            debugContext.getDebugEventHub().addDebugEventSetListener(new DebugEventListener());
             Launcher launcher = new Launcher();
             VirtualMachine vm = launcher.launchJVM(mainClass, classpath);
             this.vmTarget = new JDIVMTarget(debugContext, vm, false);
+            debugContext.getDebugEventHub().addDebugEventSetListener(new DebugEventListener());
         } catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
             Logger.logException("Launching debuggee vm exception", e);
             return new DebugResult(3001, "Cannot launch jvm.", null);
@@ -391,8 +399,13 @@ public class DebugSession implements IDebugSession {
                         Method method = location.method();
                         // TODO Will use LS to get real source path of the
                         // class.
+                        String originalSourcePath = location.sourcePath();
+                        String fullpath = DebugUtils.sourceLookup(this.sourcePath, originalSourcePath);
+                        if (fullpath == null) {
+                            fullpath = Paths.get(this.cwd, originalSourcePath).toString();
+                        }
                         Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(),
-                                new Types.Source(this.cwd + "\\" + location.sourceName(), 0), location.lineNumber(), 0);
+                                new Types.Source(fullpath, 0), location.lineNumber(), 0);
                         result.add(newFrame);
                     }
                 }
