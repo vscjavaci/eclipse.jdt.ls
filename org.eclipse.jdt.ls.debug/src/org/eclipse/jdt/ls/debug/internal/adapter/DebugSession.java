@@ -50,7 +50,7 @@ import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.event.ThreadDeathEvent;
 
-public class DebugSession implements IDebugSession {
+public class DebugSession implements IDebugSession, IDebugEventSetListener {
     protected boolean debuggerLinesStartAt1;
     protected boolean debuggerPathsAreURI;
     protected boolean clientLinesStartAt1 = true;
@@ -59,8 +59,8 @@ public class DebugSession implements IDebugSession {
     private String cwd;
     private String[] sourcePath;
     private IResponder responder;
-    private boolean vmStarted = false;
     private boolean shutdown = false;
+    private IDebugContext debugContext;
     private IVMTarget vmTarget;
     private IdCollection<StackFrame> frameCollection = new IdCollection<>();
 
@@ -92,8 +92,9 @@ public class DebugSession implements IDebugSession {
 
             case "disconnect":
                 return disconnect();
-            // case "configurationDone":
-            // return ConfigurationDone();
+
+            case "configurationDone":
+                return configurationDone();
 
             case "next":
                 return next(JsonUtils.fromJson(args, Requests.NextArguments.class));
@@ -210,7 +211,7 @@ public class DebugSession implements IDebugSession {
                 }
         }
         Capabilities caps = new Capabilities();
-        // caps.supportsConfigurationDoneRequest = true;
+        caps.supportsConfigurationDoneRequest = true;
         // caps.supportsFunctionBreakpoints = true;
         // caps.supportsSetVariable = true;
         // caps.supportsConditionalBreakpoints = false;
@@ -241,11 +242,10 @@ public class DebugSession implements IDebugSession {
         }
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
         try {
-            IDebugContext debugContext = new DebugContext();
             Launcher launcher = new Launcher();
             VirtualMachine vm = launcher.launchJVM(mainClass, classpath);
+            this.debugContext = new DebugContext();
             this.vmTarget = new JDIVMTarget(debugContext, vm, false);
-            debugContext.getDebugEventHub().addDebugEventSetListener(new DebugEventListener());
         } catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
             Logger.logException("Launching debuggee vm exception", e);
             return new DebugResult(3001, "Cannot launch jvm.", null);
@@ -258,9 +258,23 @@ public class DebugSession implements IDebugSession {
         return null;
     }
 
+    /**
+     * VS Code terminates a debug session with the disconnect request.
+     */
     @Override
     public DebugResult disconnect() {
+        this.debugContext.getDebugEventHub().removeDebugEventSetListener(this);
         return new DebugResult(new Events.TerminatedEvent());
+    }
+    
+    /**
+     * VS Code sends a configurationDone request to indicate the end of configuration sequence.
+     */
+    public DebugResult configurationDone() {
+        this.debugContext.getDebugEventHub().addDebugEventSetListener(this);
+        // The configuration sequence has done, then resume VM.
+        this.vmTarget.getVM().resume();
+        return new DebugResult();
     }
 
     @Override
@@ -354,10 +368,6 @@ public class DebugSession implements IDebugSession {
     public DebugResult threads() {
         if (this.shutdown) {
             return new DebugResult(new Results.ThreadsResponseBody(new ArrayList<Types.Thread>()));
-        }
-        if (!this.vmStarted) {
-            this.vmStarted = true;
-            this.vmTarget.getVM().resume();
         }
         ArrayList<Types.Thread> threads = new ArrayList<>();
         try {
@@ -502,72 +512,70 @@ public class DebugSession implements IDebugSession {
         }
     }
 
-    public class DebugEventListener implements IDebugEventSetListener {
-
-        @Override
-        public void handleDebugEvents(IDebugEvent[] events) {
-            for (IDebugEvent event : events) {
-                EventType type = event.getKind();
-                Object source = event.getSource();
-                switch (type) {
-                case VMSTART_EVENT:
-                    shutdown = false;
-                    break;
-                case VMDEATH_EVENT:
-                    if (!shutdown) {
-                        Events.ExitedEvent exitedEvent = new Events.ExitedEvent(0);
-                        Events.TerminatedEvent terminatedEvent = new Events.TerminatedEvent();
-                        responder.addEvent(exitedEvent.type, exitedEvent);
-                        responder.addEvent(terminatedEvent.type, terminatedEvent);
-                    }
-                    shutdown = true;
-                    break;
-                case THREADSTART_EVENT:
-                    if (source instanceof IThread) {
-                        IThread jdiThread = (IThread) source;
-                        ThreadReference startThread = jdiThread.getUnderlyingThread();
-                        Events.ThreadEvent threadEvent = new Events.ThreadEvent("started", startThread.uniqueID());
-                        responder.addEvent(threadEvent.type, threadEvent);
-                    }
-                    break;
-                case THREADDEATH_EVENT:
-                    ThreadReference deathThread = ((ThreadDeathEvent) source).thread();
-                    Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
-                    responder.addEvent(threadDeathEvent.type, threadDeathEvent);
-                    break;
-                case BREAKPOINT_EVENT:
-                    BreakpointEvent bpEvent = (BreakpointEvent) source;
-                    ThreadReference bpThread = bpEvent.thread();
-                    Location bpLocation = bpEvent.location();
-                    try {
-                        // TODO Need use Language server to get absolute source
-                        // path.
-                        Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint",
-                                new Types.Source(cwd + "/" + bpLocation.sourcePath(), 0), bpLocation.lineNumber(), 0,
-                                "", bpThread.uniqueID());
-                        responder.addEvent(stopevent.type, stopevent);
-                    } catch (AbsentInformationException e) {
-                        Logger.logException("Get breakpoint info exception", e);
-                    }
-                    break;
-                case STEP_EVENT:
-                    StepEvent stepEvent = (StepEvent) source;
-                    ThreadReference stepThread = stepEvent.thread();
-                    Location stepLocation = stepEvent.location();
-                    Events.StoppedEvent stopevent;
-                    try {
-                        stopevent = new Events.StoppedEvent("step",
-                                new Types.Source(cwd + "/" + stepLocation.sourcePath(), 0), stepLocation.lineNumber(),
-                                0, "", stepThread.uniqueID());
-                        responder.addEvent(stopevent.type, stopevent);
-                    } catch (AbsentInformationException e) {
-                        Logger.logException("Get step info exception", e);
-                    }
-                    break;
-                default:
-                    // nothing
+    @Override
+    public void handleDebugEvents(IDebugEvent[] events) {
+        for (IDebugEvent event : events) {
+            EventType type = event.getKind();
+            Object source = event.getSource();
+            switch (type) {
+            case VMSTART_EVENT:
+                this.shutdown = false;
+                break;
+            case VMDEATH_EVENT:
+                if (!this.shutdown) {
+                    Events.ExitedEvent exitedEvent = new Events.ExitedEvent(0);
+                    Events.TerminatedEvent terminatedEvent = new Events.TerminatedEvent();
+                    this.responder.addEvent(exitedEvent.type, exitedEvent);
+                    this.responder.addEvent(terminatedEvent.type, terminatedEvent);
                 }
+                this.shutdown = true;
+                break;
+            case THREADSTART_EVENT:
+                if (source instanceof IThread) {
+                    IThread jdiThread = (IThread) source;
+                    ThreadReference startThread = jdiThread.getUnderlyingThread();
+                    Events.ThreadEvent threadEvent = new Events.ThreadEvent("started", startThread.uniqueID());
+                    this.responder.addEvent(threadEvent.type, threadEvent);
+                }
+                break;
+            case THREADDEATH_EVENT:
+                ThreadReference deathThread = ((ThreadDeathEvent) source).thread();
+                Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
+                this.responder.addEvent(threadDeathEvent.type, threadDeathEvent);
+                break;
+            case BREAKPOINT_EVENT:
+                BreakpointEvent bpEvent = (BreakpointEvent) source;
+                ThreadReference bpThread = bpEvent.thread();
+                Location bpLocation = bpEvent.location();
+                try {
+                    // TODO Need use Language server to get absolute source
+                    // path.
+                    Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint",
+                            new Types.Source(cwd + "/" + bpLocation.sourcePath(), 0), bpLocation.lineNumber(), 0,
+                            "", bpThread.uniqueID());
+                    this.responder.addEvent(stopevent.type, stopevent);
+                } catch (AbsentInformationException e) {
+                    Logger.logException("Get breakpoint info exception", e);
+                }
+                break;
+            case STEP_EVENT:
+                StepEvent stepEvent = (StepEvent) source;
+                ThreadReference stepThread = stepEvent.thread();
+                Location stepLocation = stepEvent.location();
+                Events.StoppedEvent stopevent;
+                try {
+                    stopevent = new Events.StoppedEvent("step",
+                            new Types.Source(cwd + "/" + stepLocation.sourcePath(), 0), stepLocation.lineNumber(),
+                            0, "", stepThread.uniqueID());
+                    this.responder.addEvent(stopevent.type, stopevent);
+                } catch (AbsentInformationException e) {
+                    Logger.logException("Get step info exception", e);
+                }
+                break;
+            default:
+                // nothing
             }
         }
     }
+
 }
