@@ -96,14 +96,13 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
         }
 
         if (referenceTypeName.indexOf("$") == -1) {
-            this.registerRequest(createClassPrepareRequest(referenceTypeName, null, target), target);
+            createClassPrepareRequest(referenceTypeName, null, target);
             // intercept local and anonymous inner classes
-            this.registerRequest(createClassPrepareRequest(enclosingTypeName + "$*", null, target), target);
+            createClassPrepareRequest(enclosingTypeName + "$*", null, target);
         } else {
-            this.registerRequest(createClassPrepareRequest(referenceTypeName, null, target), target);
+            createClassPrepareRequest(referenceTypeName, null, target);
             // intercept local and anonymous inner classes
-            this.registerRequest(
-                    createClassPrepareRequest(enclosingTypeName + "$*", referenceTypeName, target), target);
+            createClassPrepareRequest(enclosingTypeName + "$*", referenceTypeName, target);
         }
 
         VirtualMachine vm = target.getVM();
@@ -160,7 +159,7 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
         this.requestsByTarget.remove(target);
     }
 
-    protected ClassPrepareRequest createClassPrepareRequest(String classPattern, String classExclusionPattern,
+    protected void createClassPrepareRequest(String classPattern, String classExclusionPattern,
             IVMTarget target) {
         EventRequestManager manager = target.getVM().eventRequestManager();
         ClassPrepareRequest req = manager.createClassPrepareRequest();
@@ -172,7 +171,7 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
         }
         req.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
         req.enable();
-        return req;
+        this.registerRequest(req, target);
     }
 
     protected abstract boolean createRequest(IVMTarget target, ReferenceType type);

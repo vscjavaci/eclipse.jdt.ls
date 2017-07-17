@@ -48,7 +48,6 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.connect.VMStartException;
 import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.StepEvent;
-import com.sun.jdi.event.ThreadDeathEvent;
 
 public class DebugSession implements IDebugSession, IDebugEventSetListener {
     protected boolean debuggerLinesStartAt1;
@@ -519,7 +518,6 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             Object source = event.getSource();
             switch (type) {
             case VMSTART_EVENT:
-                this.shutdown = false;
                 break;
             case VMDEATH_EVENT:
                 if (!this.shutdown) {
@@ -539,9 +537,12 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                 }
                 break;
             case THREADDEATH_EVENT:
-                ThreadReference deathThread = ((ThreadDeathEvent) source).thread();
-                Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
-                this.responder.addEvent(threadDeathEvent.type, threadDeathEvent);
+                if (source instanceof IThread) {
+                    IThread jdiThread = (IThread) source;
+                    ThreadReference deathThread = jdiThread.getUnderlyingThread();
+                    Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
+                    this.responder.addEvent(threadDeathEvent.type, threadDeathEvent);
+                }
                 break;
             case BREAKPOINT_EVENT:
                 BreakpointEvent bpEvent = (BreakpointEvent) source;
