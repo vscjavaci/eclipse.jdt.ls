@@ -41,10 +41,7 @@ public class JavaLineBreakpoint extends JavaBreakpoint {
         int lineNumber = getLineNumber();
         List<Location> locations = determineLocations(lineNumber, type);
         if (locations == null || locations.isEmpty()) {
-            this.setVerified(false);
             return false;
-        } else {
-            this.setVerified(true);
         }
         EventRequestManager manager = target.getEventRequestManager();
         if (manager == null) {
@@ -58,6 +55,8 @@ public class JavaLineBreakpoint extends JavaBreakpoint {
             registerRequest(requests[i], target); 
             i++;
         }
+        this.setVerified(true);
+        target.fireEvent(new DebugEvent(this, EventType.VALID_BREAKPOINT_EVENT));
         return true;
     }
 

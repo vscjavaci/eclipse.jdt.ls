@@ -89,10 +89,7 @@ public abstract class JavaBreakpoint implements IBreakpoint, IJDIEventListener {
     }
 
     protected boolean handleClassPrepareEvent(ClassPrepareEvent event, IVMTarget target, boolean suspendVote) {
-        boolean created = createRequest(target, event.referenceType());
-        if (created) {
-            target.fireEvent(new DebugEvent(this, EventType.VALID_BREAKPOINT_EVENT));
-        }
+        createRequest(target, event.referenceType());
         return true;
     }
 
