@@ -101,6 +101,9 @@ public class BreakpointManager implements IBreakpointManager {
         if (sourceModified && breakpointMap != null) {
             for (IBreakpoint bp : breakpointMap.values()) {
                 bp.removeFromVMTarget(debugContext.getVMTarget());
+                synchronized (breakpoints) {
+                    this.breakpoints.remove(bp);
+                }
             }
             this.sourceToBreakpoints.put(source, null);
             breakpointMap = null;
