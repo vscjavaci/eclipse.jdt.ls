@@ -5,7 +5,7 @@
 	<groupId>org.eclipse.jdt.ls</groupId>
 	<artifactId>parent</artifactId>
 	<name>${base.name} :: Parent</name>
-	<version>0.1.0-SNAPSHOT</version>
+	<version>0.2.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
 		<base.name>JDT Language Server</base.name>
@@ -21,6 +21,7 @@
 		<os.testArgs></os.testArgs>
 		<!-- skip for local builds, set it to true on Eclipse.org infrastructure -->
 		<cbi.jarsigner.skip>true</cbi.jarsigner.skip>
+		<checkstyle.skip>true</checkstyle.skip>
 	</properties>
 	<modules>
 		<module>org.eclipse.jdt.ls.target</module>

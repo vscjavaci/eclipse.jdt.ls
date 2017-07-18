@@ -36,7 +36,26 @@ public class ClientPreferences {
 	}
 
 	public boolean isCompletionSnippetsSupported() {
-		return v3supported && capabilities.getTextDocument().getCompletion().getCompletionItem().getSnippetSupport().booleanValue();
+		return v3supported && capabilities.getTextDocument().getCompletion().getCompletionItem().getSnippetSupport();
 	}
 
+	public boolean isV3Supported() {
+		return v3supported;
+	}
+
+	public boolean isFormattingDynamicRegistrationSupported() {
+		return v3supported && capabilities.getTextDocument().getFormatting().getDynamicRegistration();
+	}
+
+	public boolean isRangeFormattingDynamicRegistrationSupported() {
+		return v3supported && capabilities.getTextDocument().getRangeFormatting().getDynamicRegistration();
+	}
+
+	public boolean isCodeLensDynamicRegistrationSupported() {
+		return v3supported && capabilities.getTextDocument().getCodeLens().getDynamicRegistration();
+	}
+
+	public boolean isSignatureHelpDynamicRegistrationSupported() {
+		return v3supported && capabilities.getTextDocument().getSignatureHelp().getDynamicRegistration();
+	}
 }
