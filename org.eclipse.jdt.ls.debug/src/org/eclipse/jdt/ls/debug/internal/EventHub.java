@@ -1,16 +1,24 @@
 package org.eclipse.jdt.ls.debug.internal;
 
-import io.reactivex.*;
-import io.reactivex.subjects.*;
-import com.sun.jdi.*;
-import com.sun.jdi.event.*;
+import com.sun.jdi.VMDisconnectedException;
+import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.event.Event;
+import com.sun.jdi.event.EventQueue;
+import com.sun.jdi.event.EventSet;
+
+import io.reactivex.Observable;
+import io.reactivex.subjects.PublishSubject;
 
 public class EventHub implements AutoCloseable {
 	private PublishSubject<DebugEvent> subject = PublishSubject.<DebugEvent>create();
+	
 	public Observable<DebugEvent> observable() {
 		return subject;
 	}
 	
+	/**
+	 * @param vm - the target virtual machine.
+	 */
 	public void start(VirtualMachine vm) {
 		EventQueue queue = vm.eventQueue();
 		while (true) {
