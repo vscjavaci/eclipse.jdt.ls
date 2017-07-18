@@ -22,7 +22,6 @@ import org.eclipse.jdt.ls.debug.internal.adapter.Results.DebugResult;
 import org.eclipse.jdt.ls.debug.internal.adapter.Results.SetBreakpointsResponseBody;
 import org.eclipse.jdt.ls.debug.internal.adapter.Types.Capabilities;
 import org.eclipse.jdt.ls.debug.internal.core.EventType;
-import org.eclipse.jdt.ls.debug.internal.core.IBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpointManager;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugContext;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugEvent;

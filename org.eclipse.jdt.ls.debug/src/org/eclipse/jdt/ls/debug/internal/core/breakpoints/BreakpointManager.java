@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.IBreakpointManager;
@@ -29,7 +30,7 @@ public class BreakpointManager implements IBreakpointManager {
     private List<IBreakpoint> breakpoints;
     private IDebugContext debugContext;
     private HashMap<String, HashMap<String, IBreakpoint>> sourceToBreakpoints;
-    private int nextBreakpointId = 1;
+    private AtomicInteger nextBreakpointId = new AtomicInteger(1);
     
     /**
      * Constructor.
@@ -98,6 +99,7 @@ public class BreakpointManager implements IBreakpointManager {
     public IBreakpoint[] addBreakpoints(String source, IBreakpoint[] breakpoints, boolean sourceModified) {
         List<IBreakpoint> result = new ArrayList<>();
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
+        // When source file is modified, delete all previous added breakpoints.
         if (sourceModified && breakpointMap != null) {
             for (IBreakpoint bp : breakpointMap.values()) {
                 bp.removeFromVMTarget(debugContext.getVMTarget());
@@ -183,6 +185,7 @@ public class BreakpointManager implements IBreakpointManager {
         for (IBreakpoint breakpoint : breakpoints) {
             if (this.breakpoints.contains(breakpoint)) {
                 try {
+                    // remove the breakpoint from debugee VM.
                     breakpoint.removeFromVMTarget(debugContext.getVMTarget());
                     synchronized (breakpoints) {
                         this.breakpoints.remove(breakpoint);
@@ -210,7 +213,7 @@ public class BreakpointManager implements IBreakpointManager {
         return breakpointMap.values().toArray(new IBreakpoint[0]);
     }
 
-    private synchronized int nextBreakpointId() {
-        return nextBreakpointId++;
+    private int nextBreakpointId() {
+        return nextBreakpointId.getAndIncrement();
     }
 }
