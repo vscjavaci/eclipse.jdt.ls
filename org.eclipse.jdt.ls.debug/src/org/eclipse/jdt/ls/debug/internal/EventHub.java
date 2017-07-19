@@ -16,43 +16,59 @@ public class EventHub implements AutoCloseable {
         return subject;
     }
 
+    private Thread workingThread = null;
+    private boolean isClosed = false;
+
     /**
      * @param vm
-     *            - the target virtual machine.
+     *            the target virtual machine.
      */
     public void start(VirtualMachine vm) {
-        EventQueue queue = vm.eventQueue();
-        while (true) {
-            try {
-                if (Thread.interrupted()) {
+        if (isClosed) {
+            throw new IllegalStateException("This event hub is already closed.");
+        }
+
+        workingThread = new Thread(() -> {
+            EventQueue queue = vm.eventQueue();
+            while (true) {
+                try {
+                    if (Thread.interrupted()) {
+                        subject.onComplete();
+                        return;
+                    }
+
+                    EventSet set = queue.remove();
+                    boolean shouldResume = true;
+                    for (Event event : set) {
+                        DebugEvent dbgEvent = new DebugEvent();
+                        dbgEvent.event = event;
+                        subject.onNext(dbgEvent);
+                        shouldResume &= dbgEvent.shouldResume;
+                    }
+
+                    if (shouldResume) {
+                        set.resume();
+                    }
+                } catch (InterruptedException e) {
                     subject.onComplete();
                     return;
+                } catch (VMDisconnectedException e) {
+                    subject.onError(e);
+                    return;
                 }
-
-                EventSet set = queue.remove();
-                boolean shouldResume = true;
-                for (Event event : set) {
-                    DebugEvent dbgEvent = new DebugEvent();
-                    dbgEvent.event = event;
-                    subject.onNext(dbgEvent);
-                    shouldResume &= dbgEvent.shouldResume;
-                }
-
-                if (shouldResume) {
-                    set.resume();
-                }
-            } catch (InterruptedException e) {
-                subject.onComplete();
-                return;
-            } catch (VMDisconnectedException e) {
-                subject.onError(e);
-                return;
             }
-        }
+        });
+
+        workingThread.start();
     }
 
     @Override
     public void close() {
-        Thread.currentThread().interrupt();
+        if (isClosed) {
+            return;
+        }
+
+        workingThread.interrupt();
+        workingThread = null;
     }
 }
