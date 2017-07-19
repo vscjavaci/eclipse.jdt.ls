@@ -25,7 +25,8 @@ public class EventHub implements AutoCloseable {
         while (true) {
             try {
                 if (Thread.interrupted()) {
-                    break;
+                    subject.onComplete();
+                    return;
                 }
 
                 EventSet set = queue.remove();
