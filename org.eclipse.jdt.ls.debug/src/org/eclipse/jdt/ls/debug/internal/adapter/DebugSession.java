@@ -377,7 +377,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             for (IThread thread : this.vmTarget.getThreads()) {
                 JDIThread jdiThread = (JDIThread) thread;
                 ThreadReference tr = jdiThread.getUnderlyingThread();
-                threads.add(new Types.Thread(tr.uniqueID(), tr.name()));
+                threads.add(new Types.Thread(tr.uniqueID(), "Thread [" + tr.name() + "]"));
             }
             return new DebugResult(new Results.ThreadsResponseBody(threads));
         } catch (VMDisconnectedException ex) {
