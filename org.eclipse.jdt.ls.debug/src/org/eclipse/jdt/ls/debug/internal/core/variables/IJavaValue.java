@@ -23,7 +23,7 @@ public interface IJavaValue {
 
 
     /**
-     * Returns the real value of this value for primitive value, or the id of an
+     * Returns the real value of this value for primitive value, or the id of a 
      * non-primitive value, or <code>null</code> if this value represents the
      * <code>null</code> value.
      *
