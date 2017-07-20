@@ -24,5 +24,7 @@ public interface IThread {
 
     public void stepOver();
 
+    public void stepOut();
+
     public void resume();
 }

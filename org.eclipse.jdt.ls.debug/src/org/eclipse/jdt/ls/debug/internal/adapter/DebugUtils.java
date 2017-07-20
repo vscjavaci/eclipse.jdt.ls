@@ -17,10 +17,22 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IBuffer;
+import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.IJavaSearchScope;
+import org.eclipse.jdt.core.search.SearchEngine;
+import org.eclipse.jdt.core.search.SearchPattern;
+import org.eclipse.jdt.core.search.TypeNameMatch;
+import org.eclipse.jdt.core.search.TypeNameMatchRequestor;
 import org.eclipse.jdt.internal.core.SourceField;
 import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jdt.internal.core.SourceType;
@@ -31,6 +43,8 @@ import org.eclipse.jdt.ls.debug.internal.core.IBreakpointManager;
 import org.eclipse.jdt.ls.debug.internal.core.breakpoints.FakeJavaLineBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.breakpoints.JavaLineBreakpoint;
 import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
+
+import com.sun.jdi.Location;
 
 public class DebugUtils {
 
@@ -95,4 +109,81 @@ public class DebugUtils {
         return null;
     }
     
+    /**
+     * Searches the source file from the full qualified name and returns the uri string.
+     * @param project
+     *               project instance
+     * @param fqcn
+     *               full qualified name
+     * @return the uri string of source file
+     */
+    public static String getURI(IProject project, String fqcn) throws JavaModelException {
+        IJavaSearchScope searchScope = project != null ? JDTUtils.createSearchScope(JavaCore.create(project)) : SearchEngine.createWorkspaceScope();
+        
+        int lastDot = fqcn.lastIndexOf(".");
+        String packageName = lastDot > 0 ? fqcn.substring(0, lastDot) : "";
+        String className = lastDot > 0 ? fqcn.substring(lastDot + 1) : fqcn;
+        ClassUriExtractor extractor = new ClassUriExtractor();
+        
+        new SearchEngine().searchAllTypeNames(packageName.toCharArray(),SearchPattern.R_EXACT_MATCH,
+                className.toCharArray(), SearchPattern.R_EXACT_MATCH,
+                IJavaSearchConstants.TYPE,
+                searchScope,
+                extractor,
+                IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH,
+                new NullProgressMonitor());
+        return extractor.uri;
+    }
+    
+    /**
+     * Searches the source file from the full qualified name and returns the uri string.
+     * @param location
+     *                jdi location
+     * @return the uri string of source file
+     */
+    public static String getURI(Location location) throws JavaModelException {
+        return getURI(null, location.declaringType().name());
+    }
+    
+    /**
+     * Gets the source contents of the uri path.
+     * @param uri
+     *           the uri string
+     * @return the source contents
+     */
+    public static String getSource(String uri) {
+        String source = null;
+        IClassFile cf = JDTUtils.resolveClassFile(uri);
+        if (cf != null) {
+            try {
+                IBuffer buffer = cf.getBuffer();
+                if (buffer != null) {
+                    source = buffer.getContents();
+                }
+                if (source == null) {
+                    source = JDTUtils.disassemble(cf);
+                }
+            } catch (JavaModelException e) {
+                e.printStackTrace();
+            }
+            if (source == null) {
+                source = "";
+            }
+        }
+        return source;
+    }
+
+    private static class ClassUriExtractor extends TypeNameMatchRequestor {
+
+        String uri;
+
+        @Override
+        public void acceptTypeNameMatch(TypeNameMatch match) {
+            if (match.getType().isBinary()) {
+                uri = JDTUtils.getFileURI(match.getType().getClassFile());
+            }  else {
+                uri = JDTUtils.getFileURI(match.getType().getResource());
+            }
+        }
+    }
 }

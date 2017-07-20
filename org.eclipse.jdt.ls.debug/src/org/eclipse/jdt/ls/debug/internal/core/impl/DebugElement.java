@@ -13,9 +13,9 @@ package org.eclipse.jdt.ls.debug.internal.core.impl;
 
 import org.eclipse.jdt.ls.debug.internal.core.IDebugElement;
 import org.eclipse.jdt.ls.debug.internal.core.IDebugEvent;
-import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
 import org.eclipse.jdt.ls.debug.internal.core.IJDIEventHub;
 import org.eclipse.jdt.ls.debug.internal.core.IJDIEventListener;
+import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
 
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequest;

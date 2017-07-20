@@ -12,12 +12,20 @@
 package org.eclipse.jdt.ls.debug.internal.core.impl;
 
 import org.eclipse.jdt.ls.debug.internal.core.EventType;
-import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
+import org.eclipse.jdt.ls.debug.internal.core.IJDIEventListener;
 import org.eclipse.jdt.ls.debug.internal.core.IThread;
+import org.eclipse.jdt.ls.debug.internal.core.IVMTarget;
 
+import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.event.Event;
+import com.sun.jdi.event.EventSet;
+import com.sun.jdi.request.EventRequest;
+import com.sun.jdi.request.EventRequestManager;
+import com.sun.jdi.request.StepRequest;
 
-public class JDIThread extends DebugElement implements IThread {
+public class JDIThread extends DebugElement implements IThread, IJDIEventListener {
 
     private ThreadReference thread;
 
@@ -31,6 +39,14 @@ public class JDIThread extends DebugElement implements IThread {
         return this.thread;
     }
 
+    protected StackFrame getTopStackFrame() {
+        try {
+            return this.thread.frame(0);
+        } catch (IncompatibleThreadStateException e) {
+            return null;
+        }
+    }
+    
     @Override
     public void fireCreationEvent() {
         fireEvent(new DebugEvent(this, EventType.THREADSTART_EVENT));
@@ -43,19 +59,46 @@ public class JDIThread extends DebugElement implements IThread {
 
     @Override
     public void stepInto() {
-        // TODO Auto-generated method stub
-
+        createStepRequest(StepRequest.STEP_INTO);
+        resume();
     }
 
     @Override
     public void stepOver() {
-        // TODO Auto-generated method stub
+        createStepRequest(StepRequest.STEP_OVER);
+        resume();
+    }
 
+    public void stepOut() {
+        createStepRequest(StepRequest.STEP_OUT);
+        resume();
     }
 
     @Override
     public void resume() {
         thread.resume();
     }
-
+    
+    @Override
+    public boolean handleEvent(Event event, IVMTarget target, boolean suspendVote, EventSet eventSet) {
+        target.fireEvent(new DebugEvent(event, EventType.STEP_EVENT));
+        return false;
+    }
+    
+    private void createStepRequest(int stepKind) {
+        StackFrame top = getTopStackFrame();
+        if (top == null) {
+            return ;
+        }
+        EventRequestManager manager = getEventRequestManager();
+        if (manager == null) {
+            return ;
+        }
+        StepRequest request = manager.createStepRequest(thread, StepRequest.STEP_LINE, stepKind);
+        request.setSuspendPolicy(EventRequest.SUSPEND_EVENT_THREAD);
+        request.addCountFilter(1);
+        request.setEnabled(true);
+        
+        this.getVMTarget().getEventHub().addJDIEventListener(request, this);
+    }
 }

@@ -225,4 +225,17 @@ public class Results {
             }
         }
     }
+    
+    public static class ContinueResponseBody extends ResponseBody {
+        public boolean allThreadsContinued;
+        
+        public ContinueResponseBody() {
+            this.allThreadsContinued = true;
+        }
+        
+        public ContinueResponseBody(boolean allThreadsContinued) {
+            this.allThreadsContinued = allThreadsContinued;
+        }
+    }
 }
+

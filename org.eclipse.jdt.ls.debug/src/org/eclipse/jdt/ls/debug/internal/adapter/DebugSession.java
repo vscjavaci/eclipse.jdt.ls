@@ -13,10 +13,12 @@ package org.eclipse.jdt.ls.debug.internal.adapter;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.ls.debug.internal.adapter.DispatcherProtocol.IResponder;
 import org.eclipse.jdt.ls.debug.internal.adapter.Results.DebugResult;
 import org.eclipse.jdt.ls.debug.internal.adapter.Results.SetBreakpointsResponseBody;
@@ -61,7 +63,8 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
     private IDebugContext debugContext;
     private IVMTarget vmTarget;
     private IdCollection<StackFrame> frameCollection = new IdCollection<>();
-
+    private IdCollection<String> sourceCollection = new IdCollection<>();
+    
     /**
      * Constructs a DebugSession instance.
      */
@@ -294,14 +297,18 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
 
     @Override
     public DebugResult resume(Requests.ContinueArguments arguments) {
+        boolean allThreadsContinued = true;
         for (IThread ithread : this.vmTarget.getThreads()) {
             JDIThread jdiThread = (JDIThread) ithread;
             if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
+                allThreadsContinued = false;
                 jdiThread.resume();
             }
         }
-
-        return new DebugResult();
+        if (allThreadsContinued) {
+            this.vmTarget.getVM().resume();
+        }
+        return new DebugResult(new Results.ContinueResponseBody(allThreadsContinued));
     }
 
     @Override
@@ -340,7 +347,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             for (IThread ithread : this.vmTarget.getThreads()) {
                 JDIThread jdiThread = (JDIThread) ithread;
                 if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
-                    jdiThread.stepOver();
+                    jdiThread.stepOut();
                 }
             }
         } catch (Exception e) {
@@ -397,20 +404,14 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                         int frameId = this.frameCollection.create(stackFrame);
                         Location location = stackFrame.location();
                         Method method = location.method();
-                        // TODO Will use LS to get real source path of the
-                        // class.
-                        String originalSourcePath = location.sourcePath();
-                        String fullpath = DebugUtils.sourceLookup(this.sourcePath, originalSourcePath);
-                        if (fullpath == null) {
-                            fullpath = Paths.get(this.cwd, originalSourcePath).toString();
-                        }
+                        Types.Source source = getAdapterSource(location);
                         Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(),
-                                new Types.Source(fullpath, 0), location.lineNumber(), 0);
+                                source, location.lineNumber(), 0);
                         result.add(newFrame);
                     }
                 }
             }
-        } catch (IncompatibleThreadStateException | AbsentInformationException e) {
+        } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
             Logger.logException("DebugSession#stackTrace exception", e);
         }
         return new DebugResult(new Results.StackTraceResponseBody(result, result.size()));
@@ -436,7 +437,10 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
 
     @Override
     public DebugResult source(Requests.SourceArguments arguments) {
-        return null;
+        int sourceReference = arguments.sourceReference;
+        String uri = sourceCollection.get(sourceReference);
+        String source = DebugUtils.getSource(uri);
+        return new DebugResult(new Results.SourceResponseBody(source));
     }
 
     @Override
@@ -444,6 +448,32 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
         return null;
     }
 
+    private Types.Source getAdapterSource(Location location) throws URISyntaxException, AbsentInformationException {
+        Types.Source source = null;
+        String uri = null;
+        String name = location.sourceName();
+        try {
+            uri = DebugUtils.getURI(location);
+        } catch (JavaModelException e) {
+            // do nothing.
+        }
+
+        if (uri != null && uri.startsWith("jdt://")) {
+            int sourceReference = sourceCollection.create(uri);
+            source = new Types.Source(name, uri, sourceReference);
+        } else if (uri != null) {
+            source = new Types.Source(name, Paths.get(new URI(uri)).toString(), 0);
+        } else {
+            String originalSourcePath = location.sourcePath();
+            String sourcepath = DebugUtils.sourceLookup(this.sourcePath, originalSourcePath);
+            if (sourcepath == null) {
+                sourcepath = Paths.get(this.cwd, originalSourcePath).toString();
+            }
+            source = new Types.Source(name, sourcepath, 0);
+        }
+        return source;
+    }
+    
     protected int convertDebuggerLineToClient(int line) {
         if (this.debuggerLinesStartAt1) {
             return this.clientLinesStartAt1 ? line : line - 1;
@@ -540,13 +570,12 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                 ThreadReference bpThread = bpEvent.thread();
                 Location bpLocation = bpEvent.location();
                 try {
-                    // TODO Need use Language server to get absolute source
-                    // path.
+                    Types.Source adapterSource = getAdapterSource(bpLocation);
                     Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint",
-                            new Types.Source(cwd + "/" + bpLocation.sourcePath(), 0), bpLocation.lineNumber(), 0,
+                            adapterSource, bpLocation.lineNumber(), 0,
                             "", bpThread.uniqueID());
                     this.responder.addEvent(stopevent.type, stopevent);
-                } catch (AbsentInformationException e) {
+                } catch (AbsentInformationException | URISyntaxException e) {
                     Logger.logException("Get breakpoint info exception", e);
                 }
                 break;
@@ -572,11 +601,12 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                 Location stepLocation = stepEvent.location();
                 Events.StoppedEvent stopevent;
                 try {
+                    Types.Source adapterSource = getAdapterSource(stepLocation);
                     stopevent = new Events.StoppedEvent("step",
-                            new Types.Source(cwd + "/" + stepLocation.sourcePath(), 0), stepLocation.lineNumber(),
+                            adapterSource, stepLocation.lineNumber(),
                             0, "", stepThread.uniqueID());
                     this.responder.addEvent(stopevent.type, stopevent);
-                } catch (AbsentInformationException e) {
+                } catch (AbsentInformationException | URISyntaxException e) {
                     Logger.logException("Get step info exception", e);
                 }
                 break;
