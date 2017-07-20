@@ -16,6 +16,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.jdt.core.JavaModelException;
@@ -64,6 +65,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
     private IVMTarget vmTarget;
     private IdCollection<StackFrame> frameCollection = new IdCollection<>();
     private IdCollection<String> sourceCollection = new IdCollection<>();
+    private HashMap<Long, Events.StoppedEvent> stoppedEventsByThread = new HashMap<>();
     
     /**
      * Constructs a DebugSession instance.
@@ -302,6 +304,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             JDIThread jdiThread = (JDIThread) ithread;
             if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
                 allThreadsContinued = false;
+                this.stoppedEventsByThread.remove(arguments.threadId);
                 jdiThread.resume();
             }
         }
@@ -317,6 +320,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             for (IThread ithread : this.vmTarget.getThreads()) {
                 JDIThread jdiThread = (JDIThread) ithread;
                 if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
+                    this.stoppedEventsByThread.remove(arguments.threadId);
                     jdiThread.stepOver();
                 }
             }
@@ -332,6 +336,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             for (IThread ithread : this.vmTarget.getThreads()) {
                 JDIThread jdiThread = (JDIThread) ithread;
                 if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
+                    this.stoppedEventsByThread.remove(arguments.threadId);
                     jdiThread.stepInto();
                 }
             }
@@ -347,6 +352,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
             for (IThread ithread : this.vmTarget.getThreads()) {
                 JDIThread jdiThread = (JDIThread) ithread;
                 if (jdiThread.getUnderlyingThread().uniqueID() == arguments.threadId) {
+                    this.stoppedEventsByThread.remove(arguments.threadId);
                     jdiThread.stepOut();
                 }
             }
@@ -562,7 +568,11 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                     IThread jdiThread = (IThread) source;
                     ThreadReference deathThread = jdiThread.getUnderlyingThread();
                     Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
+                    this.stoppedEventsByThread.remove(deathThread.uniqueID());
                     this.responder.addEvent(threadDeathEvent.type, threadDeathEvent);
+                    for (Events.StoppedEvent stoppedEvent : this.stoppedEventsByThread.values()) {
+                        this.responder.addEvent(stoppedEvent.type, stoppedEvent);
+                    }
                 }
                 break;
             case BREAKPOINT_EVENT:
@@ -574,6 +584,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                     Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint",
                             adapterSource, bpLocation.lineNumber(), 0,
                             "", bpThread.uniqueID());
+                    this.stoppedEventsByThread.put(bpThread.uniqueID(), stopevent);
                     this.responder.addEvent(stopevent.type, stopevent);
                 } catch (AbsentInformationException | URISyntaxException e) {
                     Logger.logException("Get breakpoint info exception", e);
@@ -605,6 +616,7 @@ public class DebugSession implements IDebugSession, IDebugEventSetListener {
                     stopevent = new Events.StoppedEvent("step",
                             adapterSource, stepLocation.lineNumber(),
                             0, "", stepThread.uniqueID());
+                    this.stoppedEventsByThread.put(stepThread.uniqueID(), stopevent);
                     this.responder.addEvent(stopevent.type, stopevent);
                 } catch (AbsentInformationException | URISyntaxException e) {
                     Logger.logException("Get step info exception", e);
