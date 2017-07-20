@@ -61,9 +61,6 @@ public class JDIEventHub implements IJDIEventHub {
      */
     public void shutdown() {
         this.shutdown = true;
-        if (this.executor != null) {
-            this.executor.shutdown();
-        }
     }
 
     @Override
@@ -72,7 +69,7 @@ public class JDIEventHub implements IJDIEventHub {
         if (jvm != null) {
             EventQueue eventQueue = jvm.eventQueue();
             EventSet eventSet = null;
-            executor = new ThreadPoolExecutor(0, 5, 30L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+            executor = new ThreadPoolExecutor(0, 1000, 30L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
             while (!isShutdown()) {
                 try {
                     eventSet = eventQueue.remove(1000);
@@ -92,6 +89,7 @@ public class JDIEventHub implements IJDIEventHub {
                     });
                 }
             }
+            this.executor.shutdown();
         }
     }
 
