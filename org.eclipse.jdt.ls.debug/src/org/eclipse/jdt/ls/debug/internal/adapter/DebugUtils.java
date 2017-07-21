@@ -12,6 +12,7 @@
 package org.eclipse.jdt.ls.debug.internal.adapter;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -21,10 +22,10 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IBuffer;
 import org.eclipse.jdt.core.IClassFile;
-import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
@@ -33,6 +34,7 @@ import org.eclipse.jdt.core.search.SearchEngine;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.TypeNameMatch;
 import org.eclipse.jdt.core.search.TypeNameMatchRequestor;
+import org.eclipse.jdt.internal.core.BinaryMember;
 import org.eclipse.jdt.internal.core.SourceField;
 import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jdt.internal.core.SourceType;
@@ -55,25 +57,36 @@ public class DebugUtils {
             boolean sourceModified, IBreakpointManager manager) {
         List<Types.Breakpoint> resBreakpoints = new ArrayList<>();
         List<IBreakpoint> javaBreakpoints = new ArrayList<>();
-        Path sourcePath = Paths.get(source.path);
-        ICompilationUnit element = JDTUtils.resolveCompilationUnit(sourcePath.toUri());
+        ITypeRoot element = null;
+        String sourcefile = source.path.replace("\\", "/");
+        URI sourceUri = JDTUtils.toURI(sourcefile);
+        if (sourceUri != null && sourceUri.getScheme().equals("jdt")) {
+            element = JDTUtils.resolveTypeRoot(sourcefile);
+        } else {
+            Path path = Paths.get(source.path);
+            sourcefile = path.normalize().toString();
+            element = JDTUtils.resolveCompilationUnit(path.toUri());
+        }
         
         for (Types.SourceBreakpoint bp : lines) {
             boolean valid = false;
             try {
-                String fqn = null;
-                int offset = JsonRpcHelpers.toOffset(element.getBuffer(), bp.line, 0);
-                IJavaElement javaElement = element.getElementAt(offset);
-                if (javaElement instanceof SourceField || javaElement instanceof SourceMethod) {
-                    IType type = ((IMember) javaElement).getDeclaringType();
-                    fqn = type.getFullyQualifiedName();
-                } else if (javaElement instanceof SourceType) {
-                    fqn = ((SourceType) javaElement).getFullyQualifiedName();
-                }
-
-                if (fqn != null) {
-                    javaBreakpoints.add(new JavaLineBreakpoint(fqn, bp.line, -1));
-                    valid = true;
+                if (element != null) {
+                    String fqn = null;
+                    int offset = JsonRpcHelpers.toOffset(element.getBuffer(), bp.line, 0);
+                    IJavaElement javaElement = element.getElementAt(offset);
+                    if (javaElement instanceof SourceField || javaElement instanceof SourceMethod
+                            || javaElement instanceof BinaryMember) {
+                        IType type = ((IMember) javaElement).getDeclaringType();
+                        fqn = type.getFullyQualifiedName();
+                    } else if (javaElement instanceof SourceType) {
+                        fqn = ((SourceType) javaElement).getFullyQualifiedName();
+                    }
+                    
+                    if (fqn != null) {
+                        javaBreakpoints.add(new JavaLineBreakpoint(fqn, bp.line, -1));
+                        valid = true;
+                    }
                 }
             } catch (Exception e) {
                 Logger.logException("Add breakpoint exception", e);
@@ -83,7 +96,7 @@ public class DebugUtils {
             }
         }
 
-        IBreakpoint[] added = manager.addBreakpoints(sourcePath.normalize().toString(), javaBreakpoints.toArray(new IBreakpoint[0]), sourceModified);
+        IBreakpoint[] added = manager.addBreakpoints(sourcefile, javaBreakpoints.toArray(new IBreakpoint[0]), sourceModified);
         for (IBreakpoint add : added) {
             resBreakpoints.add(new Types.Breakpoint(add.getId(), add.isVerified(), ((JavaLineBreakpoint) add).getLineNumber(), ""));
         }
