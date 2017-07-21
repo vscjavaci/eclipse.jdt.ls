@@ -1,4 +1,4 @@
-package org.eclipse.jdt.ls.debug.internal;
+package org.eclipse.jdt.ls.debug;
 
 import com.sun.jdi.event.Event;
 
