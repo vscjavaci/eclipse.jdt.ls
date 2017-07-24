@@ -11,13 +11,19 @@
 
 package org.eclipse.jdt.ls.debug;
 
-import java.util.List;
+import com.sun.jdi.ThreadReference;
 
-import com.sun.jdi.request.EventRequest;
+public class ThreadUtility {
+    static void stepOver(ThreadReference thread) {
+        throw new UnsupportedOperationException();
+    }
 
-import io.reactivex.disposables.Disposable;
+    static void stepInto(ThreadReference thread) {
+        throw new UnsupportedOperationException();
+    }
 
-public interface IDebugResource extends AutoCloseable {
-    List<EventRequest> requests();
-    List<Disposable> subscriptions();
+    static void stepOut(ThreadReference thread) {
+        throw new UnsupportedOperationException();
+    }
 }
+
