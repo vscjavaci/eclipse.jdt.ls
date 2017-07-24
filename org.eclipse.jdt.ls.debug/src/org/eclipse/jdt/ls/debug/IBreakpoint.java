@@ -1,8 +1,11 @@
 package org.eclipse.jdt.ls.debug;
 
-import com.sun.jdi.request.EventRequest;
+public interface IBreakpoint extends IDebugResource {
+    String className();
+    int lineNumber();
 
-public interface IBreakpoint {
-    // This is the receipt for tracking the breakpoint at JDI side
-    EventRequest breakpointRequest();
+    int hitCount();
+    void setHitCount(int hitCount);
+
+    void install();
 }

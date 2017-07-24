@@ -1,17 +1,8 @@
 package org.eclipse.jdt.ls.debug;
 
-import java.util.function.Consumer;
-
-import org.eclipse.debug.core.DebugEvent;
 import com.sun.jdi.ThreadReference;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.StepEvent;
 
 public interface IDebugSession {
-    void suspend();
-
-    void resume();
-
     static IDebugSession launch(/* TODO: arguments? */) {
         throw new UnsupportedOperationException();
     }
@@ -20,19 +11,23 @@ public interface IDebugSession {
         throw new UnsupportedOperationException();
     }
 
+    void suspend();
+
+    void resume();
+
     void detach();
 
     void terminate();
 
     // breakpoints
-    void addBreakpoint(String className, int lineNumber, Consumer<IBreakpoint> validatedHandler, Consumer<DebugEvent> breakEventHandler);
+    IBreakpoint createBreakpoint(String className, int lineNumber);
+    IBreakpoint createBreakpoint(String className, int lineNumber, int hitCount);
 
-    void addBreakpoint(String className, int lineNumber, int hitCount, Consumer<IBreakpoint> validatedHandler, Consumer<DebugEvent> breakEventHandler);
-
-    void removeBreakpoint(IBreakpoint breakpoint);
+    // createExeptionBreakpoint
+    // createFunctionBreakpoint
 
     ThreadReference[] allThreads();
-    
-    EventHub eventHub();
+
+    IEventHub eventHub();
 }
 
