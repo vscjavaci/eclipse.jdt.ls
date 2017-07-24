@@ -32,6 +32,7 @@ public interface IDebugSession {
 
     // breakpoints
     IBreakpoint createBreakpoint(String className, int lineNumber);
+
     IBreakpoint createBreakpoint(String className, int lineNumber, int hitCount);
 
     // createExeptionBreakpoint

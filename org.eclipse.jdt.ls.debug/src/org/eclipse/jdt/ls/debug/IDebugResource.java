@@ -19,5 +19,6 @@ import io.reactivex.disposables.Disposable;
 
 public interface IDebugResource extends AutoCloseable {
     List<EventRequest> requests();
+
     List<Disposable> subscriptions();
 }
