@@ -30,6 +30,10 @@ public class DebugSession implements IDebugSession {
 
     @Override
     public void start() {
+        // request thread events by default
+        vm.eventRequestManager().createThreadStartRequest().enable();
+        vm.eventRequestManager().createThreadDeathRequest().enable();
+
         eventHub.start(vm);
     }
 
