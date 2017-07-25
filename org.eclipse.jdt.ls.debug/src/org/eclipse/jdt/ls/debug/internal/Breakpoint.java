@@ -126,16 +126,24 @@ public class Breakpoint implements IBreakpoint {
         classPrepareRequest.enable();
         requests.add(classPrepareRequest);
 
+        // Local types also needs to be handled
+        ClassPrepareRequest localClassPrepareRequest = vm.eventRequestManager().createClassPrepareRequest();
+        localClassPrepareRequest.addClassFilter(className + "$*");
+        localClassPrepareRequest.enable();
+        requests.add(localClassPrepareRequest);
+
         Disposable subscription = eventHub.events()
-        .filter(debugEvent -> debugEvent.event.request().equals(classPrepareRequest))
-        .subscribe(debugEvent -> {
-            ClassPrepareEvent event = (ClassPrepareEvent)debugEvent.event;
-            List<BreakpointRequest> newRequests = createBreakpointRequests(vm, event.referenceType(), lineNumber, hitCount);
-            requests.addAll(newRequests);
-            if (!newRequests.isEmpty() && !future.isDone()) {
-                future.complete(this);
-            }
-        });
+                .filter(debugEvent -> debugEvent.event.request().equals(classPrepareRequest)
+                        || debugEvent.event.request().equals(localClassPrepareRequest))
+                .subscribe(debugEvent -> {
+                    ClassPrepareEvent event = (ClassPrepareEvent) debugEvent.event;
+                    List<BreakpointRequest> newRequests = createBreakpointRequests(vm, event.referenceType(),
+                            lineNumber, hitCount);
+                    requests.addAll(newRequests);
+                    if (!newRequests.isEmpty() && !future.isDone()) {
+                        future.complete(this);
+                    }
+                });
         subscriptions.add(subscription);
 
         return future;
