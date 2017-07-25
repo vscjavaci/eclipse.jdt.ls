@@ -11,6 +11,7 @@
 
 package org.eclipse.jdt.ls.debug;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -25,32 +26,53 @@ import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.connect.VMStartException;
 
 public class DebugUtility {
-    static IDebugSession launch(String mainClass, List<String> classPaths)
+    public static IDebugSession launch(String mainClass, List<String> classPaths)
+            throws IOException, IllegalConnectorArgumentsException, VMStartException {
+        return DebugUtility.launch(mainClass, String.join(File.pathSeparator, classPaths));
+    }
+
+    /**
+     * Launches a debuggee in suspend mode.
+     *
+     * @param mainClass
+     *            the main class.
+     * @param classPaths
+     *            the class paths.
+     * @return an instance of IDebugSession.
+     * @throws IOException
+     *             when unable to launch.
+     * @throws IllegalConnectorArgumentsException
+     *             when one of the arguments is invalid.
+     * @throws VMStartException
+     *             when the debuggee was successfully launched, but terminated
+     *             with an error before a connection could be established.
+     */
+    public static IDebugSession launch(String mainClass, String classPaths)
             throws IOException, IllegalConnectorArgumentsException, VMStartException {
         List<LaunchingConnector> connectors = Bootstrap.virtualMachineManager().launchingConnectors();
         LaunchingConnector connector = connectors.get(0);
 
         Map<String, Argument> arguments = connector.defaultArguments();
-        arguments.get("options").setValue("-cp " + String.join(",", classPaths));
+        arguments.get("options").setValue("-cp " + classPaths);
         arguments.get("suspend").setValue("true");
         arguments.get("main").setValue(mainClass);
 
         return new DebugSession(connector.launch(arguments));
     }
 
-    static IDebugSession attach(/* TODO: arguments? */) {
+    public static IDebugSession attach(/* TODO: arguments? */) {
         throw new UnsupportedOperationException();
     }
 
-    static void stepOver(ThreadReference thread) {
+    public static void stepOver(ThreadReference thread) {
         throw new UnsupportedOperationException();
     }
 
-    static void stepInto(ThreadReference thread) {
+    public static void stepInto(ThreadReference thread) {
         throw new UnsupportedOperationException();
     }
 
-    static void stepOut(ThreadReference thread) {
+    public static void stepOut(ThreadReference thread) {
         throw new UnsupportedOperationException();
     }
 }
