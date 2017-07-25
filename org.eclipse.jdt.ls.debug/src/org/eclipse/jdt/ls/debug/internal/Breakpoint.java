@@ -131,7 +131,7 @@ public class Breakpoint implements IBreakpoint {
                         || debugEvent.event.request().equals(localClassPrepareRequest))
                 .subscribe(debugEvent -> {
                     ClassPrepareEvent event = (ClassPrepareEvent) debugEvent.event;
-                    List<BreakpointRequest> newRequests = createBreakpointRequests(vm, event.referenceType(),
+                    List<BreakpointRequest> newRequests = createBreakpointRequests(event.referenceType(),
                             lineNumber, hitCount);
                     requests.addAll(newRequests);
                     if (!newRequests.isEmpty() && !future.isDone()) {
@@ -141,7 +141,7 @@ public class Breakpoint implements IBreakpoint {
         subscriptions.add(subscription);
 
         List<ReferenceType> refTypes = vm.classesByName(className);
-        requests.addAll(createBreakpointRequests(vm, refTypes, lineNumber, hitCount));
+        requests.addAll(createBreakpointRequests(refTypes, lineNumber, hitCount));
         if (!requests.isEmpty()) {
             future.complete(this);
         }
@@ -172,28 +172,43 @@ public class Breakpoint implements IBreakpoint {
         return locations;
     }
 
-    private static List<BreakpointRequest> createBreakpointRequests(VirtualMachine vm, ReferenceType refType,
+    private List<BreakpointRequest> createBreakpointRequests(ReferenceType refType,
             int lineNumber, int hitCount) {
         List<ReferenceType> refTypes = new ArrayList<ReferenceType>();
         refTypes.add(refType);
-        return createBreakpointRequests(vm, refTypes, lineNumber, hitCount);
+        return createBreakpointRequests(refTypes, lineNumber, hitCount);
     }
 
-    private static List<BreakpointRequest> createBreakpointRequests(VirtualMachine vm, List<ReferenceType> refTypes,
+    private List<BreakpointRequest> createBreakpointRequests(List<ReferenceType> refTypes,
             int lineNumber, int hitCount) {
         List<Location> locations = collectLocations(refTypes, lineNumber);
-        List<BreakpointRequest> requests = new ArrayList<BreakpointRequest>();
 
-        locations.forEach(location -> {
+        // find out the existing breakpoint locations
+        List<Location> existingLocations = new ArrayList<Location>(requests.size());
+        Observable.fromIterable(requests).filter(request -> request instanceof BreakpointRequest)
+                .map(request -> ((BreakpointRequest) request).location()).toList().subscribe(list -> {
+                    existingLocations.addAll(list);
+                });
+
+        // remove duplicated locations
+        List<Location> newLocations = new ArrayList<Location>(locations.size());
+        Observable.fromIterable(locations).filter(location -> !existingLocations.contains(location)).toList()
+                .subscribe(list -> {
+                    newLocations.addAll(list);
+                });
+
+        List<BreakpointRequest> newRequests = new ArrayList<BreakpointRequest>(newLocations.size());
+
+        newLocations.forEach(location -> {
             BreakpointRequest request = vm.eventRequestManager().createBreakpointRequest(location);
             request.setSuspendPolicy(BreakpointRequest.SUSPEND_EVENT_THREAD);
             if (hitCount > 0) {
                 request.addCountFilter(hitCount);
             }
             request.enable();
-            requests.add(request);
+            newRequests.add(request);
         });
 
-        return requests;
+        return newRequests;
     }
 }
