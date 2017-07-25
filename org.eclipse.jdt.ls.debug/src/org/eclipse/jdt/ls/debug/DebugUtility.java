@@ -18,22 +18,24 @@ import java.util.Map;
 
 import org.eclipse.jdt.ls.debug.internal.DebugSession;
 
-import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.Connector.Argument;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.connect.VMStartException;
 
 public class DebugUtility {
-    public static IDebugSession launch(String mainClass, List<String> classPaths)
+    public static IDebugSession launch(VirtualMachineManager vmManager, String mainClass, List<String> classPaths)
             throws IOException, IllegalConnectorArgumentsException, VMStartException {
-        return DebugUtility.launch(mainClass, String.join(File.pathSeparator, classPaths));
+        return DebugUtility.launch(vmManager, mainClass, String.join(File.pathSeparator, classPaths));
     }
 
     /**
      * Launches a debuggee in suspend mode.
      *
+     * @param vmManager
+     *            the virtual machine manager.
      * @param mainClass
      *            the main class.
      * @param classPaths
@@ -47,9 +49,9 @@ public class DebugUtility {
      *             when the debuggee was successfully launched, but terminated
      *             with an error before a connection could be established.
      */
-    public static IDebugSession launch(String mainClass, String classPaths)
+    public static IDebugSession launch(VirtualMachineManager vmManager, String mainClass, String classPaths)
             throws IOException, IllegalConnectorArgumentsException, VMStartException {
-        List<LaunchingConnector> connectors = Bootstrap.virtualMachineManager().launchingConnectors();
+        List<LaunchingConnector> connectors = vmManager.launchingConnectors();
         LaunchingConnector connector = connectors.get(0);
 
         Map<String, Argument> arguments = connector.defaultArguments();
