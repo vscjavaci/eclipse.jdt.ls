@@ -111,14 +111,6 @@ public class Breakpoint implements IBreakpoint {
 
     @Override
     public CompletableFuture<IBreakpoint> install() {
-        CompletableFuture<IBreakpoint> future = new CompletableFuture<IBreakpoint>();
-
-        List<ReferenceType> refTypes = vm.classesByName(className);
-        requests.addAll(createBreakpointRequests(vm, refTypes, lineNumber, hitCount));
-        if (!requests.isEmpty()) {
-            future.complete(this);
-        }
-
         // It's possible that different class loaders create new class with the same name.
         // Here to listen to future class prepare events to handle such case.
         ClassPrepareRequest classPrepareRequest = vm.eventRequestManager().createClassPrepareRequest();
@@ -131,6 +123,8 @@ public class Breakpoint implements IBreakpoint {
         localClassPrepareRequest.addClassFilter(className + "$*");
         localClassPrepareRequest.enable();
         requests.add(localClassPrepareRequest);
+
+        CompletableFuture<IBreakpoint> future = new CompletableFuture<IBreakpoint>();
 
         Disposable subscription = eventHub.events()
                 .filter(debugEvent -> debugEvent.event.request().equals(classPrepareRequest)
@@ -145,6 +139,12 @@ public class Breakpoint implements IBreakpoint {
                     }
                 });
         subscriptions.add(subscription);
+
+        List<ReferenceType> refTypes = vm.classesByName(className);
+        requests.addAll(createBreakpointRequests(vm, refTypes, lineNumber, hitCount));
+        if (!requests.isEmpty()) {
+            future.complete(this);
+        }
 
         return future;
     }
