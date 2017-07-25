@@ -65,9 +65,8 @@ public class Breakpoint implements IBreakpoint {
     // AutoCloseable
     @Override
     public void close() throws Exception {
-        vm.eventRequestManager().deleteEventRequests(this.requests());
-
-        Observable.fromIterable(this.subscriptions()).subscribe(subscription -> {
+        vm.eventRequestManager().deleteEventRequests(requests());
+        subscriptions().forEach(subscription -> {
             subscription.dispose();
         });
     }
@@ -75,12 +74,12 @@ public class Breakpoint implements IBreakpoint {
     // IBreakpoint
     @Override
     public String className() {
-        return this.className;
+        return className;
     }
 
     @Override
     public int lineNumber() {
-        return this.lineNumber;
+        return lineNumber;
     }
 
     @Override
