@@ -158,10 +158,8 @@ public class Breakpoint implements IBreakpoint {
     private static List<Location> collectLocations(List<ReferenceType> refTypes, int lineNumber) {
         List<Location> locations = new ArrayList<Location>();
         refTypes.forEach(refType -> {
-            refType.nestedTypes().forEach(nestedType -> {
-                locations.addAll(collectLocations(nestedType, lineNumber));
-            });
             locations.addAll(collectLocations(refType, lineNumber));
+            locations.addAll(collectLocations(refType.nestedTypes(), lineNumber));
         });
 
         return locations;
