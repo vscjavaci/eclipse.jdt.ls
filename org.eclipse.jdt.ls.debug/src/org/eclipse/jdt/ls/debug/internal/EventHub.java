@@ -13,6 +13,7 @@ package org.eclipse.jdt.ls.debug.internal;
 
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.IEventHub;
+import org.eclipse.jdt.ls.debug.internal.core.log.Logger;
 
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
@@ -60,15 +61,27 @@ public class EventHub implements IEventHub {
                     }
 
                     EventSet set = queue.remove();
+
+                    // Print JDI Events
+                    StringBuffer buf = new StringBuffer("\nJDI Event Set: {");
+                    for (Event event : set) {
+                        buf.append(event);
+                        buf.append(", ");
+                    }
+                    buf.append("}\n");
+                    Logger.logInfo(buf.toString());
+
                     boolean shouldResume = true;
+                    boolean beConsumed = false;
                     for (Event event : set) {
                         DebugEvent dbgEvent = new DebugEvent();
                         dbgEvent.event = event;
                         subject.onNext(dbgEvent);
                         shouldResume &= dbgEvent.shouldResume;
+                        beConsumed |= dbgEvent.consumed;
                     }
 
-                    if (shouldResume) {
+                    if (beConsumed && shouldResume) {
                         set.resume();
                     }
                 } catch (InterruptedException e) {
@@ -79,7 +92,7 @@ public class EventHub implements IEventHub {
                     return;
                 }
             }
-        });
+        }, "Event Hub");
 
         workingThread.start();
     }
@@ -134,7 +147,7 @@ public class EventHub implements IEventHub {
      */
     public Observable<DebugEvent> vmEvents() {
         return this.events().filter(debugEvent -> debugEvent.event instanceof VMStartEvent
-                || debugEvent instanceof VMDisconnectEvent
-                || debugEvent instanceof VMDeathEvent);
+                || debugEvent.event instanceof VMDisconnectEvent
+                || debugEvent.event instanceof VMDeathEvent);
     }
 }
