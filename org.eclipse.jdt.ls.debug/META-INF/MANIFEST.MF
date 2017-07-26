@@ -19,3 +19,4 @@ Export-Package: org.eclipse.jdt.ls.debug.internal;x-friends:="org.eclipse.jdt.ls
 Bundle-ClassPath: lib/gson-2.7.jar,
  .,
  lib/rxjava-2.1.1.jar
+ lib/commons-lang3-3.6.jar
