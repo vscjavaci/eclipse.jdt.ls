@@ -12,52 +12,51 @@
 package org.eclipse.jdt.ls.debug.adapter;
 
 
-import org.eclipse.jdt.ls.debug.adapter.Results.DebugResult;
-import org.eclipse.jdt.ls.debug.adapter.Results.SetBreakpointsResponseBody;
+import org.eclipse.jdt.ls.debug.adapter.Messages.Response;
 
 import com.google.gson.JsonObject;
 
 public interface IDebugAdapter {
-    DebugResult dispatch(String command, JsonObject args);
+    void dispatchRequest(Response response, String command, JsonObject args);
 
-    DebugResult initialize(Requests.InitializeArguments arguments);
+    void initialize(Response response, Requests.InitializeArguments arguments);
 
-    DebugResult launch(Requests.LaunchArguments arguments);
+    void launch(Response response, Requests.LaunchArguments arguments);
 
-    DebugResult attach(Requests.AttachArguments arguments);
+    void attach(Response response, Requests.AttachArguments arguments);
 
-    DebugResult disconnect();
+    void disconnect(Response response);
 
-    DebugResult setFunctionBreakpoints(Requests.SetFunctionBreakpointsArguments arguments);
+    void setFunctionBreakpoints(Response response, Requests.SetFunctionBreakpointsArguments arguments);
 
     // NOTE: This method should never return a failure result, as this causes
     // the launch to be aborted half-way
     // through. Instead, failures should be returned as unverified breakpoints.
-    SetBreakpointsResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments);
+    void setBreakpoints(Response response, Requests.SetBreakpointArguments arguments);
 
-    DebugResult setExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments);
+    void setExceptionBreakpoints(Response response, Requests.SetExceptionBreakpointsArguments arguments);
 
-    DebugResult resume(Requests.ContinueArguments arguments);
+    void resume(Response response, Requests.ContinueArguments arguments);
 
-    DebugResult next(Requests.NextArguments arguments);
+    void next(Response response, Requests.NextArguments arguments);
 
-    DebugResult stepIn(Requests.StepInArguments arguments);
+    void stepIn(Response response, Requests.StepInArguments arguments);
 
-    DebugResult stepOut(Requests.StepOutArguments arguments);
+    void stepOut(Response response, Requests.StepOutArguments arguments);
 
-    DebugResult pause(Requests.PauseArguments arguments);
+    void pause(Response response, Requests.PauseArguments arguments);
 
-    DebugResult threads();
+    void threads(Response response);
 
-    DebugResult stackTrace(Requests.StackTraceArguments arguments);
+    void stackTrace(Response response, Requests.StackTraceArguments arguments);
 
-    DebugResult scopes(Requests.ScopesArguments arguments);
+    void scopes(Response response, Requests.ScopesArguments arguments);
 
-    DebugResult variables(Requests.VariablesArguments arguments);
+    void variables(Response response, Requests.VariablesArguments arguments);
 
-    DebugResult setVariable(Requests.SetVariableArguments arguments);
+    void setVariable(Response response, Requests.SetVariableArguments arguments);
 
-    DebugResult source(Requests.SourceArguments arguments);
+    void source(Response response, Requests.SourceArguments arguments);
 
-    DebugResult evaluate(Requests.EvaluateArguments arguments);
+    void evaluate(Response response, Requests.EvaluateArguments arguments);
 }
