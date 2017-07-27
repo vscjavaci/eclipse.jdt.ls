@@ -18,23 +18,23 @@ import com.google.gson.JsonObject;
  */
 public class Messages {
 
-    public static class DispatcherMessage {
+    public static class ProtocolMessage {
         public int seq;
         public String type;
 
-        public DispatcherMessage(String type) {
+        public ProtocolMessage(String type) {
             this.type = type;
         }
     }
 
-    public static class DispatcherRequest extends DispatcherMessage {
+    public static class Request extends ProtocolMessage {
         public String command;
         public JsonObject arguments;
 
         /**
          * Constructor.
          */
-        public DispatcherRequest(int id, String cmd, JsonObject arg) {
+        public Request(int id, String cmd, JsonObject arg) {
             super("request");
             this.seq = id;
             this.command = cmd;
@@ -42,21 +42,21 @@ public class Messages {
         }
     }
 
-    public static class DispatcherResponse extends DispatcherMessage {
+    public static class Response extends ProtocolMessage {
         public boolean success;
         public String message;
         public int request_seq;
         public String command;
         public Object body;
 
-        public DispatcherResponse() {
+        public Response() {
             super("response");
         }
 
         /**
          * Constructor.
          */
-        public DispatcherResponse(String msg) {
+        public Response(String msg) {
             super("response");
             this.success = false;
             this.message = msg;
@@ -65,7 +65,7 @@ public class Messages {
         /**
          * Constructor.
          */
-        public DispatcherResponse(boolean succ, String message) {
+        public Response(boolean succ, String message) {
             super("response");
             this.success = succ;
             this.message = message;
@@ -74,7 +74,7 @@ public class Messages {
         /**
          * Constructor.
          */
-        public DispatcherResponse(DispatcherResponse m) {
+        public Response(Response m) {
             super("response");
             this.seq = m.seq;
             this.success = m.success;
@@ -87,25 +87,25 @@ public class Messages {
         /**
          * Constructor.
          */
-        public DispatcherResponse(int rseq, String cmd) {
+        public Response(int rseq, String cmd) {
             super("response");
             this.request_seq = rseq;
             this.command = cmd;
         }
     }
 
-    public static class DispatcherEvent extends DispatcherMessage {
+    public static class Event extends ProtocolMessage {
         public String event;
         public Object body;
 
-        public DispatcherEvent() {
+        public Event() {
             super("event");
         }
 
         /**
          * Constructor.
          */
-        public DispatcherEvent(DispatcherEvent m) {
+        public Event(Event m) {
             super("event");
             this.seq = m.seq;
             this.event = m.event;
@@ -115,7 +115,7 @@ public class Messages {
         /**
          * Constructor.
          */
-        public DispatcherEvent(String type, Object body) {
+        public Event(String type, Object body) {
             super("event");
             this.event = type;
             this.body = body;

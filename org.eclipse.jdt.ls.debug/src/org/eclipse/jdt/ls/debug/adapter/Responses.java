@@ -11,74 +11,12 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import com.google.gson.JsonObject;
 
 /**
  * The response content types defined by VSCode Debug Protocol.
  */
-public class Results {
-    /**
-     * This monomorphic class is used to return results from a debugger request
-     * or to return errors. In addition events can be attached that are fired
-     * after the request results have been returned to the caller.
-     */
-    public static class DebugResult {
-        public boolean success; // boolean indicating success
-        public ResponseBody body; // depending on value of success either the
-        public List<Events.DebugEvent> events; // send this event after
-
-        /**
-         * A success result without additional data.
-         */
-        public DebugResult() {
-            this.success = true;
-        }
-
-        /**
-         * A success result with as additional event.
-         */
-        public DebugResult(Events.DebugEvent ev) {
-            this.success = true;
-            add(ev);
-        }
-
-        /**
-         * A result with a response body. If body is a ErrorResponseBody then
-         * Success will be set to false.
-         */
-        public DebugResult(ResponseBody body) {
-            this.success = true;
-            this.body = body;
-            if (body instanceof ErrorResponseBody) {
-                this.success = false;
-            }
-        }
-
-        /**
-         * A failure result with a full error message.
-         */
-        public DebugResult(int id, String format, JsonObject arguments) {
-            this.success = false;
-            this.body = new ErrorResponseBody(new Types.Message(id, format, arguments));
-        }
-
-        /**
-         * Add a DebugEvent to this request result. Events are fired after the
-         * result is returned to the caller of the request.
-         */
-        public void add(Events.DebugEvent ev) {
-            if (ev != null) {
-                if (this.events == null) {
-                    this.events = new ArrayList<>();
-                }
-                this.events.add(ev);
-            }
-        }
-    }
-
+public class Responses {
     /**
      * subclasses of ResponseBody are serialized as the response body. Don't
      * change their instance variables since that will break the OpenDebug

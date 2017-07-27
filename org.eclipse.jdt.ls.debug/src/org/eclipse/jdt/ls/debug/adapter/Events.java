@@ -25,10 +25,6 @@ public class Events {
         }
     }
 
-    public static class DebugProtocolCallbacks {
-
-    }
-
     public static class InitializedEvent extends DebugEvent {
         public InitializedEvent() {
             super("initialized");

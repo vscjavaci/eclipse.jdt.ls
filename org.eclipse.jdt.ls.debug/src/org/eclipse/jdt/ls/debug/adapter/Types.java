@@ -12,7 +12,6 @@
 package org.eclipse.jdt.ls.debug.adapter;
 
 import java.nio.file.Paths;
-import java.util.List;
 
 import com.google.gson.JsonObject;
 
@@ -217,13 +216,9 @@ public class Types {
 
     public static class Capabilities {
         public boolean supportsConfigurationDoneRequest;
-        public boolean supportsFunctionBreakpoints;
-        public boolean supportsConditionalBreakpoints;
-        public boolean supportsHitConditionalBreakpoints;
         public boolean supportsEvaluateForHovers;
-        public boolean supportsStepBack;
         public boolean supportsSetVariable;
+        public boolean supportTerminateDebuggee;
         public boolean supportsDelayedStackTraceLoading;
-        public List<ExceptionBreakpointFilter> exceptionBreakpointFilters;
     }
 }
