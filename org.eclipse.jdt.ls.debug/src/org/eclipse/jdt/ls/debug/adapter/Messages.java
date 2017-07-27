@@ -92,6 +92,11 @@ public class Messages {
             this.request_seq = rseq;
             this.command = cmd;
         }
+
+        public Response(int rseq, String cmd, boolean succ) {
+            this(rseq, cmd);
+            this.success = succ;
+        }
     }
 
     public static class Event extends ProtocolMessage {
