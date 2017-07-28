@@ -71,9 +71,7 @@ public class BreakpointManager {
                 } catch (Exception e) {
                     Logger.logException("Remove breakpoint exception", e);
                 }
-                synchronized (breakpoints) {
-                    this.breakpoints.remove(bp);
-                }
+                this.breakpoints.remove(bp);
             }
             this.sourceToBreakpoints.put(source, null);
             breakpointMap = null;
@@ -121,9 +119,7 @@ public class BreakpointManager {
 
         if (breakpoints != null && breakpoints.length > 0) {
             for (IBreakpoint breakpoint : breakpoints) {
-                synchronized (this.breakpoints) {
-                   this.breakpoints.add(breakpoint);
-                }
+                this.breakpoints.add(breakpoint);
                 breakpointMap.put(String.valueOf(breakpoint.lineNumber()), breakpoint);
             }
         }
@@ -143,9 +139,7 @@ public class BreakpointManager {
                 try {
                     // Destroy the breakpoint on the debugee VM.
                     breakpoint.close();
-                    synchronized (breakpoints) {
-                        this.breakpoints.remove(breakpoint);
-                    }
+                    this.breakpoints.remove(breakpoint);
                     breakpointMap.remove(String.valueOf(breakpoint.lineNumber()));
                 } catch (Exception e) {
                     Logger.logException("Remove breakpoint exception", e);

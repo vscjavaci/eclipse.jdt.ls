@@ -59,15 +59,15 @@ public class AdapterUtils {
     /**
      * Finds the immediate parent class where the breakpoint locates
      * and returns the corresponding full qualified name.
-     * @param source
+     * @param sourceFile
      *              the source file
      * @param lines
      *              breakpoint line number array
      * @return the full qualified name array
      */
-    public static String[] getFullQualifiedName(Types.Source source, int[] lines) {
+    public static String[] getFullQualifiedName(String sourceFile, int[] lines) {
         String[] fqns = new String[lines.length];
-        Path sourcePath = Paths.get(source.path);
+        Path sourcePath = Paths.get(sourceFile);
         ICompilationUnit element = JDTUtils.resolveCompilationUnit(sourcePath.toUri());
         
         for (int i = 0; i < lines.length; i++) {

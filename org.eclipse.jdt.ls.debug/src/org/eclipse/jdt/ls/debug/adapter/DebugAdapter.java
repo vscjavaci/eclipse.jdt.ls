@@ -327,27 +327,19 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments) {
-        int size = arguments.breakpoints.length;
-        int[] debuggerLines = this.convertClientLineToDebugger(arguments.lines);
-        List<Types.Breakpoint> res = new ArrayList<>(size);
-        String[] fqns = AdapterUtils.getFullQualifiedName(arguments.source, debuggerLines);
-        IBreakpoint[] newBreakpoints = new IBreakpoint[size];
-        for (int i = 0; i < size; i++) {
-            newBreakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i]);
-        }
-        IBreakpoint[] breakpoints = this.breakpointManager.addBreakpoints(arguments.source.path, newBreakpoints, arguments.sourceModified);
-        for (int i = 0; i < size; i++) {
-            if (newBreakpoints[i] == breakpoints[i] && breakpoints[i].className() != null) {
-                breakpoints[i].install().thenAccept(bp -> {
-                    int id = (int) bp.getProperty("id");
-                    boolean verified = (boolean) bp.getProperty("verified");
-                    int lineNumber = bp.lineNumber();
-                    Events.BreakpointEvent bpEvent = new Events.BreakpointEvent("new", new Types.Breakpoint(id, verified, lineNumber, ""));
+        List<Types.Breakpoint> res = new ArrayList<>();
+        IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(arguments.source.path, arguments.lines);
+        IBreakpoint[] added = this.breakpointManager.addBreakpoints(arguments.source.path, toAdds, arguments.sourceModified);
+        for (int i = 0; i < arguments.breakpoints.length; i++) {
+            // For newly added breakpoint, should install it to debuggee at first.
+            if (toAdds[i] == added[i] && added[i].className() != null) {
+                added[i].putProperty("id", this.nextBreakpointId.getAndIncrement());
+                added[i].install().thenAccept(bp -> {
+                    Events.BreakpointEvent bpEvent = new Events.BreakpointEvent("new", this.convertDebuggerBreakpointToClient(bp));
                     sendEvent(bpEvent);
                 });
-                breakpoints[i].putProperty("id", this.nextBreakpointId.getAndIncrement());
             }
-            res.add(new Types.Breakpoint((int) breakpoints[i].getProperty("id"), (boolean) breakpoints[i].getProperty("verified"), this.convertDebuggerLineToClient(breakpoints[i].lineNumber()), ""));
+            res.add(this.convertDebuggerBreakpointToClient(added[i]));
         }
 
         return new Responses.SetBreakpointsResponseBody(res);
@@ -421,9 +413,9 @@ public class DebugAdapter implements IDebugAdapter {
                     int frameId = this.frameCollection.create(stackFrame);
                     Location location = stackFrame.location();
                     Method method = location.method();
-                    Types.Source source = getAdapterSource(location);
-                    Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(),
-                            source, this.convertDebuggerLineToClient(location.lineNumber()), 0);
+                    Types.Source clientSource = this.convertDebuggerSourceToClient(location);
+                    Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(), clientSource,
+                            this.convertDebuggerLineToClient(location.lineNumber()), 0);
                     result.add(newFrame);
                 }
             } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
@@ -451,8 +443,8 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody source(Requests.SourceArguments arguments) {
         int sourceReference = arguments.sourceReference;
         String uri = sourceCollection.get(sourceReference);
-        String source = AdapterUtils.getSource(uri);
-        return new Responses.SourceResponseBody(source);
+        String contents = this.convertDebuggerSourceToClient(uri);
+        return new Responses.SourceResponseBody(contents);
     }
 
     private Responses.ResponseBody evaluate(Requests.EvaluateArguments arguments) {
@@ -500,10 +492,9 @@ public class DebugAdapter implements IDebugAdapter {
             ThreadReference bpThread = bpEvent.thread();
             Location bpLocation = bpEvent.location();
             try {
-                Types.Source adapterSource = getAdapterSource(bpLocation);
-                Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint",
-                        adapterSource, this.convertDebuggerLineToClient(bpLocation.lineNumber()),
-                        0, "", bpThread.uniqueID());
+                Types.Source clientSource = this.convertDebuggerSourceToClient(bpLocation);
+                Events.StoppedEvent stopevent = new Events.StoppedEvent("breakpoint", clientSource,
+                        this.convertDebuggerLineToClient(bpLocation.lineNumber()), 0, "", bpThread.uniqueID());
                 this.stoppedEventsByThread.put(bpThread.uniqueID(), stopevent);
                 this.sendEvent(stopevent);
             } catch (AbsentInformationException | URISyntaxException e) {
@@ -535,32 +526,6 @@ public class DebugAdapter implements IDebugAdapter {
 
     private void sendEvent(Events.DebugEvent event) {
         this.eventConsumer.accept(event);
-    }
-
-    private Types.Source getAdapterSource(Location location) throws URISyntaxException, AbsentInformationException {
-        Types.Source source = null;
-        String uri = null;
-        String name = location.sourceName();
-        try {
-            uri = AdapterUtils.getURI(location);
-        } catch (JavaModelException e) {
-            // do nothing.
-        }
-
-        if (uri != null && uri.startsWith("jdt://")) {
-            int sourceReference = sourceCollection.create(uri);
-            source = new Types.Source(name, uri, sourceReference);
-        } else if (uri != null) {
-            source = new Types.Source(name, Paths.get(new URI(uri)).toString(), 0);
-        } else {
-            String originalSourcePath = location.sourcePath();
-            String sourcepath = AdapterUtils.sourceLookup(this.sourcePath, originalSourcePath);
-            if (sourcepath == null) {
-                sourcepath = Paths.get(this.cwd, originalSourcePath).toString();
-            }
-            source = new Types.Source(name, sourcepath, 0);
-        }
-        return source;
     }
 
     private ThreadReference getThread(int threadId) {
@@ -602,5 +567,52 @@ public class DebugAdapter implements IDebugAdapter {
             newLines[i] = convertClientLineToDebugger(lines[i]);
         }
         return newLines;
+    }
+
+    private Types.Breakpoint convertDebuggerBreakpointToClient(IBreakpoint breakpoint) {
+        int id = (int) breakpoint.getProperty("id");
+        boolean verified = breakpoint.getProperty("verified") != null ? (boolean) breakpoint.getProperty("verified") : false;
+        int lineNumber = this.convertDebuggerLineToClient(breakpoint.lineNumber());
+        return new Types.Breakpoint(id, verified, lineNumber, "");
+    }
+
+    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, int[] lines) {
+        int[] debuggerLines = this.convertClientLineToDebugger(lines);
+        String[] fqns = AdapterUtils.getFullQualifiedName(sourceFile, debuggerLines);
+        IBreakpoint[] breakpoints = new IBreakpoint[lines.length];
+        for (int i = 0; i < lines.length; i++) {
+            breakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i]);
+        }
+        return breakpoints;
+    }
+
+    private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException, AbsentInformationException {
+        Types.Source source = null;
+        String uri = null;
+        String name = location.sourceName();
+        try {
+            uri = AdapterUtils.getURI(location);
+        } catch (JavaModelException e) {
+            // do nothing.
+        }
+
+        if (uri != null && uri.startsWith("jdt://")) {
+            int sourceReference = sourceCollection.create(uri);
+            source = new Types.Source(name, uri, sourceReference);
+        } else if (uri != null) {
+            source = new Types.Source(name, Paths.get(new URI(uri)).toString(), 0);
+        } else {
+            String originalSourcePath = location.sourcePath();
+            String sourcepath = AdapterUtils.sourceLookup(this.sourcePath, originalSourcePath);
+            if (sourcepath == null) {
+                sourcepath = Paths.get(this.cwd, originalSourcePath).toString();
+            }
+            source = new Types.Source(name, sourcepath, 0);
+        }
+        return source;
+    }
+
+    private String convertDebuggerSourceToClient(String uri) {
+        return AdapterUtils.getSource(uri);
     }
 }

@@ -48,7 +48,6 @@ public class Breakpoint implements IBreakpoint {
         this.className = className;
         this.lineNumber = lineNumber;
         this.hitCount = hitCount;
-        this.putProperty("verified", false);
     }
 
     // IDebugResource
