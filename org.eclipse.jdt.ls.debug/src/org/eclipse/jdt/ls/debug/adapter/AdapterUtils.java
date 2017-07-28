@@ -52,8 +52,6 @@ import org.eclipse.jdt.ls.core.internal.handlers.JsonRpcHelpers;
 import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
-import com.sun.jdi.Location;
-
 public class AdapterUtils {
 
     /**
@@ -190,6 +188,21 @@ public class AdapterUtils {
     }
 
     /**
+     * Accord to project name and main class, compute runtime classpath.
+     * @param projectName
+     *                   project name
+     * @param mainClass
+     *                   full qualified class name
+     * @return class path
+     * @throws CoreException
+     *                      CoreException
+     */
+    public static String computeClassPath(String projectName, String mainClass) throws CoreException {
+        IJavaProject project = getJavaProject(projectName, mainClass);
+        return computeClassPath(project);
+    }
+    
+    /**
      * Compute runtime classpath.
      * 
      * @param javaProject
@@ -215,7 +228,7 @@ public class AdapterUtils {
      *               full qualified name
      * @return the uri string of source file
      */
-    public static String getURI(IProject project, String fqcn) throws JavaModelException {
+    public static String getURI(IProject project, String fqcn) {
         IJavaSearchScope searchScope = project != null ? JDTUtils.createSearchScope(JavaCore.create(project)) : SearchEngine.createWorkspaceScope();
         
         int lastDot = fqcn.lastIndexOf(".");
@@ -223,24 +236,39 @@ public class AdapterUtils {
         String className = lastDot > 0 ? fqcn.substring(lastDot + 1) : fqcn;
         ClassUriExtractor extractor = new ClassUriExtractor();
         
-        new SearchEngine().searchAllTypeNames(packageName.toCharArray(),SearchPattern.R_EXACT_MATCH,
-                className.toCharArray(), SearchPattern.R_EXACT_MATCH,
-                IJavaSearchConstants.TYPE,
-                searchScope,
-                extractor,
-                IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH,
-                new NullProgressMonitor());
+        try {
+            new SearchEngine().searchAllTypeNames(packageName.toCharArray(),SearchPattern.R_EXACT_MATCH,
+                    className.toCharArray(), SearchPattern.R_EXACT_MATCH,
+                    IJavaSearchConstants.TYPE,
+                    searchScope,
+                    extractor,
+                    IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH,
+                    new NullProgressMonitor());
+        } catch (JavaModelException e) {
+            return null;
+        }
         return extractor.uri;
     }
 
     /**
      * Searches the source file from the full qualified name and returns the uri string.
-     * @param location
-     *                jdi location
+     * @param fqcn
+     *            full qualified class name
      * @return the uri string of source file
      */
-    public static String getURI(Location location) throws JavaModelException {
-        return getURI(null, location.declaringType().name());
+    public static String getURI(String fqcn) {
+        return getURI(null, fqcn);
+    }
+
+    /**
+     * Gets the source contents of the uri path.
+     * @param uri
+     *           the uri string
+     * @return the source contents
+     */
+    public static String getContents(String uri) {
+        IClassFile cf = JDTUtils.resolveClassFile(uri);
+        return getContents(cf);
     }
 
     /**
@@ -279,17 +307,6 @@ public class AdapterUtils {
             }
         }
         return source;
-    }
-
-    /**
-     * Gets the source contents of the uri path.
-     * @param uri
-     *           the uri string
-     * @return the source contents
-     */
-    public static String getSource(String uri) {
-        IClassFile cf = JDTUtils.resolveClassFile(uri);
-        return getContents(cf);
     }
 
     private static class ClassUriExtractor extends TypeNameMatchRequestor {

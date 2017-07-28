@@ -23,8 +23,6 @@ import java.util.function.Consumer;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdi.Bootstrap;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugUtility;
 import org.eclipse.jdt.ls.debug.IBreakpoint;
@@ -260,14 +258,9 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody launch(Requests.LaunchArguments arguments) {
         this.cwd = arguments.cwd;
         String mainClass = arguments.startupClass;
-        if (mainClass.endsWith(".java")) {
-            mainClass = mainClass.substring(0, mainClass.length() - 5);
-        }
-
         String classpath;
         try {
-            IJavaProject project = AdapterUtils.getJavaProject(arguments.projectName, mainClass);
-            classpath = AdapterUtils.computeClassPath(project);
+            classpath = AdapterUtils.computeClassPath(arguments.projectName, mainClass);
             classpath = classpath.replaceAll("\\\\", "/");
         } catch (CoreException e) {
             Logger.logException("Failed to resolve classpath.", e);
@@ -331,7 +324,7 @@ public class DebugAdapter implements IDebugAdapter {
         IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(arguments.source.path, arguments.lines);
         IBreakpoint[] added = this.breakpointManager.addBreakpoints(arguments.source.path, toAdds, arguments.sourceModified);
         for (int i = 0; i < arguments.breakpoints.length; i++) {
-            // For newly added breakpoint, should install it to debuggee at first.
+            // For newly added breakpoint, should install it to debuggee first.
             if (toAdds[i] == added[i] && added[i].className() != null) {
                 added[i].putProperty("id", this.nextBreakpointId.getAndIncrement());
                 added[i].install().thenAccept(bp -> {
@@ -385,7 +378,8 @@ public class DebugAdapter implements IDebugAdapter {
         }
         ArrayList<Types.Thread> threads = new ArrayList<>();
         for (ThreadReference thread : this.safeGetAllThreads()) {
-            threads.add(new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]"));
+            Types.Thread clientThread = this.convertDebuggerThreadToClient(thread);
+            threads.add(clientThread);
         }
         return new Responses.ThreadsResponseBody(threads);
     }
@@ -410,13 +404,8 @@ public class DebugAdapter implements IDebugAdapter {
     
                 for (int i = 0; i < arguments.levels; i++) {
                     StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
-                    int frameId = this.frameCollection.create(stackFrame);
-                    Location location = stackFrame.location();
-                    Method method = location.method();
-                    Types.Source clientSource = this.convertDebuggerSourceToClient(location);
-                    Types.StackFrame newFrame = new Types.StackFrame(frameId, method.name(), clientSource,
-                            this.convertDebuggerLineToClient(location.lineNumber()), 0);
-                    result.add(newFrame);
+                    Types.StackFrame clientStackFrame = this.convertDebuggerStackFrameToClient(stackFrame);
+                    result.add(clientStackFrame);
                 }
             } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
                 Logger.logException("DebugSession#stackTrace exception", e);
@@ -588,13 +577,8 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException, AbsentInformationException {
         Types.Source source = null;
-        String uri = null;
+        String uri = AdapterUtils.getURI(location.declaringType().name());
         String name = location.sourceName();
-        try {
-            uri = AdapterUtils.getURI(location);
-        } catch (JavaModelException e) {
-            // do nothing.
-        }
 
         if (uri != null && uri.startsWith("jdt://")) {
             int sourceReference = sourceCollection.create(uri);
@@ -613,6 +597,20 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private String convertDebuggerSourceToClient(String uri) {
-        return AdapterUtils.getSource(uri);
+        return AdapterUtils.getContents(uri);
+    }
+
+    private Types.Thread convertDebuggerThreadToClient(ThreadReference thread) {
+        return new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]");
+    }
+
+    private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame)
+            throws URISyntaxException, AbsentInformationException {
+        int frameId = this.frameCollection.create(stackFrame);
+        Location location = stackFrame.location();
+        Method method = location.method();
+        Types.Source clientSource = this.convertDebuggerSourceToClient(location);
+        return new Types.StackFrame(frameId, method.name(), clientSource,
+                this.convertDebuggerLineToClient(location.lineNumber()), 0);
     }
 }
