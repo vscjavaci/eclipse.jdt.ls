@@ -71,16 +71,14 @@ public class EventHub implements IEventHub {
                     Logger.logInfo(buf.toString());
 
                     boolean shouldResume = true;
-                    boolean beConsumed = false;
                     for (Event event : set) {
                         DebugEvent dbgEvent = new DebugEvent();
                         dbgEvent.event = event;
                         subject.onNext(dbgEvent);
                         shouldResume &= dbgEvent.shouldResume;
-                        beConsumed |= dbgEvent.consumed;
                     }
 
-                    if (beConsumed && shouldResume) {
+                    if (shouldResume) {
                         set.resume();
                     }
                 } catch (InterruptedException e) {

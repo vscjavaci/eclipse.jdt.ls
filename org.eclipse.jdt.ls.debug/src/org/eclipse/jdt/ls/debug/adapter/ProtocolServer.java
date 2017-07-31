@@ -33,7 +33,6 @@ public class ProtocolServer {
     private int bodyLength = -1;
     private int sequenceNumber = 1;
 
-    private Object lock = new Object();
     private boolean isDispatchingData;
     private ConcurrentLinkedQueue<Messages.Event> eventQueue;
 
@@ -66,15 +65,12 @@ public class ProtocolServer {
         try {
             while (!this.terminateSession) {
                 int read = this.reader.read(buffer, 0, BUFFER_SIZE);
-                if (read == 0) {
+                if (read == -1) {
                     break;
                 }
 
-                if (read > 0) {
-                    // Logger.logInfo("\n[RAW_REQUEST]\n" + new String(String.valueOf(buffer, 0, read)));
-                    this.rawData.append(buffer, read);
-                    this.processData();
-                }
+                this.rawData.append(buffer, read);
+                this.processData();
             }
         } catch (IOException e) {
             Logger.logException("Read data from io exception", e);
@@ -89,17 +85,6 @@ public class ProtocolServer {
     }
 
     /**
-     * Sends the event to writer immediately.
-     * @param eventType
-     *              event type
-     * @param body
-     *              event content
-     */
-    private void sendEvent(String eventType, Object body) {
-        sendMessage(new Messages.Event(eventType, body));
-    }
-
-    /**
      * If the the dispatcher is idle, then send the event immediately.
      * Else add the new event to an eventQueue first and send them when dispatcher becomes idle again.
      * @param eventType
@@ -108,7 +93,7 @@ public class ProtocolServer {
      *              event content
      */
     private void sendEventLater(String eventType, Object body) {
-        synchronized (this.lock) {
+        synchronized (this) {
             if (this.isDispatchingData) {
                 this.eventQueue.offer(new Messages.Event(eventType, body));
             } else {
@@ -169,7 +154,7 @@ public class ProtocolServer {
             Logger.logInfo("\n[REQUEST]\n" + request);
             Messages.Request message = JsonUtils.fromJson(request, Messages.Request.class);
             if (message.type.equals("request")) {
-                synchronized (this.lock) {
+                synchronized (this) {
                     this.isDispatchingData = true;
                 }
 
@@ -185,7 +170,7 @@ public class ProtocolServer {
                 }
             }
         } finally {
-            synchronized (this.lock) {
+            synchronized (this) {
                 this.isDispatchingData = false;
             }
 

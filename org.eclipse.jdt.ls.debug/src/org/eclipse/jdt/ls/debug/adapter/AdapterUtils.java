@@ -13,6 +13,7 @@ package org.eclipse.jdt.ls.debug.adapter;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -56,23 +57,23 @@ public class AdapterUtils {
 
     /**
      * Finds the immediate parent class where the breakpoint locates
-     * and returns the corresponding full qualified name.
+     * and returns the corresponding fully qualified name.
      * @param sourceFile
      *              the source file
      * @param lines
      *              breakpoint line number array
-     * @return the full qualified name array
+     * @return the fully qualified name array
      */
-    public static String[] getFullQualifiedName(String sourceFile, int[] lines) {
+    public static String[] getFullyQualifiedName(String sourceFile, int[] lines) {
         String[] fqns = new String[lines.length];
         Path sourcePath = Paths.get(sourceFile);
-        ICompilationUnit element = JDTUtils.resolveCompilationUnit(sourcePath.toUri());
+        ICompilationUnit cu = JDTUtils.resolveCompilationUnit(sourcePath.toUri());
         
         for (int i = 0; i < lines.length; i++) {
             String fqn = null;
             try {
-                int offset = JsonRpcHelpers.toOffset(element.getBuffer(), lines[i], 0);
-                IJavaElement javaElement = element.getElementAt(offset);
+                int offset = JsonRpcHelpers.toOffset(cu.getBuffer(), lines[i], 0);
+                IJavaElement javaElement = cu.getElementAt(offset);
                 if (javaElement instanceof SourceField || javaElement instanceof SourceMethod) {
                     IType type = ((IMember) javaElement).getDeclaringType();
                     fqn = type.getFullyQualifiedName();
@@ -89,17 +90,17 @@ public class AdapterUtils {
 
     /**
      * Search the absolute path of the java file under the specified source path directory.
-     * @param sourcePath
-     *                  the project source path directories
+     * @param sourcePaths
+     *                  the project source directories
      * @param sourceName
      *                  the java file path
      * @return the absolute file path
      */
-    public static String sourceLookup(String[] sourcePath, String sourceName) {
-        for (String path : sourcePath) {
-            String fullpath = Paths.get(path, sourceName).toString();
-            if (new File(fullpath).isFile()) {
-                return fullpath;
+    public static String sourceLookup(String[] sourcePaths, String sourceName) {
+        for (String path : sourcePaths) {
+            Path fullpath = Paths.get(path, sourceName);
+            if (Files.isRegularFile(fullpath)) {
+                return fullpath.toString();
             }
         }
         return null;
@@ -165,30 +166,7 @@ public class AdapterUtils {
     }
 
     /**
-     * Gets java project from projectName and main class.
-     * @param projectName
-     *                   project name
-     * @param mainClass
-     *                   full qualified class name
-     * @return java project
-     * @throws CoreException
-     *                      CoreException
-     */
-    public static IJavaProject getJavaProject(String projectName, String mainClass) throws CoreException {
-        // if type exists in multiple projects, debug configuration need provide project name.
-        if (projectName != null) {
-            return getJavaProjectFromName(projectName);
-        } else {
-            List<IJavaProject> projects = AdapterUtils.getJavaProjectFromType(mainClass);
-            if (projects.size() == 0 || projects.size() > 1) {
-                throw new CoreException(new Status(IStatus.ERROR, JavaDebuggerServerPlugin.PLUGIN_ID, "project count is zero or more than one."));
-            }
-            return projects.get(0);
-        }
-    }
-
-    /**
-     * Accord to project name and main class, compute runtime classpath.
+     * Accord to the project name and the main class, compute runtime classpath.
      * @param projectName
      *                   project name
      * @param mainClass
@@ -198,12 +176,22 @@ public class AdapterUtils {
      *                      CoreException
      */
     public static String computeClassPath(String projectName, String mainClass) throws CoreException {
-        IJavaProject project = getJavaProject(projectName, mainClass);
+        IJavaProject project = null;
+        // if type exists in multiple projects, debug configuration need provide project name.
+        if (projectName != null) {
+            project = getJavaProjectFromName(projectName);
+        } else {
+            List<IJavaProject> projects = AdapterUtils.getJavaProjectFromType(mainClass);
+            if (projects.size() == 0 || projects.size() > 1) {
+                throw new CoreException(new Status(IStatus.ERROR, JavaDebuggerServerPlugin.PLUGIN_ID, "project count is zero or more than one."));
+            }
+            project = projects.get(0);
+        }
         return computeClassPath(project);
     }
-    
+
     /**
-     * Compute runtime classpath.
+     * Compute runtime classpath of a java project.
      * 
      * @param javaProject
      *            java project
@@ -221,19 +209,19 @@ public class AdapterUtils {
     }
 
     /**
-     * Searches the source file from the full qualified name and returns the uri string.
+     * Searches the source file from the fully qualified name and returns the uri string.
      * @param project
      *               project instance
-     * @param fqcn
-     *               full qualified name
+     * @param fullyQualifiedName
+     *               fully qualified name
      * @return the uri string of source file
      */
-    public static String getURI(IProject project, String fqcn) {
+    public static String getURI(IProject project, String fullyQualifiedName) {
         IJavaSearchScope searchScope = project != null ? JDTUtils.createSearchScope(JavaCore.create(project)) : SearchEngine.createWorkspaceScope();
         
-        int lastDot = fqcn.lastIndexOf(".");
-        String packageName = lastDot > 0 ? fqcn.substring(0, lastDot) : "";
-        String className = lastDot > 0 ? fqcn.substring(lastDot + 1) : fqcn;
+        int lastDot = fullyQualifiedName.lastIndexOf(".");
+        String packageName = lastDot > 0 ? fullyQualifiedName.substring(0, lastDot) : "";
+        String className = lastDot > 0 ? fullyQualifiedName.substring(lastDot + 1) : fullyQualifiedName;
         ClassUriExtractor extractor = new ClassUriExtractor();
         
         try {
@@ -300,7 +288,7 @@ public class AdapterUtils {
                     source = JDTUtils.disassemble(cf);
                 }
             } catch (JavaModelException e) {
-                e.printStackTrace();
+                Logger.logException("Failed to parse the source contents of the class file", e);
             }
             if (source == null) {
                 source = "";

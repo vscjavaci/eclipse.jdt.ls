@@ -12,10 +12,11 @@
 package org.eclipse.jdt.ls.debug.adapter;
 
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdCollection<T> {
     private int startId;
-    private int nextId;
+    private AtomicInteger nextId;
     private HashMap<Integer, T> idMap;
 
     public IdCollection() {
@@ -29,12 +30,12 @@ public class IdCollection<T> {
      */
     public IdCollection(int startId) {
         this.startId = startId;
-        this.nextId = startId;
+        this.nextId = new AtomicInteger(startId);
         this.idMap = new HashMap<>();
     }
 
     public void reset() {
-        this.nextId = this.startId;
+        this.nextId.set(this.startId);;
         this.idMap.clear();
     }
 
@@ -42,10 +43,9 @@ public class IdCollection<T> {
      * Creates a id number for the given value.
      */
     public int create(T value) {
-        int id = this.nextId++;
+        int id = this.nextId.getAndIncrement();
         this.idMap.put(id, value);
         return id;
-
     }
 
     public T get(int id) {

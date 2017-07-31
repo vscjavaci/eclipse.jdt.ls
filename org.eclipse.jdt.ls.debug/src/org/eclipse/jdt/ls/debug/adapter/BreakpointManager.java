@@ -43,8 +43,8 @@ public class BreakpointManager {
      *              full list of breakpoints that locates in this source file
      * @return the full breakpoint list that locates in the source file
      */
-    public IBreakpoint[] addBreakpoints(String source, IBreakpoint[] breakpoints) {
-        return addBreakpoints(source, breakpoints, false);
+    public IBreakpoint[] setBreakpoints(String source, IBreakpoint[] breakpoints) {
+        return setBreakpoints(source, breakpoints, false);
     }
 
     /**
@@ -59,10 +59,10 @@ public class BreakpointManager {
      *              the source file are modified or not.
      * @return the full breakpoint list that locates in the source file
      */
-    public IBreakpoint[] addBreakpoints(String source, IBreakpoint[] breakpoints, boolean sourceModified) {
+    public IBreakpoint[] setBreakpoints(String source, IBreakpoint[] breakpoints, boolean sourceModified) {
         List<IBreakpoint> result = new ArrayList<>();
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
-        // When source file is modified, delete all previous added breakpoints.
+        // When source file is modified, delete all previously added breakpoints.
         if (sourceModified && breakpointMap != null) {
             for (IBreakpoint bp : breakpointMap.values()) {
                 try {
@@ -83,12 +83,12 @@ public class BreakpointManager {
 
         // Compute the breakpoints that are newly added.
         List<IBreakpoint> toAdd = new ArrayList<>();
-        HashMap<String, Boolean> visited = new HashMap<>();
+        List<Integer> visitedLineNumbers = new ArrayList<>();
         for (IBreakpoint breakpoint : breakpoints) {
             IBreakpoint existed = breakpointMap.get(String.valueOf(breakpoint.lineNumber()));
             if (existed != null) {
                 result.add(existed);
-                visited.put(String.valueOf(existed.lineNumber()), true);
+                visitedLineNumbers.add(existed.lineNumber());
                 continue;
             } else {
                 result.add(breakpoint);
@@ -99,18 +99,18 @@ public class BreakpointManager {
         // Compute the breakpoints that are no longer listed.
         List<IBreakpoint> toRemove = new ArrayList<>();
         for (IBreakpoint breakpoint : breakpointMap.values()) {
-            if (!visited.containsKey(String.valueOf(breakpoint.lineNumber()))) {
+            if (!visitedLineNumbers.contains(breakpoint.lineNumber())) {
                 toRemove.add(breakpoint);
             }
         }
 
-        removeBreakpoints(source, toRemove.toArray(new IBreakpoint[0]));
-        internalAddBreakpoints(source, toAdd.toArray(new IBreakpoint[0]));
+        removeBreakpointsInternally(source, toRemove.toArray(new IBreakpoint[0]));
+        addBreakpointsInternally(source, toAdd.toArray(new IBreakpoint[0]));
         
         return result.toArray(new IBreakpoint[0]);
     }
 
-    private void internalAddBreakpoints(String source, IBreakpoint[] breakpoints) {
+    private void addBreakpointsInternally(String source, IBreakpoint[] breakpoints) {
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
         if (breakpointMap == null) {
             breakpointMap = new HashMap<>();
@@ -128,7 +128,7 @@ public class BreakpointManager {
     /**
      * Removes the specified breakpoints from breakpoint manager.
      */
-    public void removeBreakpoints(String source, IBreakpoint[] breakpoints) {
+    private void removeBreakpointsInternally(String source, IBreakpoint[] breakpoints) {
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
         if (breakpointMap == null || breakpointMap.isEmpty() || breakpoints.length == 0) {
             return ;

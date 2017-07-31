@@ -86,7 +86,6 @@ public class DebugAdapter implements IDebugAdapter {
 
         Responses.ResponseBody responseBody = null;
         JsonObject arguments = request.arguments != null ? request.arguments : new JsonObject();
-        Logger.logInfo("Dispatch command:" + request.command);
 
         try {
             switch (request.command) {
@@ -194,13 +193,11 @@ public class DebugAdapter implements IDebugAdapter {
                     Requests.SetFunctionBreakpointsArguments setFuncBreakpointArguments = JsonUtils.fromJson(arguments,
                             Requests.SetFunctionBreakpointsArguments.class);
                     if (setFuncBreakpointArguments.breakpoints != null) {
-                        // FunctionBreakpoint[] breakpoints =
-                        // mapper.readValue(args.getString("breakpoints"),
-                        // FunctionBreakpoint[].class);
-                        // return SetFunctionBreakpoints(breakpoints);
+                        responseBody = setFunctionBreakpoints(setFuncBreakpointArguments);
+                    } else {
+                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1012, String.format("%s: property '%s' is missing, null, or empty",
+                                "setFunctionBreakpoints", "breakpoints"), null));
                     }
-                    responseBody = new Responses.ErrorResponseBody(new Types.Message(1012, String.format("%s: property '%s' is missing, null, or empty",
-                            "setFunctionBreakpoints", "breakpoints"), null));
                     break;
 
                 case "evaluate":
@@ -306,12 +303,10 @@ public class DebugAdapter implements IDebugAdapter {
      * VS Code sends a configurationDone request to indicate the end of configuration sequence.
      */
     private Responses.ResponseBody configurationDone() {
-        this.debugSession.start();
         this.eventSubscriptions.add(this.debugSession.eventHub().events().subscribe(debugEvent -> {
             handleEvent(debugEvent);
         }));
-        // The configuration sequence has done, then resume VM.
-        this.debugSession.resume();
+        this.debugSession.start();
         return new Responses.ResponseBody();
     }
 
@@ -322,7 +317,7 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments) {
         List<Types.Breakpoint> res = new ArrayList<>();
         IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(arguments.source.path, arguments.lines);
-        IBreakpoint[] added = this.breakpointManager.addBreakpoints(arguments.source.path, toAdds, arguments.sourceModified);
+        IBreakpoint[] added = this.breakpointManager.setBreakpoints(arguments.source.path, toAdds, arguments.sourceModified);
         for (int i = 0; i < arguments.breakpoints.length; i++) {
             // For newly added breakpoint, should install it to debuggee first.
             if (toAdds[i] == added[i] && added[i].className() != null) {
@@ -448,8 +443,7 @@ public class DebugAdapter implements IDebugAdapter {
     private void handleEvent(DebugEvent debugEvent) {
         Event event = debugEvent.event;
         if (event instanceof VMStartEvent) {
-            debugEvent.consumed = true;
-            debugEvent.shouldResume &= false;
+            // do nothing.
         } else if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
             if (!this.shutdown) {
                 Events.ExitedEvent exitedEvent = new Events.ExitedEvent(0);
@@ -458,14 +452,10 @@ public class DebugAdapter implements IDebugAdapter {
                 this.sendEvent(terminatedEvent);
             }
             this.shutdown = true;
-            debugEvent.consumed = true;
-            debugEvent.shouldResume &= false;
         } else if (event instanceof ThreadStartEvent) {
             ThreadReference startThread = ((ThreadStartEvent) event).thread();
             Events.ThreadEvent threadEvent = new Events.ThreadEvent("started", startThread.uniqueID());
             this.sendEvent(threadEvent);
-            debugEvent.consumed = true;
-            debugEvent.shouldResume &= true;
         } else if (event instanceof ThreadDeathEvent) {
             ThreadReference deathThread = ((ThreadDeathEvent) event).thread();
             Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
@@ -474,8 +464,6 @@ public class DebugAdapter implements IDebugAdapter {
             for (Events.StoppedEvent stoppedEvent : this.stoppedEventsByThread.values()) {
                 this.sendEvent(stoppedEvent);
             }
-            debugEvent.consumed = true;
-            debugEvent.shouldResume &= true;
         } else if (event instanceof BreakpointEvent) {
             BreakpointEvent bpEvent = (BreakpointEvent) event;
             ThreadReference bpThread = bpEvent.thread();
@@ -489,7 +477,6 @@ public class DebugAdapter implements IDebugAdapter {
             } catch (AbsentInformationException | URISyntaxException e) {
                 Logger.logException("Get breakpoint info exception", e);
             }
-            debugEvent.consumed = true;
             debugEvent.shouldResume &= false;
         }
     }
@@ -567,7 +554,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, int[] lines) {
         int[] debuggerLines = this.convertClientLineToDebugger(lines);
-        String[] fqns = AdapterUtils.getFullQualifiedName(sourceFile, debuggerLines);
+        String[] fqns = AdapterUtils.getFullyQualifiedName(sourceFile, debuggerLines);
         IBreakpoint[] breakpoints = new IBreakpoint[lines.length];
         for (int i = 0; i < lines.length; i++) {
             breakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i]);

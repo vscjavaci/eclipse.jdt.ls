@@ -133,7 +133,6 @@ public class Breakpoint implements IBreakpoint {
                         && (classPrepareRequest.equals(debugEvent.event.request())
                             || localClassPrepareRequest.equals(debugEvent.event.request())))
                 .subscribe(debugEvent -> {
-                    debugEvent.consumed = true;
                     ClassPrepareEvent event = (ClassPrepareEvent) debugEvent.event;
                     List<BreakpointRequest> newRequests = createBreakpointRequests(event.referenceType(),
                             lineNumber, hitCount);
