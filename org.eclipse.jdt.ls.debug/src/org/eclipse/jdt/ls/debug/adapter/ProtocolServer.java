@@ -53,7 +53,10 @@ public class ProtocolServer {
         this.rawData = new CharBuffer();
         this.eventQueue = new ConcurrentLinkedQueue<>();
         this.debugAdapter = new DebugAdapter(debugEvent -> {
-            this.sendEventLater(debugEvent.type, debugEvent);
+            // If the protocolServer has been stopped, it'll no longer receive any event.
+            if (!terminateSession) {
+                this.sendEventLater(debugEvent.type, debugEvent);
+            }
         });
     }
 

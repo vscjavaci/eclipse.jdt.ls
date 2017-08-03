@@ -55,6 +55,35 @@ public class Events {
         }
     }
 
+    public static class ContinuedEvent extends DebugEvent {
+        public long threadId;
+        public boolean allThreadsContinued;
+
+        /**
+         * Constructor.
+         */
+        public ContinuedEvent(long id) {
+            super("continued");
+            this.threadId = id;
+        }
+
+        /**
+         * Constructor.
+         */
+        public ContinuedEvent(long id, boolean allThreadsContinued) {
+            this(id);
+            this.allThreadsContinued = allThreadsContinued;
+        }
+
+        /**
+         * Constructor.
+         */
+        public ContinuedEvent(boolean allThreadsContinued) {
+            super("continued");
+            this.allThreadsContinued = allThreadsContinued;
+        }
+    }
+
     public static class ExitedEvent extends DebugEvent {
         public int exitCode;
 
@@ -65,8 +94,15 @@ public class Events {
     }
 
     public static class TerminatedEvent extends DebugEvent {
+        public boolean restart;
+
         public TerminatedEvent() {
             super("terminated");
+        }
+
+        public TerminatedEvent(boolean restart) {
+            this();
+            this.restart = restart;
         }
     }
 

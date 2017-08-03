@@ -218,6 +218,7 @@ public class Types {
         public boolean supportsConfigurationDoneRequest;
         public boolean supportsEvaluateForHovers;
         public boolean supportsSetVariable;
+        public boolean supportsRestartRequest;
         public boolean supportTerminateDebuggee;
         public boolean supportsDelayedStackTraceLoading;
     }
