@@ -94,7 +94,7 @@ public final class TypeUtils {
             throw new UnsupportedOperationException("Array type is not supported.");
         }
         if (isObjectTag(signature.charAt(0))) {
-            return getDisplayNameForObject((ReferenceType) type, showQualified);
+            return getDisplayNameForReferenceType((ReferenceType) type, showQualified);
         } else {
             String typeName = getTypeName(signature);
             return showQualified ? typeName : trimTypeName(typeName);
@@ -198,7 +198,8 @@ public final class TypeUtils {
         return type;
     }
 
-    private static String getDisplayNameForObject(ReferenceType type, boolean showQuanlified) {
+    private static String getDisplayNameForReferenceType(ReferenceType type,
+            boolean showQuanlified) {
         String typeName = getTypeName(type.signature());
         // we need to get generic info
         StringBuilder sb = new StringBuilder();
