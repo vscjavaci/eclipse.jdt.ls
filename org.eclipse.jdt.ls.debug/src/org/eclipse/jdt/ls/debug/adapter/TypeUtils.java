@@ -109,9 +109,9 @@ public final class TypeUtils {
      *            the JVM.
      * @param expectedClassLoader
      *            the class loader of the class(because JVM many have two or more classes
-     *            with same full qualified name)
+     *            with same fully qualified name)
      * @param typeName
-     *            the full qualified class name
+     *            the fully qualified class name
      * @return the reference type
      */
     public static ReferenceType resolveReferenceType(VirtualMachine vm,
@@ -199,15 +199,15 @@ public final class TypeUtils {
     }
 
     private static String getDisplayNameForReferenceType(ReferenceType type,
-            boolean showQuanlified) {
+            boolean showQualified) {
         String typeName = getTypeName(type.signature());
         // we need to get generic info
         StringBuilder sb = new StringBuilder();
         String genericSignature = type.genericSignature();
         if (StringUtils.isBlank(genericSignature)) {
-            sb.append(showQuanlified ? typeName : trimTypeName(typeName));
+            sb.append(showQualified ? typeName : trimTypeName(typeName));
         } else {
-            sb.append(showQuanlified ? typeName : trimTypeName(typeName));
+            sb.append(showQualified ? typeName : trimTypeName(typeName));
             String[] typeParameters = getTypeParameters(genericSignature);
             if (typeParameters.length > 0) {
                 sb.append('<').append(typeParameters[0]);
