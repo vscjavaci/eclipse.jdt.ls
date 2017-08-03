@@ -251,6 +251,10 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+		<repository>
+			<id>mvnrepository.com</id>
+			<url>http://mvnrepository.com/artifact</url>
+		</repository>
 	</repositories>
 	<profiles>
 		<profile>
