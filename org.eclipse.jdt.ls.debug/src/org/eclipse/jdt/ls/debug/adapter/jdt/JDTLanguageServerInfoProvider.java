@@ -34,15 +34,13 @@ import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jdt.internal.core.SourceType;
 import org.eclipse.jdt.ls.core.internal.JDTUtils;
 import org.eclipse.jdt.ls.core.internal.handlers.JsonRpcHelpers;
-import org.eclipse.jdt.ls.debug.adapter.IProvider;
-import org.eclipse.jdt.ls.debug.adapter.ISourceLookUpProvider;
-import org.eclipse.jdt.ls.debug.adapter.IVirtualMachineManagerProvider;
+import org.eclipse.jdt.ls.debug.adapter.IDebugProvider;
 import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 import com.sun.jdi.VirtualMachineManager;
 
-public class JDTLanguageServerInfoProvider implements ISourceLookUpProvider, IVirtualMachineManagerProvider {
+public class JDTLanguageServerInfoProvider implements IDebugProvider {
 
     private HashMap<String, Object> context = new HashMap<String, Object>();
 
