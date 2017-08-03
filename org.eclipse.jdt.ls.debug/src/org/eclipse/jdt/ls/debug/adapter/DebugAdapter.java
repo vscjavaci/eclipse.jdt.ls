@@ -256,15 +256,10 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody launch(Requests.LaunchArguments arguments) {
         this.cwd = arguments.cwd;
         String mainClass = arguments.startupClass;
-        String classpath;
-        try {
-            // to-do: move to ls
-            classpath = AdapterUtils.computeClassPath(arguments.projectName, mainClass);
-            classpath = classpath.replaceAll("\\\\", "/");
-        } catch (CoreException e) {
-            Logger.logException("Failed to resolve classpath.", e);
-            return new Responses.ErrorResponseBody(new Types.Message(3001, "Cannot launch jvm.", null));
-        }
+        String classpath = arguments.classpath;
+        
+        // why
+        classpath = classpath.replaceAll("\\\\", "/");
 
         if (arguments.sourcePath == null || arguments.sourcePath.length == 0) {
             this.sourcePath = new String[] { cwd };
