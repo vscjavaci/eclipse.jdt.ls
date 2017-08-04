@@ -36,11 +36,6 @@
                             <artifactId>reactive-streams</artifactId>
                             <version>1.0.0</version>
                         </artifactItem>
-                        <artifactItem>
-                             <groupId>org.apache.commons</groupId>
-                             <artifactId>commons-lang3</artifactId>
-                             <version>3.6</version>
-                        </artifactItem>
                     </artifactItems>
                 </configuration>
             </plugin>
