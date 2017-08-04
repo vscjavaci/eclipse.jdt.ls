@@ -117,10 +117,15 @@ public final class DefaultVariableProvider implements IVariableProvider {
                 VirtualMachine vm = type.virtualMachine();
                 ReferenceType elementType = TypeUtils.resolveReferenceType(vm,
                         ((ReferenceType) type).classLoader(),
-                        TypeUtils.getTypeName(arrayElementSignature));
+                        TypeUtils.getTypeName(arrayElementSignature, true));
+                if (elementType == null) {
+                    // type has not been loaded occurred while retrieving component type of array.
+                    sb.append(TypeUtils.getTypeName(arrayElementSignature, showQualified));
+                } else {
                 sb.append(TypeUtils.getDisplayName(elementType, showQualified));
+                }
             } else {
-                sb.append(TypeUtils.getTypeName(arrayElementSignature));
+                sb.append(TypeUtils.getTypeName(arrayElementSignature, showQualified));
             }
             int length = getArrayLength(value);
 
