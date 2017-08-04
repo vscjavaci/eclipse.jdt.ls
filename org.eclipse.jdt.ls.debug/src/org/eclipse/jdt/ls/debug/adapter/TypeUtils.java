@@ -87,7 +87,7 @@ public final class TypeUtils {
      */
     public static String getDisplayName(Type type, boolean showQualified) {
         if (type == null) {
-            throw new UnsupportedOperationException("Array type is not supported.");
+            throw new UnsupportedOperationException("Null type.");
         }
         String signature = type.signature();
         if (signature.charAt(0) == ARRAY) {
@@ -96,8 +96,7 @@ public final class TypeUtils {
         if (isObjectTag(signature.charAt(0))) {
             return getDisplayNameForReferenceType((ReferenceType) type, showQualified);
         } else {
-            String typeName = getTypeName(signature);
-            return showQualified ? typeName : trimTypeName(typeName);
+            return getTypeName(signature ,showQualified);
         }
     }
 
@@ -146,22 +145,24 @@ public final class TypeUtils {
      *
      * @param signature
      *            the signature of the type
+     * @param showQualified
+     *            whether or not show fully qualified name
      * @return whether the type is an object type.
      */
-    public static String getTypeName(String signature) {
+    public static String getTypeName(String signature, boolean showQualified) {
         StringBuilder sb = new StringBuilder();
         int arrayDimension = 0;
         while (signature.charAt(arrayDimension) == ARRAY) {
             arrayDimension++;
         }
         if (arrayDimension > 0) {
-            sb.append(getTypeName(signature.substring(arrayDimension)));
+            sb.append(getTypeName(signature.substring(arrayDimension), showQualified));
         } else {
             if (OBJECT == signature.charAt(arrayDimension)) {
                 int endClassSig = signature.indexOf(SIGNATURE_ENDCLASS, arrayDimension);
                 String fqn = signature.substring(arrayDimension + 1, endClassSig);
                 fqn = fqn.replace('/', '.');
-                sb.append(fqn);
+                sb.append(showQualified ? fqn : trimTypeName(fqn));
             } else {
                 sb.append(primitiveTypeMap.get(signature.charAt(arrayDimension)));
             }
@@ -200,14 +201,14 @@ public final class TypeUtils {
 
     private static String getDisplayNameForReferenceType(ReferenceType type,
             boolean showQualified) {
-        String typeName = getTypeName(type.signature());
+        String typeName = getTypeName(type.signature(), showQualified);
         // we need to get generic info
         StringBuilder sb = new StringBuilder();
         String genericSignature = type.genericSignature();
         if (StringUtils.isBlank(genericSignature)) {
-            sb.append(showQualified ? typeName : trimTypeName(typeName));
+            sb.append(typeName);
         } else {
-            sb.append(showQualified ? typeName : trimTypeName(typeName));
+            sb.append(typeName);
             String[] typeParameters = getTypeParameters(genericSignature);
             if (typeParameters.length > 0) {
                 sb.append('<').append(typeParameters[0]);
