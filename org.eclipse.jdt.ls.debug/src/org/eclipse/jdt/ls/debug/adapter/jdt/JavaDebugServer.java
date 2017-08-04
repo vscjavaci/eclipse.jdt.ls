@@ -65,7 +65,7 @@ public class JavaDebugServer implements IDebugServer {
                         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                         PrintWriter out = new PrintWriter(connection.getOutputStream(), true);
 
-                        protocolServer = new ProtocolServer(in, out, new JDTLanguageServerInfoProvider());
+                        protocolServer = new ProtocolServer(in, out, new JDTProviderContext());
                         // protocol server will dispatch request and send response in a while-loop.
                         protocolServer.start();
                     } catch (IOException e1) {

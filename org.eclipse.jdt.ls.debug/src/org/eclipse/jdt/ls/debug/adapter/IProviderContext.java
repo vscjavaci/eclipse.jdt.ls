@@ -11,5 +11,9 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-public interface IDebugProvider extends ISourceLookUpProvider, IVirtualMachineManagerProvider {
+public interface IProviderContext {
+
+    ISourceLookUpProvider getSourceLookUpProvider();
+    
+    IVirtualMachineManagerProvider getVirtualMachineManagerProvider();
 }
