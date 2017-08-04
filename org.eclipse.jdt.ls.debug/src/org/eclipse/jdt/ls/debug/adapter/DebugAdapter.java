@@ -17,7 +17,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.eclipse.core.runtime.CoreException;
@@ -62,11 +61,11 @@ public class DebugAdapter implements IDebugAdapter {
     private Requests.LaunchArguments launchArguments;
     private String cwd;
     private String[] sourcePath;
-    private boolean shutdown = false;
     private IDebugSession debugSession;
     private BreakpointManager breakpointManager;
     private List<Disposable> eventSubscriptions;
-    
+
+    private IdCollection<String> messageCollection = new IdCollection<>();
     private IdCollection<StackFrame> frameCollection = new IdCollection<>();
     private IdCollection<String> sourceCollection = new IdCollection<>();
 
@@ -141,8 +140,8 @@ public class DebugAdapter implements IDebugAdapter {
                 case "variables":
                     Requests.VariablesArguments varArguments = JsonUtils.fromJson(arguments, Requests.VariablesArguments.class);
                     if (varArguments.variablesReference == -1) {
-                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1009, String.format("%s: property '%s' is missing, null, or empty",
-                                "variables", "variablesReference"), null));
+                        responseBody = new Responses.ErrorResponseBody(
+                                this.convertDebuggerMessageToClient("VariablesRequest: property 'variablesReference' is missing, null, or empty"));
                     } else {
                         responseBody = variables(varArguments);
                     }
@@ -155,11 +154,11 @@ public class DebugAdapter implements IDebugAdapter {
                         // Just exit out of editing if we're given an empty expression.
                         responseBody = new Responses.ResponseBody();
                     } else if (setVarArguments.variablesReference == -1) {
-                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1106, String.format("%s: property '%s' is missing, null, or empty",
-                                "setVariable", "variablesReference"), null));
+                        responseBody = new Responses.ErrorResponseBody(
+                                this.convertDebuggerMessageToClient("SetVariablesRequest: property 'variablesReference' is missing, null, or empty"));
                     } else if (setVarArguments.name == null) {
-                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1106,
-                                String.format("%s: property '%s' is missing, null, or empty", "setVariable", "name"), null));
+                        responseBody = new Responses.ErrorResponseBody(
+                                this.convertDebuggerMessageToClient("SetVariablesRequest: property 'name' is missing, null, or empty"));
                     } else {
                         responseBody = setVariable(setVarArguments);
                     }
@@ -168,9 +167,8 @@ public class DebugAdapter implements IDebugAdapter {
                 case "source":
                     Requests.SourceArguments sourceArguments = JsonUtils.fromJson(arguments, Requests.SourceArguments.class);
                     if (sourceArguments.sourceReference == -1) {
-                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1010,
-                                String.format("%s: property '%s' is missing, null, or empty", "source", "sourceReference"),
-                                null));
+                        responseBody = new Responses.ErrorResponseBody(
+                                this.convertDebuggerMessageToClient("SourceRequest: property 'sourceReference' is missing, null, or empty"));
                     } else {                        
                         responseBody = source(sourceArguments);
                     }
@@ -196,8 +194,8 @@ public class DebugAdapter implements IDebugAdapter {
                     if (setFuncBreakpointArguments.breakpoints != null) {
                         responseBody = setFunctionBreakpoints(setFuncBreakpointArguments);
                     } else {
-                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1012, String.format("%s: property '%s' is missing, null, or empty",
-                                "setFunctionBreakpoints", "breakpoints"), null));
+                        responseBody = new Responses.ErrorResponseBody(
+                                this.convertDebuggerMessageToClient("SetFunctionBreakpointsRequest: property 'breakpoints' is missing, null, or empty"));
                     }
                     break;
 
@@ -205,21 +203,21 @@ public class DebugAdapter implements IDebugAdapter {
                     Requests.EvaluateArguments evaluateArguments = JsonUtils.fromJson(arguments,
                             Requests.EvaluateArguments.class);
                     if (evaluateArguments.expression == null) {
-                        responseBody = new Responses.ErrorResponseBody(new Types.Message(1013,
-                                String.format("%s: property '%s' is missing, null, or empty", "evaluate", "expression"),
-                                null));
+                        responseBody = new Responses.ErrorResponseBody(
+                                this.convertDebuggerMessageToClient("EvaluateRequest: property 'expression' is missing, null, or empty"));
                     } else {
                         responseBody = evaluate(evaluateArguments);
                     }
                     break;
 
                 default:
-                    responseBody = new Responses.ErrorResponseBody(new Types.Message(1014, String.format("unrecognized request: { _request: %s }",
-                            request.command), null));
+                    responseBody = new Responses.ErrorResponseBody(
+                            this.convertDebuggerMessageToClient(String.format("unrecognized request: { _request: %s }", request.command)));
                 }
         } catch (Exception e) {
             Logger.logException("DebugSession dispatch exception", e);
-            responseBody = new Responses.ErrorResponseBody(new Types.Message(1104, e.getMessage(), null));
+            responseBody = new Responses.ErrorResponseBody(
+                    this.convertDebuggerMessageToClient(e.getMessage() != null ? e.getMessage() : e.toString()));
         }
 
         Messages.Response response = new Messages.Response();
@@ -260,7 +258,8 @@ public class DebugAdapter implements IDebugAdapter {
         try {
             this.launchDebugSession(arguments);
         } catch (DebugException e) {
-            return new Responses.ErrorResponseBody(new Types.Message(3001, "Cannot launch debuggee vm: " + e.getMessage(), null));
+            return new Responses.ErrorResponseBody(
+                    this.convertDebuggerMessageToClient("Cannot launch debuggee vm: " + e.getMessage()));
         }
         return new Responses.ResponseBody();
     }
@@ -276,7 +275,8 @@ public class DebugAdapter implements IDebugAdapter {
         try {
             this.launchDebugSession(this.launchArguments);
         } catch (DebugException e) {
-            return new Responses.ErrorResponseBody(new Types.Message(3001, "Cannot restart debuggee vm: " + e.getMessage(), null));
+            return new Responses.ErrorResponseBody(
+                    this.convertDebuggerMessageToClient("Cannot restart debuggee vm: " + e.getMessage()));
         }
         // See VSCode bug 28175 (https://github.com/Microsoft/vscode/issues/28175).
         // Need send a ContinuedEvent to clean up the old debugger's call stacks.
@@ -446,18 +446,16 @@ public class DebugAdapter implements IDebugAdapter {
         Event event = debugEvent.event;
         if (event instanceof VMStartEvent) {
             // do nothing.
-        } else if (event instanceof VMDeathEvent || event instanceof VMDisconnectEvent) {
-            if (!this.shutdown) {
-                this.sendEvent(new Events.ExitedEvent(0));
-                this.sendEvent(new Events.TerminatedEvent());
-                // Terminate eventHub thread.
-                try {
-                    this.debugSession.eventHub().close();
-                } catch (Exception e) {
-                    // do nothing.
-                }
+        } else if (event instanceof VMDeathEvent) {
+            this.sendEvent(new Events.ExitedEvent(0));
+        } else if (event instanceof VMDisconnectEvent) {
+            this.sendEvent(new Events.TerminatedEvent());
+            // Terminate eventHub thread.
+            try {
+                this.debugSession.eventHub().close();
+            } catch (Exception e) {
+                // do nothing.
             }
-            this.shutdown = true;
         } else if (event instanceof ThreadStartEvent) {
             ThreadReference startThread = ((ThreadStartEvent) event).thread();
             Events.ThreadEvent threadEvent = new Events.ThreadEvent("started", startThread.uniqueID());
@@ -656,5 +654,9 @@ public class DebugAdapter implements IDebugAdapter {
         }
         return new Events.StoppedEvent(reason, clientSource, this.convertDebuggerLineToClient(bpLocation.lineNumber()),
                 0, "", bpThread.uniqueID());
+    }
+
+    private Types.Message convertDebuggerMessageToClient(String message) {
+        return new Types.Message(this.messageCollection.create(null), message);
     }
 }

@@ -43,14 +43,14 @@ public class Events {
         /**
          * Constructor.
          */
-        public StoppedEvent(String reason, Types.Source src, int ln, int col, String text, long id) {
+        public StoppedEvent(String reason, Types.Source src, int ln, int col, String text, long threadId) {
             super("stopped");
             this.reason = reason;
             this.source = src;
             this.line = ln;
             this.column = col;
             this.text = text;
-            this.threadId = id;
+            this.threadId = threadId;
             this.allThreadsStopped = false;
         }
     }
@@ -62,16 +62,16 @@ public class Events {
         /**
          * Constructor.
          */
-        public ContinuedEvent(long id) {
+        public ContinuedEvent(long threadId) {
             super("continued");
-            this.threadId = id;
+            this.threadId = threadId;
         }
 
         /**
          * Constructor.
          */
-        public ContinuedEvent(long id, boolean allThreadsContinued) {
-            this(id);
+        public ContinuedEvent(long threadId, boolean allThreadsContinued) {
+            this(threadId);
             this.allThreadsContinued = allThreadsContinued;
         }
 
@@ -113,10 +113,10 @@ public class Events {
         /**
          * Constructor.
          */
-        public ThreadEvent(String reason, long id) {
+        public ThreadEvent(String reason, long threadId) {
             super("thread");
             this.reason = reason;
-            this.threadId = id;
+            this.threadId = threadId;
         }
     }
 
