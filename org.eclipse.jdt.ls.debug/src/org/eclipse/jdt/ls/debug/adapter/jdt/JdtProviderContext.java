@@ -4,7 +4,7 @@ import org.eclipse.jdt.ls.debug.adapter.IProviderContext;
 import org.eclipse.jdt.ls.debug.adapter.ISourceLookUpProvider;
 import org.eclipse.jdt.ls.debug.adapter.IVirtualMachineManagerProvider;
 
-public class JDTProviderContext implements IProviderContext {
+public class JdtProviderContext implements IProviderContext {
 
     private ISourceLookUpProvider sourceLookUpProvider;
     private IVirtualMachineManagerProvider virtualMachineManagerProvider;
@@ -19,8 +19,8 @@ public class JDTProviderContext implements IProviderContext {
         return this.virtualMachineManagerProvider;
     }
 
-    public JDTProviderContext() {
-        this.sourceLookUpProvider = new JDTSourceLookUpProvider();
-        this.virtualMachineManagerProvider = new JDTVirtualMachineManagerProvider();
+    public JdtProviderContext() {
+        this.sourceLookUpProvider = new JdtSourceLookUpProvider();
+        this.virtualMachineManagerProvider = new JdtVirtualMachineManagerProvider();
     }
 }

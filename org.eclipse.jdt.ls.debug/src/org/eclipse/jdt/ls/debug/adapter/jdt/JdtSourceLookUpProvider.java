@@ -37,7 +37,7 @@ import org.eclipse.jdt.ls.debug.adapter.ISourceLookUpProvider;
 import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
-public class JDTSourceLookUpProvider implements ISourceLookUpProvider {
+public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
     private HashMap<String, Object> context = new HashMap<String, Object>();
 
     @Override

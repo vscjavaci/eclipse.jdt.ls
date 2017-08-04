@@ -7,7 +7,7 @@ import org.eclipse.jdt.ls.debug.adapter.IVirtualMachineManagerProvider;
 
 import com.sun.jdi.VirtualMachineManager;
 
-public class JDTVirtualMachineManagerProvider implements IVirtualMachineManagerProvider {
+public class JdtVirtualMachineManagerProvider implements IVirtualMachineManagerProvider {
 
     @Override
     public VirtualMachineManager getVirtualMachineManager() {
