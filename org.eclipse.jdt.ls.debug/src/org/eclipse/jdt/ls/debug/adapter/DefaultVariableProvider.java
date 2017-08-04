@@ -294,6 +294,6 @@ public final class DefaultVariableProvider implements IVariableProvider {
     }
 
     private static int getArrayDimension(Type type) {
-        return StringUtils.countMatches(type.signature(), LEFT_SQUARE_BRACKET);
+        return StringUtils.countMatches(type.signature(), "[");
     }
 }
