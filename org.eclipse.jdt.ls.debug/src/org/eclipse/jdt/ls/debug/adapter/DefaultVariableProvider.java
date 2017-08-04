@@ -41,7 +41,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
     private static final String NULL = "null";
     private static final String SQUARE_BRACKET = "[]";
     private static final char LEFT_SQUARE_BRACKET = '[';
-    private static final char RIGHT_SQUARE_BRACKET = '[';
+    private static final char RIGHT_SQUARE_BRACKET = ']';
     private static final char LEFT_BRACE = '(';
     private static final char RIGHT_BRACE = ')';
     private static final char QUOTE = '\"';
