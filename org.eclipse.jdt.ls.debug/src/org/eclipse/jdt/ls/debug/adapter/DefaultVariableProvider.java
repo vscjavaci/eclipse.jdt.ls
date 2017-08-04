@@ -227,6 +227,33 @@ public final class DefaultVariableProvider implements IVariableProvider {
     }
 
     /**
+     * Get the variables of the object with pagination.
+     *
+     * @param obj the object
+     * @param start the start of the pagination
+     * @param count the number of variables needed
+     * @return the variable list
+     * @throws AbsentInformationException when there is any error in retrieving information
+     */
+    @Override
+    public List<JavaVariable> listFieldVariables(ObjectReference obj, int start, int count)
+            throws AbsentInformationException {
+        List<JavaVariable> res = new ArrayList<JavaVariable>();
+        Type type = obj.type();
+        if (type instanceof ArrayType) {
+            int arrayIndex = start;
+            for (Value elementValue : ((ArrayReference) obj).getValues(start, count)) {
+                JavaVariable ele = new JavaVariable(String.valueOf(arrayIndex), elementValue);
+                ele.arrayIndex = arrayIndex;
+                arrayIndex++;
+                res.add(ele);
+            }
+            return res;
+        }
+        throw new UnsupportedOperationException("Only Array type is supported.");
+    }
+
+    /**
      * Get the local variables of an stack frame.
      *
      * @param stackFrame the stack frame

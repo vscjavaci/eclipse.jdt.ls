@@ -56,6 +56,17 @@ public interface IVariableProvider {
     List<JavaVariable> listFieldVariables(ObjectReference obj) throws AbsentInformationException;
 
     /**
+     * Get the variables of the object with pagination.
+     *
+     * @param obj the object
+     * @param start the start of the pagination
+     * @param count the number of variables needed
+     * @return the variable list
+     * @throws AbsentInformationException when there is any error in retrieving information
+     */
+    List<JavaVariable> listFieldVariables(ObjectReference obj, int start, int count) throws AbsentInformationException;
+
+    /**
      * Get the local variables of an stack frame.
      *
      * @param stackFrame the stack frame
