@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugUtility;
 import org.eclipse.jdt.ls.debug.IBreakpoint;
