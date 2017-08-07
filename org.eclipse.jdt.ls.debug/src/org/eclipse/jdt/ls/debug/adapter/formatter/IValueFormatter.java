@@ -14,34 +14,25 @@ package org.eclipse.jdt.ls.debug.adapter.formatter;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
-public interface IValueFormatter {
+import java.util.Map;
+
+public interface IValueFormatter extends IFormatter {
     /**
-     * The filter function for this formatter.
+     * The conditional function for this formatter.
      *
      * @param value the JDI value
      * @return whether or not this formatter is expected to work on this value.
      */
-    boolean accept(Value value);
+    boolean acceptType(Type type, Map<String, Object>props);
 
-    /**
-     * Enable or disable the hex format for display numbers.
-     * @param hexFormat whether to enable hex numeric format
-     */
-    void setHexFormat(boolean hexFormat);
-
-    /**
-     * Get the string representations for this value.
-     * @param value the JDI value.
-     * @return the string representations.
-     */
-    String valueOf(Value value);
 
     /**
      * Create the value from string, this method is used in setValue feature
      * where converts user-input string to JDI value.
+     *
      * @param value the string text.
      * @param type the expected value type.
      * @return the JDI value.
      */
-    Value valueFrom(String value, Type type);
+    Value valueOf(String value, Type type);
 }
