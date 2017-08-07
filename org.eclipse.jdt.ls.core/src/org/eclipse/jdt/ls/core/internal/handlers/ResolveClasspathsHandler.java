@@ -33,23 +33,25 @@ import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
 import org.eclipse.jdt.launching.JavaRuntime;
-import org.eclipse.jdt.ls.core.internal.ClasspathParams;
+import org.eclipse.jdt.ls.core.internal.ClasspathResolveRequestParams;
 import org.eclipse.jdt.ls.core.internal.JavaLanguageServerPlugin;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 
 /**
  * @author xuzho
  *
  */
-public class ResolveClasspathHandler {
+public class ResolveClasspathsHandler {
 
-	public CompletableFuture<String> resolveClasspath(ClasspathParams param) {
+	public CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param) {
 		return CompletableFutures.computeAsync(cm -> {
 			try {
 				return computeClassPath(param.getProjectName(), param.getStartupClass());
 			} catch (CoreException e) {
 				logException("Failed to resolve classpath.", e);
-				return null;
+				throw new ResponseErrorException(new ResponseError(-32602, "Failed to resolve classpath: " + e.getMessage(), e));
 			}
 		});
 	}

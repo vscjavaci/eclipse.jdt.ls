@@ -27,7 +27,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.WorkingCopyOwner;
 import org.eclipse.jdt.ls.core.internal.CancellableProgressMonitor;
-import org.eclipse.jdt.ls.core.internal.ClasspathParams;
+import org.eclipse.jdt.ls.core.internal.ClasspathResolveRequestParams;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection.JavaLanguageClient;
 import org.eclipse.jdt.ls.core.internal.JavaLanguageServerPlugin;
@@ -457,10 +457,10 @@ public class JDTLanguageServer implements LanguageServer, TextDocumentService, W
 	}
 
 	@Override
-	public CompletableFuture<String> resolveClasspath(ClasspathParams param) {
+	public CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param) {
 		logInfo(">> java/resolveClasspath");
-		ResolveClasspathHandler handler = new ResolveClasspathHandler();
-		return handler.resolveClasspath(param);
+		ResolveClasspathsHandler handler = new ResolveClasspathsHandler();
+		return handler.resolveClasspaths(param);
 	}
 
 	public void sendStatus(ServiceStatus serverStatus, String status) {

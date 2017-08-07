@@ -39,7 +39,6 @@ public class Requests {
         public String startupClass;
         public String projectName;
         public String classpath;
-        public String[] classPath = new String[0];
         public String[] sourcePath = new String[0];
         public boolean stopOnEntry = false;
         public String[] options = new String[0];

@@ -18,7 +18,7 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
  * Representation of a request that client send to server to resolve class path
  */
 @SuppressWarnings("all")
-public class ClasspathParams {
+public class ClasspathResolveRequestParams {
 	/*
 	 *  the fully qualified name of startupClass
 	 */
@@ -30,11 +30,11 @@ public class ClasspathParams {
 	 */
 	private String projectName;
 
-	public ClasspathParams(final String startupClass) {
+	public ClasspathResolveRequestParams(final String startupClass) {
 		this.startupClass = startupClass;
 	}
 
-	public ClasspathParams(final String startupClass, final String projectName) {
+	public ClasspathResolveRequestParams(final String startupClass, final String projectName) {
 		this.startupClass = startupClass;
 		this.projectName = projectName;
 	}
@@ -93,7 +93,7 @@ public class ClasspathParams {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		ClasspathParams other = (ClasspathParams) obj;
+		ClasspathResolveRequestParams other = (ClasspathResolveRequestParams) obj;
 		if (this.startupClass == null) {
 			if (other.startupClass != null) {
 				return false;
