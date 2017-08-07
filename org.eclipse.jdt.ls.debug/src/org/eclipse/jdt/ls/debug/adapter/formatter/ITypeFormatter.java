@@ -13,11 +13,15 @@ package org.eclipse.jdt.ls.debug.adapter.formatter;
 
 import com.sun.jdi.Type;
 
+import java.util.Map;
+
 public interface ITypeFormatter extends IFormatter  {
+
     /**
-     * Convert a JDI type to <code>String</code>
-     * @param type the JDI type
-     * @return the string representation for this JDI type.
+     * The conditional function for this formatter.
+     *
+     * @param value the JDI value
+     * @return whether or not this formatter is expected to work on this value.
      */
-    String typeToString(Type type);
+    boolean acceptType(Type type, Map<String, Object>props);
 }

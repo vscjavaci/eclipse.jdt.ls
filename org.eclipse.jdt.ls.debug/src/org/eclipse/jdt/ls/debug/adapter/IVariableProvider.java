@@ -96,17 +96,20 @@ public interface IVariableProvider {
     List<JavaVariable> listStaticVariables(StackFrame stackFrame);
 
     /**
-     * Set the type formatter for convert type to <code>String</code>, it is used in Object
-     * value which hash the format of ${type} (id=${id}).
-     * @param typeFormatter the type formatter
-     */
-    void setTypeFormatter(ITypeFormatter typeFormatter);
-
-    /**
-     * Register a formatter. Be careful about the sequence of formatters, the first formatter which
-     * accepts the value will be used.
+     * Register a type formatter. Be careful about the priority of formatters, the formatter with the largest
+     * priority which accepts the type will be used.
      *
      * @param formatter the value formatter
+     * @param priority the priority for this formatter, all priority
      */
-    void registerFormatter(IValueFormatter formatter);
+    void registerTypeFormatter(ITypeFormatter typeFormatter, int priority);
+
+    /**
+     * Register a value formatter. Be careful about the priority of formatters, the formatter with the largest
+     * priority which accepts the type will be used.
+     *
+     * @param formatter the value formatter
+     * @param priority the priority for this formatter, all priority
+     */
+    void registerValueFormatter(IValueFormatter formatter, int priority);
 }
