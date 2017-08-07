@@ -17,7 +17,6 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 /*
  * Representation of a request that client send to server to resolve class path
  */
-@SuppressWarnings("all")
 public class ClasspathResolveRequestParams {
 	/*
 	 *  the fully qualified name of startupClass

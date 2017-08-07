@@ -69,10 +69,10 @@ public class ResolveClasspathsHandler {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject project = root.getProject(projectName);
 		if (!project.exists()) {
-			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, "Not an existed project."));
+			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("Cannot find the project with name %s.", projectName)));
 		}
 		if (!project.isNatureEnabled("org.eclipse.jdt.core.javanature")) {
-			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, "Not a project with java nature."));
+			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("The project %s does not have java nature enabled.", projectName)));
 		}
 		IJavaProject javaProject = JavaCore.create(project);
 		return javaProject;
@@ -125,7 +125,7 @@ public class ResolveClasspathsHandler {
 		} else {
 			List<IJavaProject> projects = getJavaProjectFromType(mainClass);
 			if (projects.size() == 0 || projects.size() > 1) {
-				throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, "project count is zero or more than one."));
+				throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("main class %s doesn't exist or isn't unique in the workspace", mainClass)));
 			}
 			project = projects.get(0);
 		}
