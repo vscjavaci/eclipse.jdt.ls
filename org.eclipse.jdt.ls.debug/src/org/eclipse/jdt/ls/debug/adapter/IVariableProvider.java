@@ -14,9 +14,12 @@ package org.eclipse.jdt.ls.debug.adapter;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
 import java.util.List;
+import org.eclipse.jdt.ls.debug.adapter.formatter.ITypeFormatter;
+import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
 
 /**
  * The interface for variable provider, implementations of this interface
@@ -40,11 +43,11 @@ public interface IVariableProvider {
     String valueToString(Value value);
 
     /**
-     * Get display name of type of the value.
-     * @param value the value
+     * Get display name of type.
+     * @param type the JDI type
      * @return display name of type of the value.
      */
-    String valueTypeString(Value value);
+    String typeToString(Type type);
 
     /**
      * Get the variables of the object.
@@ -64,7 +67,8 @@ public interface IVariableProvider {
      * @return the variable list
      * @throws AbsentInformationException when there is any error in retrieving information
      */
-    List<JavaVariable> listFieldVariables(ObjectReference obj, int start, int count) throws AbsentInformationException;
+    List<JavaVariable> listFieldVariables(ObjectReference obj, int start, int count)
+            throws AbsentInformationException;
 
     /**
      * Get the local variables of an stack frame.
@@ -90,4 +94,19 @@ public interface IVariableProvider {
      * @return the static variable of an stack frame.
      */
     List<JavaVariable> listStaticVariables(StackFrame stackFrame);
+
+    /**
+     * Set the type formatter for convert type to <code>String</code>, it is used in Object
+     * value which hash the format of ${type} (id=${id}).
+     * @param typeFormatter the type formatter
+     */
+    void setTypeFormater(ITypeFormatter typeFormatter);
+
+    /**
+     * Register a formatter. Be careful about the sequence of formatters, the first formatter which
+     * accepts the value will be used.
+     *
+     * @param formatter the value formatter
+     */
+    void registerFormatter(IValueFormatter formatter);
 }

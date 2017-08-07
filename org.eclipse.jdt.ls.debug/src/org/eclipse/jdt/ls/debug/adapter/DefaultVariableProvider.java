@@ -109,7 +109,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
      * @return display name of type of the value.
      */
     @Override
-    public String valueTypeString(Type type) {
+    public String typeToString(Type type) {
         if (type == null) {
             return BaseFormatter.NULL;
         }
