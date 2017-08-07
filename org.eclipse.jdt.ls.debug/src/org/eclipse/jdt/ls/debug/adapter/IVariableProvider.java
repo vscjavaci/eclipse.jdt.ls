@@ -100,7 +100,7 @@ public interface IVariableProvider {
      * value which hash the format of ${type} (id=${id}).
      * @param typeFormatter the type formatter
      */
-    void setTypeFormater(ITypeFormatter typeFormatter);
+    void setTypeFormatter(ITypeFormatter typeFormatter);
 
     /**
      * Register a formatter. Be careful about the sequence of formatters, the first formatter which

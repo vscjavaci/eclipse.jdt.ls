@@ -54,7 +54,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
     }
 
     @Override
-    public void setTypeFormater(ITypeFormatter typeFormatter) {
+    public void setTypeFormatter(ITypeFormatter typeFormatter) {
         this.typeFormatter = typeFormatter;
     }
 
