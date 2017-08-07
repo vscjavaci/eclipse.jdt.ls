@@ -20,7 +20,7 @@ public interface IValueFormatter extends IFormatter {
     /**
      * The conditional function for this formatter.
      *
-     * @param value the JDI value
+     * @param type the JDI type
      * @return whether or not this formatter is expected to work on this value.
      */
     boolean acceptType(Type type, Map<String, Object>props);
@@ -32,7 +32,8 @@ public interface IValueFormatter extends IFormatter {
      *
      * @param value the string text.
      * @param type the expected value type.
+     * @param additiaonal information about the format.
      * @return the JDI value.
      */
-    Value valueOf(String value, Type type);
+    Value valueOf(String value, Type type, Map<String, Object>props);
 }

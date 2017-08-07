@@ -16,7 +16,8 @@ import java.util.Map;
 public interface IFormatter {
 
     /**
-     * Get the string representations for this value.
+     * Get the string representations for an object.
+     *
      * @param value the value
      * @param props extra information for printing
      * @return the string representations.
