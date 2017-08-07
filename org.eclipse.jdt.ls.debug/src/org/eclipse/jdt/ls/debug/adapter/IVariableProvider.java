@@ -100,7 +100,7 @@ public interface IVariableProvider {
      * priority which accepts the type will be used.
      *
      * @param formatter the value formatter
-     * @param priority the priority for this formatter, all priority
+     * @param priority the priority for this formatter
      */
     void registerTypeFormatter(ITypeFormatter typeFormatter, int priority);
 
@@ -109,7 +109,7 @@ public interface IVariableProvider {
      * priority which accepts the type will be used.
      *
      * @param formatter the value formatter
-     * @param priority the priority for this formatter, all priority
+     * @param priority the priority for this formatter
      */
     void registerValueFormatter(IValueFormatter formatter, int priority);
 }
