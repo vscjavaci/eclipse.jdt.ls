@@ -69,10 +69,10 @@ public class ResolveClasspathsHandler {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject project = root.getProject(projectName);
 		if (!project.exists()) {
-			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("Cannot find the project with name %s.", projectName)));
+			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("Cannot find the project with name '%s'.", projectName)));
 		}
 		if (!project.isNatureEnabled("org.eclipse.jdt.core.javanature")) {
-			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("The project %s does not have java nature enabled.", projectName)));
+			throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("The project '%s' does not have java nature enabled.", projectName)));
 		}
 		IJavaProject javaProject = JavaCore.create(project);
 		return javaProject;
@@ -124,8 +124,11 @@ public class ResolveClasspathsHandler {
 			project = getJavaProjectFromName(projectName);
 		} else {
 			List<IJavaProject> projects = getJavaProjectFromType(mainClass);
-			if (projects.size() == 0 || projects.size() > 1) {
-				throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("main class %s doesn't exist or isn't unique in the workspace", mainClass)));
+			if (projects.size() == 0) {
+				throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("Main class '%s' doesn't exist in the workspace.", mainClass)));
+			}
+			if (projects.size() > 1) {
+				throw new CoreException(new Status(IStatus.ERROR, JavaLanguageServerPlugin.PLUGIN_ID, String.format("Main class '%s' isn't unique in the workspace, please pass in specified projectname.", mainClass)));
 			}
 			project = projects.get(0);
 		}
