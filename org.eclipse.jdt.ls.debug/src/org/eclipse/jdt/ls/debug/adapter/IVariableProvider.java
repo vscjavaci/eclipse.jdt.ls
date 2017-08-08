@@ -60,7 +60,7 @@ public interface IVariableProvider {
      * @return the variable list
      * @throws AbsentInformationException when there is any error in retrieving information
      */
-    List<JavaVariable> listFieldVariables(ObjectReference obj) throws AbsentInformationException;
+    List<Variable> listFieldVariables(ObjectReference obj) throws AbsentInformationException;
 
     /**
      * Get the variables of the object with pagination.
@@ -71,7 +71,7 @@ public interface IVariableProvider {
      * @return the variable list
      * @throws AbsentInformationException when there is any error in retrieving information
      */
-    List<JavaVariable> listFieldVariables(ObjectReference obj, int start, int count)
+    List<Variable> listFieldVariables(ObjectReference obj, int start, int count)
             throws AbsentInformationException;
 
     /**
@@ -81,7 +81,7 @@ public interface IVariableProvider {
      * @return local variable list
      * @throws AbsentInformationException when there is any error in retrieving information
      */
-    List<JavaVariable> listLocalVariables(StackFrame stackFrame) throws AbsentInformationException;
+    List<Variable> listLocalVariables(StackFrame stackFrame) throws AbsentInformationException;
 
     /**
      * Get the this variable of an stack frame.
@@ -89,7 +89,7 @@ public interface IVariableProvider {
      * @param stackFrame the stack frame
      * @return this variable
      */
-    JavaVariable getThisVariable(StackFrame stackFrame);
+    Variable getThisVariable(StackFrame stackFrame);
 
     /**
      * Get the static variable of an stack frame.
@@ -97,7 +97,7 @@ public interface IVariableProvider {
      * @param stackFrame the stack frame
      * @return the static variable of an stack frame.
      */
-    List<JavaVariable> listStaticVariables(StackFrame stackFrame);
+    List<Variable> listStaticVariables(StackFrame stackFrame);
 
     /**
      * Register a type formatter. Be careful about the priority of formatters, the formatter with the largest
