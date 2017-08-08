@@ -15,7 +15,6 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
@@ -36,18 +35,11 @@ public class StringObjectFormatter implements IValueFormatter {
 
     @Override
     public String toString(Object value, Map<String, Object> props) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(Constants.QUOTE);
-        sb.append(StringUtils.abbreviate(((StringReference) value).value(),
-                this.maxStringLength));
-        sb.append(Constants.QUOTE);
-        sb.append(" (id=");
-
-        sb.append(HexicalNumericFormatter.numbericToString(
-                ((ObjectReference) value).uniqueID(),
-                HexicalNumericFormatter.containsHexFormat(props)));
-        sb.append(Constants.RIGHT_BRACE);
-        return sb.toString();
+        return String.format(Constants.STRING_OBJECT_TEMPLATE, 
+                StringUtils.abbreviate(((StringReference) value).value(), this.maxStringLength), 
+                HexicalNumericFormatter.numbericToString(
+                        ((StringReference) value).uniqueID(),
+                        HexicalNumericFormatter.containsHexFormat(props)));
     }
 
     @Override

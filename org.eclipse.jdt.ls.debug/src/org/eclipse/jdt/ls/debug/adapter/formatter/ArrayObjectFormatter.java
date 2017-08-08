@@ -17,9 +17,9 @@ public class ArrayObjectFormatter extends ObjectFormatter {
     @Override
     protected String getPrefix(ObjectReference value, Map<String, Object> props) {
         String arrayTypeString = super.getPrefix(value, props);
-        return arrayTypeString.replaceFirst("\\[", "["
+        return arrayTypeString.replaceFirst("\\[\\]", String.format(Constants.ARRAY_PREFIX
                 + HexicalNumericFormatter.numbericToString(arrayLength(value),
-                        HexicalNumericFormatter.containsHexFormat(props)));
+                        HexicalNumericFormatter.containsHexFormat(props))));
     }
 
     @Override

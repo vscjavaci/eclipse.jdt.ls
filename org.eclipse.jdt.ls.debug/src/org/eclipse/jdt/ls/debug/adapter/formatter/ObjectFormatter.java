@@ -19,17 +19,10 @@ public class ObjectFormatter implements IValueFormatter {
 
     @Override
     public String toString(Object obj, Map<String, Object> props) {
-        ObjectReference value = (ObjectReference) obj;
-        StringBuilder sb = new StringBuilder();
-        sb.append(getPrefix(value, props));
-
-
-        sb.append(" (id=");
-        sb.append(HexicalNumericFormatter.numbericToString(
-                ((ObjectReference) value).uniqueID(),
-                HexicalNumericFormatter.containsHexFormat(props)));
-        sb.append(Constants.RIGHT_BRACE);
-        return sb.toString();
+        return String.format(Constants.OBJECT_TEMPLATE, getPrefix((ObjectReference) obj, props), 
+                HexicalNumericFormatter.numbericToString(
+                        ((ObjectReference) obj).uniqueID(),
+                        HexicalNumericFormatter.containsHexFormat(props)));
     }
 
     @Override

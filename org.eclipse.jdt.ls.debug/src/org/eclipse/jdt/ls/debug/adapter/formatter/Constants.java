@@ -39,11 +39,12 @@ public final class Constants {
     public static final String QUOTE_STRING = "\"";
     public static final String STRING_SIGNATURE = "Ljava/lang/String;";
     public static final String CLASS_SIGNATURE = "Ljava/lang/Class;";
+    
+    public static final String ARRAY_PREFIX = "[%s]";    
+    public static final String CLASSS_PREFIX = "%s (%s)";
+    public static final String OBJECT_TEMPLATE = "%s (id=%s)";
+    public static final String STRING_OBJECT_TEMPLATE = "\"%s\" (id=%s)";
 
-    public static final char LEFT_BRACE = '(';
-    public static final char RIGHT_BRACE = ')';
     public static final char QUOTE = '\"';
     public static final char SPACE = ' ';
-
-
 }

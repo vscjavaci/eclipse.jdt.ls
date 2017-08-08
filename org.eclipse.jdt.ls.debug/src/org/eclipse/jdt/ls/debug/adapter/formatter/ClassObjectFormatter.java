@@ -14,14 +14,9 @@ public class ClassObjectFormatter extends ObjectFormatter {
 
     @Override
     protected String getPrefix(ObjectReference value, Map<String, Object> props) {
-        String basePrefix = super.getPrefix(value, props);
         Type classType = ((ClassObjectReference) value).reflectedType();
-        StringBuilder sb = new StringBuilder();
-        sb.append(basePrefix);
-        sb.append(Constants.LEFT_BRACE);
-        sb.append(typeToStringFunction.apply(classType, props));
-        sb.append(Constants.RIGHT_BRACE);
-        return sb.toString();
+        return String.format(Constants.CLASSS_PREFIX, super.getPrefix(value, props),
+                typeToStringFunction.apply(classType, props));
     }
 
     @Override
