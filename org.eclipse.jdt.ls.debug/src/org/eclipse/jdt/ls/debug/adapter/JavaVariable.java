@@ -75,7 +75,7 @@ public class JavaVariable {
      */
     public JavaVariable(String name, Value value) {
         if (StringUtils.isBlank(name)) {
-            throw new IllegalArgumentException("name is required for an java variable.");
+            throw new IllegalArgumentException("name is required for a java variable.");
         }
         this.name = name;
         this.value = value;
