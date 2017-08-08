@@ -28,17 +28,18 @@ import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
  */
 public interface IVariableProvider {
     /**
-     * Test whether the value has referenced objects.
+     * Test whether the value has children.
      *
      * @param value the value.
-     * @return true if this value is reference objects.
+     * @return true if this value has children objects.
      */
-    boolean hasReferences(Value value);
+    boolean hasChildren(Value value);
 
     /**
      * Get display text of the value.
      *
      * @param value the value.
+     * @param props additional information about expected format
      * @return the display text of the value
      */
     String valueToString(Value value, Map<String, Object> props);
@@ -46,6 +47,8 @@ public interface IVariableProvider {
     /**
      * Get display name of type.
      * @param type the JDI type
+     * @param props additional information about expected format
+     *
      * @return display name of type of the value.
      */
     String typeToString(Type type, Map<String, Object> props);
