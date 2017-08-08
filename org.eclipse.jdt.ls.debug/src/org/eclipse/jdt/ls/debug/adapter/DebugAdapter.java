@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.DebugUtility;
@@ -40,7 +39,6 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.connect.VMStartException;
 import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.Event;
-import com.sun.jdi.event.LocatableEvent;
 import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.event.ThreadDeathEvent;
 import com.sun.jdi.event.ThreadStartEvent;
@@ -339,8 +337,7 @@ public class DebugAdapter implements IDebugAdapter {
         if (thread != null) {
             allThreadsContinued = false;
             thread.resume();
-        }
-        if (allThreadsContinued) {
+        } else {
             this.debugSession.resume();
         }
         return new Responses.ContinueResponseBody(allThreadsContinued);
@@ -371,6 +368,14 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody pause(Requests.PauseArguments arguments) {
+        ThreadReference thread = getThread(arguments.threadId);
+        if (thread != null) {
+            thread.suspend();
+            this.sendEvent(new Events.StoppedEvent("pause", arguments.threadId));
+        } else {
+            this.debugSession.suspend();
+            this.sendEvent(new Events.StoppedEvent("pause", arguments.threadId, true));
+        }
         return new Responses.ResponseBody();
     }
 
@@ -466,14 +471,14 @@ public class DebugAdapter implements IDebugAdapter {
             ThreadReference deathThread = ((ThreadDeathEvent) event).thread();
             Events.ThreadEvent threadDeathEvent = new Events.ThreadEvent("exited", deathThread.uniqueID());
             this.sendEvent(threadDeathEvent);
-        } else if (event instanceof BreakpointEvent || event instanceof StepEvent) {
-            try {
-                Events.StoppedEvent stopEvent = this.convertDebuggerStoppedEventToClient((LocatableEvent) event);
-                this.sendEvent(stopEvent);
-            } catch (AbsentInformationException | URISyntaxException e) {
-                Logger.logException("Get breakpoint/step info exception", e);
-            }
-            debugEvent.shouldResume &= false;
+        } else if (event instanceof BreakpointEvent) {
+            ThreadReference bpThread = ((BreakpointEvent) event).thread();
+            this.sendEvent(new Events.StoppedEvent("breakpoint", bpThread.uniqueID()));
+            debugEvent.shouldResume = false;
+        } else if (event instanceof StepEvent) {
+            ThreadReference stepThread = ((StepEvent) event).thread();
+            this.sendEvent(new Events.StoppedEvent("step", stepThread.uniqueID()));
+            debugEvent.shouldResume = false;
         }
     }
 
@@ -503,16 +508,7 @@ public class DebugAdapter implements IDebugAdapter {
     private void launchDebugSession(Requests.LaunchArguments arguments) throws DebugException {
         this.cwd = arguments.cwd;
         String mainClass = arguments.startupClass;
-        String classpath;
-        try {
-            // to-do: move to ls
-            classpath = AdapterUtils.computeClassPath(arguments.projectName, mainClass);
-            classpath = classpath.replaceAll("\\\\", "/");
-        } catch (CoreException e) {
-            Logger.logException("Failed to resolve classpath.", e);
-            throw new DebugException("Failed to resolve classpath", e);
-        }
-
+        String classpath = arguments.classpath;
         if (arguments.sourcePath == null || arguments.sourcePath.length == 0) {
             this.sourcePath = new String[] { cwd };
         } else {
@@ -643,20 +639,6 @@ public class DebugAdapter implements IDebugAdapter {
         Types.Source clientSource = this.convertDebuggerSourceToClient(location);
         return new Types.StackFrame(frameId, method.name(), clientSource,
                 this.convertDebuggerLineToClient(location.lineNumber()), 0);
-    }
-
-    private Events.StoppedEvent convertDebuggerStoppedEventToClient(LocatableEvent event) throws URISyntaxException, AbsentInformationException {
-        ThreadReference bpThread = event.thread();
-        Location bpLocation = event.location();
-        Types.Source clientSource = this.convertDebuggerSourceToClient(bpLocation);
-        String reason = "";
-        if (event instanceof BreakpointEvent) {
-            reason = "breakpoint";
-        } else if (event instanceof StepEvent) {
-            reason = "step";
-        }
-        return new Events.StoppedEvent(reason, clientSource, this.convertDebuggerLineToClient(bpLocation.lineNumber()),
-                0, "", bpThread.uniqueID());
     }
 
     private Types.Message convertDebuggerMessageToClient(String message) {
