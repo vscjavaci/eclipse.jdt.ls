@@ -34,7 +34,7 @@ import org.apache.commons.lang3.StringUtils;
  * The above informations are for further formatter to compose an more detailed
  * name for name conflict situation.
  */
-public class JavaVariable {
+public class Variable {
     /**
      * The JDI value.
      */
@@ -65,7 +65,7 @@ public class JavaVariable {
      * @param name the name of this variable.
      * @param value the JDI value
      */
-    public JavaVariable(String name, Value value) {
+    public Variable(String name, Value value) {
         if (StringUtils.isBlank(name)) {
             throw new IllegalArgumentException("name is required for a java variable.");
         }
