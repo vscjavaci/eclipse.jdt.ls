@@ -21,7 +21,8 @@ public interface ITypeFormatter extends IFormatter  {
      * The conditional function for this formatter.
      *
      * @param type the JDI type
+     * @param props additional information about expected format
      * @return whether or not this formatter is expected to work on this type.
      */
-    boolean acceptType(Type type, Map<String, Object>props);
+    boolean acceptType(Type type, Map<String, Object> props);
 }

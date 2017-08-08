@@ -19,8 +19,8 @@ public interface IFormatter {
      * Get the string representations for an object.
      *
      * @param value the value
-     * @param props extra information for printing
+     * @param props additional information about expected format.
      * @return the string representations.
      */
-    String toString(Object value, Map<String, Object>props);
+    String toString(Object value, Map<String, Object> props);
 }

@@ -18,6 +18,7 @@ import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
 import java.util.List;
+import java.util.Map;
 import org.eclipse.jdt.ls.debug.adapter.formatter.ITypeFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
 
@@ -40,14 +41,14 @@ public interface IVariableProvider {
      * @param value the value.
      * @return the display text of the value
      */
-    String valueToString(Value value);
+    String valueToString(Value value, Map<String, Object> props);
 
     /**
      * Get display name of type.
      * @param type the JDI type
      * @return display name of type of the value.
      */
-    String typeToString(Type type);
+    String typeToString(Type type, Map<String, Object> props);
 
     /**
      * Get the variables of the object.
@@ -99,7 +100,7 @@ public interface IVariableProvider {
      * Register a type formatter. Be careful about the priority of formatters, the formatter with the largest
      * priority which accepts the type will be used.
      *
-     * @param formatter the value formatter
+     * @param typeFormatter the type formatter
      * @param priority the priority for this formatter
      */
     void registerTypeFormatter(ITypeFormatter typeFormatter, int priority);
