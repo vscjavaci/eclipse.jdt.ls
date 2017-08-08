@@ -33,7 +33,7 @@ public class NullObjectFormatter implements IValueFormatter {
         if (value == null || Constants.NULL_STRING.equals(value)) {
             return null;
         }
-        throw new UnsupportedOperationException("set value is not supported yet for type " + type.name());
+        throw new UnsupportedOperationException("Set value is not supported by NullObjectFormatter.");
     }
 
 }

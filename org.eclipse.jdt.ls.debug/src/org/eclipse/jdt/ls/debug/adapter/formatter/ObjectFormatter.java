@@ -42,7 +42,7 @@ public class ObjectFormatter implements IValueFormatter {
         if (value == null || Constants.NULL_STRING.equals(value)) {
             return null;
         }
-        throw new UnsupportedOperationException("set value is not supported yet for type " + type.name());
+        throw new UnsupportedOperationException(String.format("Set value is not supported yet for type %s.", type.name()));
     }
 
     /**

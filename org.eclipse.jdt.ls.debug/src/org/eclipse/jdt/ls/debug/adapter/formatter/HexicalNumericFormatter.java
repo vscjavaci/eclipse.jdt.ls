@@ -42,7 +42,8 @@ public class HexicalNumericFormatter implements IValueFormatter {
         } else if (signature0 == Constants.BYTE) {
             return vm.mirrorOf((byte)stringToLong(value));
         }
-        throw new UnsupportedOperationException(type.name() + " is not supported by HexicalNumericFormatter.");
+        throw new UnsupportedOperationException(
+                String.format("%s is not supported by HexicalNumericFormatter.", type.name()));
     }
 
 

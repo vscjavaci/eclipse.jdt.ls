@@ -48,6 +48,7 @@ public class NonNumericPrimitiveFormatter implements IValueFormatter {
         }  else if (signature0 == Constants.BOOLEAN) {
             return vm.mirrorOf(Boolean.parseBoolean(value));
         }
-        throw new UnsupportedOperationException(type.name() + " is not supported by NonNumericPrimitiveFormatter.");
+        throw new UnsupportedOperationException(
+                String.format("%s is not supported by NonNumericPrimitiveFormatter.", type.name()));
     }
 }
