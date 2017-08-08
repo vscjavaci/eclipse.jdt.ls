@@ -16,6 +16,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -247,6 +248,7 @@ public class DebugAdapter implements IDebugAdapter {
 
         Types.Capabilities caps = new Types.Capabilities();
         caps.supportsConfigurationDoneRequest = true;
+        caps.supportsHitConditionalBreakpoints = true;
         caps.supportsRestartRequest = true;
         caps.supportTerminateDebuggee = true;
         return new Responses.InitializeResponseBody(caps);
@@ -311,7 +313,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Responses.ResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments) {
         List<Types.Breakpoint> res = new ArrayList<>();
-        IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(arguments.source.path, arguments.lines);
+        IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(arguments.source.path, arguments.breakpoints);
         IBreakpoint[] added = this.breakpointManager.setBreakpoints(arguments.source.path, toAdds, arguments.sourceModified);
         for (int i = 0; i < arguments.breakpoints.length; i++) {
             // For newly added breakpoint, should install it to debuggee first.
@@ -320,6 +322,9 @@ public class DebugAdapter implements IDebugAdapter {
                     Events.BreakpointEvent bpEvent = new Events.BreakpointEvent("new", this.convertDebuggerBreakpointToClient(bp));
                     sendEvent(bpEvent);
                 });
+            } else if (toAdds[i].hitCount() != added[i].hitCount() && added[i].className() != null) {
+                // Update hitCount condition.
+                added[i].setHitCount(toAdds[i].hitCount());
             }
             res.add(this.convertDebuggerBreakpointToClient(added[i]));
         }
@@ -592,12 +597,21 @@ public class DebugAdapter implements IDebugAdapter {
         return new Types.Breakpoint(id, verified, lineNumber, "");
     }
 
-    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, int[] lines) {
+    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, Types.SourceBreakpoint[] sourceBreakpoints) {
+        int[] lines = Arrays.asList(sourceBreakpoints).stream().map(sourceBreakpoint -> {
+            return sourceBreakpoint.line;
+        }).mapToInt(line -> line).toArray();
         int[] debuggerLines = this.convertClientLineToDebugger(lines);
         String[] fqns = context.getSourceLookUpProvider().getFullyQualifiedName(sourceFile, debuggerLines, null);
         IBreakpoint[] breakpoints = new IBreakpoint[lines.length];
         for (int i = 0; i < lines.length; i++) {
-            breakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i]);
+            int hitCount = 0;
+            try {
+                hitCount = Integer.parseInt(sourceBreakpoints[i].hitCondition);
+            } catch (NumberFormatException e) {
+                hitCount = 0; // If hitCount is an illegal number, ignore hitCount condition.
+            }
+            breakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i], hitCount);
         }
         return breakpoints;
     }

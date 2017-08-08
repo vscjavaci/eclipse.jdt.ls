@@ -16,6 +16,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class AdapterUtils {
+    private static final String osName = System.getProperty("os.name", "").toLowerCase();
+
+    /**
+     * Check if the OS is windows or not.
+     */
+    public static boolean isWindows() {
+        return osName.contains("win");
+    }
 
     /**
      * Search the absolute path of the java file under the specified source path directory.
