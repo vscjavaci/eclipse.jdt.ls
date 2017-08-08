@@ -79,7 +79,7 @@ public class JavaVariable {
      *
      * @return the addition information of this variable.
      */
-    public String getAdditionInfo() {
+    public String getNameDifferentiator() {
         if (this.local != null) {
             return "Local";
         }
