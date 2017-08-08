@@ -83,6 +83,7 @@ public class HexicalNumericFormatter implements IValueFormatter {
         if (longValue.startsWith(Constants.HEX_PREFIX)) {
             return Long.valueOf(longValue.substring(2), 16);
         }
-        throw new IllegalArgumentException(longValue + " should start with " + Constants.HEX_PREFIX);
+        throw new IllegalArgumentException(
+                String.format("%s is not a valid hex number, it should start with %s", longValue, Constants.HEX_PREFIX));
     }
 }
