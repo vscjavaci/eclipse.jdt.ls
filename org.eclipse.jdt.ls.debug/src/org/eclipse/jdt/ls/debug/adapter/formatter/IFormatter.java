@@ -13,6 +13,8 @@ package org.eclipse.jdt.ls.debug.adapter.formatter;
 
 import java.util.Map;
 
+import com.sun.jdi.Type;
+
 public interface IFormatter {
 
     /**
@@ -23,4 +25,13 @@ public interface IFormatter {
      * @return the string representations.
      */
     String toString(Object value, Map<String, Object> props);
+
+    /**
+     * The conditional function for this formatter.
+     *
+     * @param type the JDI type
+     * @param props additional information about expected format
+     * @return whether or not this formatter is expected to work on this type.
+     */
+    boolean acceptType(Type type, Map<String, Object> props);
 }

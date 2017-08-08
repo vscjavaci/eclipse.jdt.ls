@@ -25,16 +25,13 @@ import org.apache.commons.lang3.StringUtils;
  * The field if this variable is a field value.
  * </li>
  * <li>
- * The array index if this variable is one element of an array.
- * </li>
- * <li>
  * The local variable information if this variable is a local variable.
  * </li>
  * <li>
  * The argument index if this variable is an argument variable.
  * </li>
  * </ul>
- * The about informations are for further formatter to compose an more detailed
+ * The above informations are for further formatter to compose an more detailed
  * name for name conflict situation.
  */
 public class JavaVariable {
@@ -59,11 +56,6 @@ public class JavaVariable {
     public LocalVariable local;
 
     /**
-     * The array index if this variable is one element of an array.
-     */
-    public int arrayIndex;
-
-    /**
      * The argument index if this variable is an argument variable.
      */
     public int argumentIndex;
@@ -79,7 +71,6 @@ public class JavaVariable {
         }
         this.name = name;
         this.value = value;
-        this.arrayIndex = -1;
         this.argumentIndex = -1;
     }
 
@@ -95,10 +86,6 @@ public class JavaVariable {
 
         if (this.argumentIndex >= 0) {
             return "Argument";
-        }
-
-        if (this.arrayIndex >= 0) {
-            return "Array";
         }
 
         if (this.field != null && this.field.declaringType() != null) {

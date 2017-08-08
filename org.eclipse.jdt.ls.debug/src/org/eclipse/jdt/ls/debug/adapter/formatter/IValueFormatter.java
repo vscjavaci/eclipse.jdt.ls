@@ -18,16 +18,6 @@ import java.util.Map;
 
 public interface IValueFormatter extends IFormatter {
     /**
-     * The conditional function for this formatter.
-     *
-     * @param type the JDI type
-     * @param props additional information about expected format
-     * @return whether or not this formatter is expected to work on this value.
-     */
-    boolean acceptType(Type type, Map<String, Object> props);
-
-
-    /**
      * Create the value from string, this method is used in setValue feature
      * where converts user-input string to JDI value.
      *
