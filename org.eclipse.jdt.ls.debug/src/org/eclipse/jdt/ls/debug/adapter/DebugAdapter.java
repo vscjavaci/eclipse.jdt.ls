@@ -475,11 +475,11 @@ public class DebugAdapter implements IDebugAdapter {
         } else if (event instanceof BreakpointEvent) {
             ThreadReference bpThread = ((BreakpointEvent) event).thread();
             this.sendEvent(new Events.StoppedEvent("breakpoint", bpThread.uniqueID()));
-            debugEvent.shouldResume &= false;
+            debugEvent.shouldResume = false;
         } else if (event instanceof StepEvent) {
             ThreadReference stepThread = ((StepEvent) event).thread();
             this.sendEvent(new Events.StoppedEvent("step", stepThread.uniqueID()));
-            debugEvent.shouldResume &= false;
+            debugEvent.shouldResume = false;
         }
     }
 
