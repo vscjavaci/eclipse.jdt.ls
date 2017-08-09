@@ -16,11 +16,11 @@ import com.sun.jdi.Value;
 
 import java.util.Map;
 
-public class NullObjectFormatter implements IValueFormatter {
+public class NullObjectFormatter extends AbstractFormatter implements IValueFormatter {
 
     @Override
     public String toString(Object value, Map<String, Object> props) {
-        return Constants.NULL_STRING;
+        return NULL_STRING;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class NullObjectFormatter implements IValueFormatter {
 
     @Override
     public Value valueOf(String value, Type type, Map<String, Object> props) {
-        if (value == null || Constants.NULL_STRING.equals(value)) {
+        if (value == null || NULL_STRING.equals(value)) {
             return null;
         }
         throw new UnsupportedOperationException("Set value is not supported by NullObjectFormatter.");

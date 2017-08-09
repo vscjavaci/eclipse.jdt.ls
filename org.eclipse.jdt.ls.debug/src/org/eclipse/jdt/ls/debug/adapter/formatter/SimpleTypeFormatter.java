@@ -5,15 +5,15 @@ import java.util.Map;
 import com.sun.jdi.Type;
 import com.sun.jdi.VoidType;
 
-public class SimpleTypeFormatter implements ITypeFormatter {
+public class SimpleTypeFormatter extends AbstractFormatter implements ITypeFormatter {
     
     @Override
     public String toString(Object type, Map<String, Object> props) {
         if (type == null) {
-            return Constants.NULL_STRING;
+            return NULL_STRING;
         }
         if (type instanceof VoidType) {
-            return Constants.VOID_STRING;
+            return VOID_STRING;
         }
         return trimTypeName(((Type)type).name());
     }

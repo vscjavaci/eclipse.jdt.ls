@@ -19,8 +19,9 @@ import com.sun.jdi.StringReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
-public class StringObjectFormatter implements IValueFormatter {
+public class StringObjectFormatter extends AbstractFormatter implements IValueFormatter {
 	private static final int DEFAULT_MAX_STRING_LENGTH = 100;
+	private static final String STRING_OBJECT_TEMPLATE = "\"%s\" (id=%s)";
     private int maxStringLength = DEFAULT_MAX_STRING_LENGTH;
 
     /**
@@ -35,7 +36,7 @@ public class StringObjectFormatter implements IValueFormatter {
 
     @Override
     public String toString(Object value, Map<String, Object> props) {
-        return String.format(Constants.STRING_OBJECT_TEMPLATE, 
+        return String.format(STRING_OBJECT_TEMPLATE, 
                 StringUtils.abbreviate(((StringReference) value).value(), this.maxStringLength), 
                 HexicalNumericFormatter.numbericToString(
                         ((StringReference) value).uniqueID(),
@@ -44,18 +45,18 @@ public class StringObjectFormatter implements IValueFormatter {
 
     @Override
     public boolean acceptType(Type type, Map<String, Object> props) {
-        return type != null && (type.signature().charAt(0) == Constants.STRING
-                || type.signature().equals(Constants.STRING_SIGNATURE));
+        return type != null && (type.signature().charAt(0) == STRING
+                || type.signature().equals(STRING_SIGNATURE));
     }
 
     @Override
     public Value valueOf(String value, Type type, Map<String, Object> props) {
-        if (value == null || Constants.NULL_STRING.equals(value)) {
+        if (value == null || NULL_STRING.equals(value)) {
             return null;
         }
         if (value.length() >= 2
-                && value.startsWith(Constants.QUOTE_STRING)
-                && value.endsWith(Constants.QUOTE_STRING)) {
+                && value.startsWith(QUOTE_STRING)
+                && value.endsWith(QUOTE_STRING)) {
             return type.virtualMachine().mirrorOf(StringUtils.substring(value, 1, -1));
         }
         return type.virtualMachine().mirrorOf(value);

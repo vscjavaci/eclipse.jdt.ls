@@ -17,11 +17,11 @@ import com.sun.jdi.VirtualMachine;
 
 import java.util.Map;
 
-public class NonNumericPrimitiveFormatter implements IValueFormatter {
+public class NonNumericPrimitiveFormatter extends AbstractFormatter implements IValueFormatter {
 
     @Override
     public String toString(Object value, Map<String, Object> props) {
-        return value == null ? Constants.NULL_STRING : value.toString();
+        return value == null ? NULL_STRING : value.toString();
     }
 
     @Override
@@ -30,22 +30,22 @@ public class NonNumericPrimitiveFormatter implements IValueFormatter {
             return false;
         }
         char signature0 = type.signature().charAt(0);
-        return signature0 == Constants.BOOLEAN || signature0 == Constants.DOUBLE
-                || signature0 == Constants.FLOAT
-                || signature0 == Constants.CHAR;
+        return signature0 == BOOLEAN || signature0 == DOUBLE
+                || signature0 == FLOAT
+                || signature0 == CHAR;
     }
 
     @Override
     public Value valueOf(String value, Type type, Map<String, Object> props) {
         VirtualMachine vm = type.virtualMachine();
         char signature0 = type.signature().charAt(0);
-        if (signature0 == Constants.FLOAT) {
+        if (signature0 == FLOAT) {
             return vm.mirrorOf(Float.parseFloat(value));
-        } else if (signature0 == Constants.DOUBLE) {
+        } else if (signature0 == DOUBLE) {
             return vm.mirrorOf(Double.parseDouble(value));
-        } else if (signature0 == Constants.CHAR) {
+        } else if (signature0 == CHAR) {
             return vm.mirrorOf((char)value.charAt(0));
-        }  else if (signature0 == Constants.BOOLEAN) {
+        }  else if (signature0 == BOOLEAN) {
             return vm.mirrorOf(Boolean.parseBoolean(value));
         }
         throw new UnsupportedOperationException(

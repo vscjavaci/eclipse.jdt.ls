@@ -7,7 +7,9 @@ import com.sun.jdi.ObjectReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
-public class ObjectFormatter implements IValueFormatter {
+public class ObjectFormatter extends AbstractFormatter implements IValueFormatter {
+    private static final String OBJECT_TEMPLATE = "%s (id=%s)";
+    
     /**
      * The format type function for this object.
      */
@@ -19,7 +21,7 @@ public class ObjectFormatter implements IValueFormatter {
 
     @Override
     public String toString(Object obj, Map<String, Object> props) {
-        return String.format(Constants.OBJECT_TEMPLATE, getPrefix((ObjectReference) obj, props), 
+        return String.format(OBJECT_TEMPLATE, getPrefix((ObjectReference) obj, props), 
                 HexicalNumericFormatter.numbericToString(
                         ((ObjectReference) obj).uniqueID(),
                         HexicalNumericFormatter.containsHexFormat(props)));
@@ -31,15 +33,15 @@ public class ObjectFormatter implements IValueFormatter {
             return false;
         }
         char tag = type.signature().charAt(0);
-        return (tag == Constants.OBJECT) || (tag == Constants.ARRAY) || (tag == Constants.STRING)
-                || (tag == Constants.THREAD) || (tag == Constants.THREAD_GROUP)
-                || (tag == Constants.CLASS_LOADER)
-                || (tag == Constants.CLASS_OBJECT);
+        return (tag == OBJECT) || (tag == ARRAY) || (tag == STRING)
+                || (tag == THREAD) || (tag == THREAD_GROUP)
+                || (tag == CLASS_LOADER)
+                || (tag == CLASS_OBJECT);
     }
 
     @Override
     public Value valueOf(String value, Type type, Map<String, Object> props) {
-        if (value == null || Constants.NULL_STRING.equals(value)) {
+        if (value == null || NULL_STRING.equals(value)) {
             return null;
         }
         throw new UnsupportedOperationException(String.format("Set value is not supported yet for type %s.", type.name()));

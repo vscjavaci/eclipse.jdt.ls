@@ -17,7 +17,10 @@ import com.sun.jdi.VirtualMachine;
 
 import java.util.Map;
 
-public class HexicalNumericFormatter implements IValueFormatter {
+public class HexicalNumericFormatter extends AbstractFormatter implements IValueFormatter {
+    private static final String HEX_FORMAT = "hex_format";
+    private static final String HEX_PREFIX = "0x";
+    
     /**
      * Get the string representations for an object.
      *
@@ -33,13 +36,13 @@ public class HexicalNumericFormatter implements IValueFormatter {
     public Value valueOf(String value, Type type, Map<String, Object> props) {
         VirtualMachine vm = type.virtualMachine();
         char signature0 = type.signature().charAt(0);
-        if (signature0 == Constants.LONG) {
+        if (signature0 == LONG) {
             return vm.mirrorOf(stringToLong(value));
-        } else if (signature0 == Constants.INT) {
+        } else if (signature0 == INT) {
             return vm.mirrorOf((int)stringToLong(value));
-        } else if (signature0 == Constants.SHORT) {
+        } else if (signature0 == SHORT) {
             return vm.mirrorOf((short)stringToLong(value));
-        } else if (signature0 == Constants.BYTE) {
+        } else if (signature0 == BYTE) {
             return vm.mirrorOf((byte)stringToLong(value));
         }
         throw new UnsupportedOperationException(
@@ -59,31 +62,31 @@ public class HexicalNumericFormatter implements IValueFormatter {
             return false;
         }
         char signature0 = type.signature().charAt(0);
-        return (signature0 == Constants.LONG
-                || signature0 == Constants.INT
-                || signature0 == Constants.SHORT
-                || signature0 == Constants.BYTE)
+        return (signature0 == LONG
+                || signature0 == INT
+                || signature0 == SHORT
+                || signature0 == BYTE)
                 && containsHexFormat(props);
     }
 
     static boolean containsHexFormat(Map<String, Object> props) {
-        return props.containsKey(Constants.HEX_FORMAT)
-                && Boolean.parseBoolean(String.valueOf(props.get(Constants.HEX_FORMAT)));
+        return props.containsKey(HEX_FORMAT)
+                && Boolean.parseBoolean(String.valueOf(props.get(HEX_FORMAT)));
     }
 
     static String numbericToString(long longValue, boolean hexFormat) {
-        return hexFormat ? Constants.HEX_PREFIX + Long.toHexString(longValue) : Long.toString(longValue);
+        return hexFormat ? HEX_PREFIX + Long.toHexString(longValue) : Long.toString(longValue);
     }
 
     static String numbericToString(int intValue, boolean hexFormat) {
-        return hexFormat ? Constants.HEX_PREFIX + Integer.toHexString(intValue) : Integer.toString(intValue);
+        return hexFormat ? HEX_PREFIX + Integer.toHexString(intValue) : Integer.toString(intValue);
     }
 
     private static long stringToLong(String longValue) {
-        if (longValue.startsWith(Constants.HEX_PREFIX)) {
+        if (longValue.startsWith(HEX_PREFIX)) {
             return Long.valueOf(longValue.substring(2), 16);
         }
         throw new IllegalArgumentException(
-                String.format("%s is not a valid hex number, it should start with %s", longValue, Constants.HEX_PREFIX));
+                String.format("%s is not a valid hex number, it should start with %s", longValue, HEX_PREFIX));
     }
 }
