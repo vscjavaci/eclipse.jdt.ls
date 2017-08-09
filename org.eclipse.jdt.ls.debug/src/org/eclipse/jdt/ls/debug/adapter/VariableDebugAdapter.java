@@ -43,9 +43,11 @@ public class VariableDebugAdapter {
             return new Responses.StackTraceResponseBody(result, 0);
         }
         ThreadReference thread = parent.getThread(arguments.threadId);
+        int frameCount = 0;
         if (thread != null) {
             try {
                 List<StackFrame> stackFrames = thread.frames();
+                frameCount = stackFrames.size();
                 if (arguments.startFrame >= stackFrames.size()) {
                     return new Responses.StackTraceResponseBody(result, 0);
                 }
@@ -64,7 +66,7 @@ public class VariableDebugAdapter {
                 Logger.logException("DebugSession#stackTrace exception", e);
             }
         }
-        return new Responses.StackTraceResponseBody(result, result.size());
+        return new Responses.StackTraceResponseBody(result, frameCount);
     }
 
     Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
