@@ -42,6 +42,8 @@ public class EventHub implements IEventHub {
     private boolean isClosed = false;
 
     /**
+     * Start the vm.
+     * 
      * @param vm
      *            the target virtual machine.
      */

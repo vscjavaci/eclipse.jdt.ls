@@ -29,10 +29,7 @@ import org.eclipse.jdt.ls.debug.internal.Logger;
 
 import com.google.gson.JsonObject;
 import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.Location;
-import com.sun.jdi.Method;
-import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
@@ -63,10 +60,11 @@ public class DebugAdapter implements IDebugAdapter {
     private BreakpointManager breakpointManager;
     private List<Disposable> eventSubscriptions;
     private IProviderContext context;
-    
-    private IdCollection<StackFrame> frameCollection = new IdCollection<>();
+
     private IdCollection<String> sourceCollection = new IdCollection<>();
     private AtomicInteger messageId = new AtomicInteger(1);
+
+    private VariableDebugAdapter variableProxy;
 
     /**
      * Constructor.
@@ -76,6 +74,7 @@ public class DebugAdapter implements IDebugAdapter {
         this.breakpointManager = new BreakpointManager();
         this.eventSubscriptions = new ArrayList<>();
         this.context = context;
+        this.variableProxy = new VariableDebugAdapter(this);
     }
 
     @Override
@@ -389,48 +388,19 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody stackTrace(Requests.StackTraceArguments arguments) {
-        List<Types.StackFrame> result = new ArrayList<>();
-        if (arguments.startFrame < 0 || arguments.levels < 0) {
-            return new Responses.StackTraceResponseBody(result, 0);
-        }
-        ThreadReference thread = getThread(arguments.threadId);
-        if (thread != null) {
-            try {
-                List<StackFrame> stackFrames = thread.frames();
-                if (arguments.startFrame >= stackFrames.size()) {
-                    return new Responses.StackTraceResponseBody(result, 0);
-                }
-                if (arguments.levels == 0) {
-                    arguments.levels = stackFrames.size() - arguments.startFrame;
-                } else {
-                    arguments.levels = Math.min(stackFrames.size() - arguments.startFrame, arguments.levels);
-                }
-    
-                for (int i = 0; i < arguments.levels; i++) {
-                    StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
-                    Types.StackFrame clientStackFrame = this.convertDebuggerStackFrameToClient(stackFrame);
-                    result.add(clientStackFrame);
-                }
-            } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
-                Logger.logException("DebugSession#stackTrace exception", e);
-            }
-        }
-        return new Responses.StackTraceResponseBody(result, result.size());
+        return variableProxy.stackTrace(arguments);
     }
 
     private Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
-        List<Types.Scope> scps = new ArrayList<>();
-        scps.add(new Types.Scope("Local", 1000000 + arguments.frameId, false));
-        return new Responses.ScopesResponseBody(scps);
+        return variableProxy.scopes(arguments);
     }
 
     private Responses.ResponseBody variables(Requests.VariablesArguments arguments) {
-        List<Types.Variable> list = new ArrayList<>();
-        return new Responses.VariablesResponseBody(list);
+        return variableProxy.variables(arguments);
     }
 
     private Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
-        return new Responses.ResponseBody();
+        return variableProxy.setVariable(arguments);
     }
 
     private Responses.ResponseBody source(Requests.SourceArguments arguments) {
@@ -533,7 +503,7 @@ public class DebugAdapter implements IDebugAdapter {
         });
         this.eventSubscriptions.clear();
         this.breakpointManager.reset();
-        this.frameCollection.reset();
+        this.variableProxy.reset();
         this.sourceCollection.reset();
         if (this.debugSession.process().isAlive()) {
             if (terminateDebuggee) {
@@ -544,65 +514,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
-    private ThreadReference getThread(int threadId) {
-        for (ThreadReference thread : this.safeGetAllThreads()) {
-            if (thread.uniqueID() == threadId) {
-                return thread;
-            }
-        }
-        return null;
-    }
-
-    private List<ThreadReference> safeGetAllThreads() {
-        try {
-            return this.debugSession.allThreads();
-        } catch (VMDisconnectedException ex) {
-            return new ArrayList<>();
-        }
-    }
-
-    private int convertDebuggerLineToClient(int line) {
-        if (this.debuggerLinesStartAt1) {
-            return this.clientLinesStartAt1 ? line : line - 1;
-        } else {
-            return this.clientLinesStartAt1 ? line + 1 : line;
-        }
-    }
-
-    private int convertClientLineToDebugger(int line) {
-        if (this.debuggerLinesStartAt1) {
-            return this.clientLinesStartAt1 ? line : line + 1;
-        } else {
-            return this.clientLinesStartAt1 ? line - 1 : line;
-        }
-    }
-
-    private int[] convertClientLineToDebugger(int[] lines) {
-        int[] newLines = new int[lines.length];
-        for (int i = 0; i < lines.length; i++) {
-            newLines[i] = convertClientLineToDebugger(lines[i]);
-        }
-        return newLines;
-    }
-
-    private Types.Breakpoint convertDebuggerBreakpointToClient(IBreakpoint breakpoint) {
-        int id = (int) breakpoint.getProperty("id");
-        boolean verified = breakpoint.getProperty("verified") != null ? (boolean) breakpoint.getProperty("verified") : false;
-        int lineNumber = this.convertDebuggerLineToClient(breakpoint.lineNumber());
-        return new Types.Breakpoint(id, verified, lineNumber, "");
-    }
-
-    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, int[] lines) {
-        int[] debuggerLines = this.convertClientLineToDebugger(lines);
-        String[] fqns = context.getSourceLookUpProvider().getFullyQualifiedName(sourceFile, debuggerLines, null);
-        IBreakpoint[] breakpoints = new IBreakpoint[lines.length];
-        for (int i = 0; i < lines.length; i++) {
-            breakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i]);
-        }
-        return breakpoints;
-    }
-
-    private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException, AbsentInformationException {
+    protected Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException, AbsentInformationException {
         Types.Source source = null;
         String uri = context.getSourceLookUpProvider().getSourceFileURI(location.declaringType().name());
         String name = location.sourceName();
@@ -623,22 +535,74 @@ public class DebugAdapter implements IDebugAdapter {
         return source;
     }
 
-    private String convertDebuggerSourceToClient(String uri) {
+    protected String convertDebuggerSourceToClient(String uri) {
         return context.getSourceLookUpProvider().getSourceContents(uri);
     }
 
-    private Types.Thread convertDebuggerThreadToClient(ThreadReference thread) {
-        return new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]");
+    protected int convertDebuggerLineToClient(int line) {
+        if (this.debuggerLinesStartAt1) {
+            return this.clientLinesStartAt1 ? line : line - 1;
+        } else {
+            return this.clientLinesStartAt1 ? line + 1 : line;
+        }
     }
 
-    private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame)
-            throws URISyntaxException, AbsentInformationException {
-        int frameId = this.frameCollection.create(stackFrame);
-        Location location = stackFrame.location();
-        Method method = location.method();
-        Types.Source clientSource = this.convertDebuggerSourceToClient(location);
-        return new Types.StackFrame(frameId, method.name(), clientSource,
-                this.convertDebuggerLineToClient(location.lineNumber()), 0);
+    protected ThreadReference getThread(int threadId) {
+        for (ThreadReference thread : this.safeGetAllThreads()) {
+            if (thread.uniqueID() == threadId) {
+                return thread;
+            }
+        }
+        return null;
+    }
+
+    private List<ThreadReference> safeGetAllThreads() {
+        try {
+            return this.debugSession.allThreads();
+        } catch (VMDisconnectedException ex) {
+            return new ArrayList<>();
+        }
+    }
+
+
+
+    private int convertClientLineToDebugger(int line) {
+        if (this.debuggerLinesStartAt1) {
+            return this.clientLinesStartAt1 ? line : line + 1;
+        } else {
+            return this.clientLinesStartAt1 ? line - 1 : line;
+        }
+    }
+
+    private int[] convertClientLineToDebugger(int[] lines) {
+        int[] newLines = new int[lines.length];
+        for (int i = 0; i < lines.length; i++) {
+            newLines[i] = convertClientLineToDebugger(lines[i]);
+        }
+        return newLines;
+    }
+
+    private Types.Breakpoint convertDebuggerBreakpointToClient(IBreakpoint breakpoint) {
+        int id = (int) breakpoint.getProperty("id");
+        boolean verified = breakpoint.getProperty("verified") != null && (boolean) breakpoint.getProperty("verified");
+        int lineNumber = this.convertDebuggerLineToClient(breakpoint.lineNumber());
+        return new Types.Breakpoint(id, verified, lineNumber, "");
+    }
+
+    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, int[] lines) {
+        int[] debuggerLines = this.convertClientLineToDebugger(lines);
+        String[] fqns = context.getSourceLookUpProvider().getFullyQualifiedName(sourceFile, debuggerLines, null);
+        IBreakpoint[] breakpoints = new IBreakpoint[lines.length];
+        for (int i = 0; i < lines.length; i++) {
+            breakpoints[i] = this.debugSession.createBreakpoint(fqns[i], debuggerLines[i]);
+        }
+        return breakpoints;
+    }
+
+
+
+    private Types.Thread convertDebuggerThreadToClient(ThreadReference thread) {
+        return new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]");
     }
 
     private Types.Message convertDebuggerMessageToClient(String message) {
