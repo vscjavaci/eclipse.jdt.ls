@@ -62,7 +62,6 @@ public class BreakpointManager {
      * @return the full breakpoint list that locates in the source file
      */
     public IBreakpoint[] setBreakpoints(String source, IBreakpoint[] breakpoints, boolean sourceModified) {
-        source = formatPath(source);
         List<IBreakpoint> result = new ArrayList<>();
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
         // When source file is modified, delete all previously added breakpoints.
@@ -114,7 +113,6 @@ public class BreakpointManager {
     }
 
     private void addBreakpointsInternally(String source, IBreakpoint[] breakpoints) {
-        source = formatPath(source);
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
         if (breakpointMap == null) {
             breakpointMap = new HashMap<>();
@@ -134,7 +132,6 @@ public class BreakpointManager {
      * Removes the specified breakpoints from breakpoint manager.
      */
     private void removeBreakpointsInternally(String source, IBreakpoint[] breakpoints) {
-        source = formatPath(source);
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
         if (breakpointMap == null || breakpointMap.isEmpty() || breakpoints.length == 0) {
             return ;
@@ -162,7 +159,6 @@ public class BreakpointManager {
      * Gets the registered breakpoints at the source file.
      */
     public IBreakpoint[] getBreakpoints(String source) {
-        source = formatPath(source);
         HashMap<String, IBreakpoint> breakpointMap = this.sourceToBreakpoints.get(source);
         if (breakpointMap == null) {
             return new IBreakpoint[0];
@@ -177,12 +173,5 @@ public class BreakpointManager {
         this.sourceToBreakpoints.clear();
         this.breakpoints.clear();
         this.nextBreakpointId.set(1);
-    }
-
-    private static String formatPath(String source) {
-        if (AdapterUtils.isWindows()) {
-            return source.toLowerCase(); // file path is case insensitive in windows.
-        }
-        return source;
     }
 }

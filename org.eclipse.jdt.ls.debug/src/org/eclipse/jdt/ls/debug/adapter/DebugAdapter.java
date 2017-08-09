@@ -14,6 +14,8 @@ package org.eclipse.jdt.ls.debug.adapter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +55,7 @@ public class DebugAdapter implements IDebugAdapter {
     private Consumer<Events.DebugEvent> eventConsumer;
 
     private boolean debuggerLinesStartAt1 = true;
-    private boolean debuggerPathsAreURI = false;
+    private boolean debuggerPathsAreURI = true;
     private boolean clientLinesStartAt1 = true;
     private boolean clientPathsAreURI = false;
 
@@ -312,9 +314,27 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments) {
+        String clientPath = arguments.source.path;
+        if (AdapterUtils.isWindows() && clientPath.length() > 2) {
+            // VSCode may send drive letters with inconsistent casing which will mess up the key
+            // in the BreakpointManager. See https://github.com/Microsoft/vscode/issues/6268
+            // Normalize the drive letter casing. Note that drive letters
+            // are not localized so invariant is safe here.
+            String drive = clientPath.substring(0, 2);
+            if (Character.isLowerCase(drive.charAt(0)) && drive.charAt(1) == ':') {
+                clientPath = clientPath.replaceFirst(drive, drive.toUpperCase());
+            }
+        }
+        String sourcePath = clientPath;
+        if (arguments.source.sourceReference != 0 && this.sourceCollection.get(arguments.source.sourceReference) != null) {
+            sourcePath = this.sourceCollection.get(arguments.source.sourceReference);
+        } else {
+            sourcePath = this.convertClientPathToDebugger(clientPath);
+        }
+
         List<Types.Breakpoint> res = new ArrayList<>();
-        IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(arguments.source.path, arguments.breakpoints);
-        IBreakpoint[] added = this.breakpointManager.setBreakpoints(arguments.source.path, toAdds, arguments.sourceModified);
+        IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(sourcePath, arguments.breakpoints);
+        IBreakpoint[] added = this.breakpointManager.setBreakpoints(sourcePath, toAdds, arguments.sourceModified);
         for (int i = 0; i < arguments.breakpoints.length; i++) {
             // For newly added breakpoint, should install it to debuggee first.
             if (toAdds[i] == added[i] && added[i].className() != null) {
@@ -590,6 +610,68 @@ public class DebugAdapter implements IDebugAdapter {
         return newLines;
     }
 
+    private String convertClientPathToDebugger(String clientPath) {
+        if (clientPath == null) {
+            return null;
+        }
+
+        if (this.debuggerPathsAreURI) {
+            if (this.clientPathsAreURI) {
+                return clientPath;
+            } else {
+                try {
+                    return Paths.get(clientPath).toUri().toString();
+                } catch (InvalidPathException e) {
+                    try {
+                        return new URI(clientPath).toString();
+                    } catch (URISyntaxException e1) {
+                        return clientPath;
+                    }
+                }
+            }
+        } else {
+            if (this.clientPathsAreURI) {
+                try {
+                    return Paths.get(new URI(clientPath)).toString();
+                } catch (URISyntaxException | IllegalArgumentException
+                        | FileSystemNotFoundException | SecurityException e) {
+                    return clientPath;
+                }
+            } else {
+                return clientPath;
+            }
+        }
+    }
+
+    private String convertDebuggerPathToClient(String debuggerPath) {
+        if (this.debuggerPathsAreURI) {
+            if (this.clientPathsAreURI) {
+                return debuggerPath;
+            } else {
+                try {
+                    return Paths.get(new URI(debuggerPath)).toString();
+                } catch (URISyntaxException | IllegalArgumentException
+                        | FileSystemNotFoundException | SecurityException e) {
+                    return debuggerPath;
+                }
+            }
+        } else {
+            if (this.clientPathsAreURI) {
+                try {
+                    return Paths.get(debuggerPath).toUri().toString();
+                } catch (InvalidPathException e) {
+                    try {
+                        return new URI(debuggerPath).toString();
+                    } catch (URISyntaxException e1) {
+                        return debuggerPath;
+                    }
+                }
+            } else {
+                return debuggerPath;
+            }
+        }
+    }
+
     private Types.Breakpoint convertDebuggerBreakpointToClient(IBreakpoint breakpoint) {
         int id = (int) breakpoint.getProperty("id");
         boolean verified = breakpoint.getProperty("verified") != null ? (boolean) breakpoint.getProperty("verified") : false;
@@ -616,25 +698,45 @@ public class DebugAdapter implements IDebugAdapter {
         return breakpoints;
     }
 
-    private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException, AbsentInformationException {
-        Types.Source source = null;
-        String uri = context.getSourceLookUpProvider().getSourceFileURI(location.declaringType().name());
-        String name = location.sourceName();
+    private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
+        String fullyQualifiedName = location.declaringType().name();
+        String uri = context.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName);
 
-        if (uri != null && uri.startsWith("jdt://")) {
-            int sourceReference = sourceCollection.create(uri);
-            source = new Types.Source(name, uri, sourceReference);
-        } else if (uri != null) {
-            source = new Types.Source(name, Paths.get(new URI(uri)).toString(), 0);
-        } else {
-            String originalSourcePath = location.sourcePath();
-            String sourcepath = AdapterUtils.sourceLookup(this.sourcePath, originalSourcePath);
-            if (sourcepath == null) {
-                sourcepath = Paths.get(this.cwd, originalSourcePath).toString();
+        String sourceName = "";
+        String relativeSourcePath = "";
+        try {
+            // When the .class file doesn't contain source information in meta data,
+            // invoking Location#sourceName() would throw AbsentInformation.
+            sourceName = location.sourceName();
+            relativeSourcePath = location.sourcePath();
+        } catch (AbsentInformationException e) {
+            int dollar = fullyQualifiedName.indexOf('$');
+            if (dollar > 0) {
+                fullyQualifiedName = fullyQualifiedName.substring(0, dollar);
             }
-            source = new Types.Source(name, sourcepath, 0);
+            int packageIndex = fullyQualifiedName.lastIndexOf('.');
+            if (packageIndex > 0) {
+                sourceName = fullyQualifiedName.substring(packageIndex + 1, fullyQualifiedName.length()) + ".java";
+            } else {
+                sourceName = fullyQualifiedName + ".java";
+            }
+            relativeSourcePath = fullyQualifiedName.replace('.', '/') + ".java";
         }
-        return source;
+
+        // If the source lookup engine cannot find the source file, then lookup it in the source directories specified by user.
+        if (uri == null) {
+            String absoluteSourcepath = AdapterUtils.sourceLookup(this.sourcePath, relativeSourcePath);
+            if (absoluteSourcepath == null) {
+                absoluteSourcepath = Paths.get(this.cwd, relativeSourcePath).toString();
+            }
+            uri = Paths.get(absoluteSourcepath).toUri().toString();
+        }
+        String clientPath = this.convertDebuggerPathToClient(uri);
+        if (uri.startsWith("file:")) {
+            return new Types.Source(sourceName, clientPath, 0);
+        } else {
+            return new Types.Source(sourceName, clientPath, this.sourceCollection.create(uri));
+        }
     }
 
     private String convertDebuggerSourceToClient(String uri) {
