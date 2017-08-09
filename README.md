@@ -121,4 +121,3 @@ Our [CI server](https://ci.eclipse.org/ls/) publishes builds to http://download.
 License
 -------
 EPL 1.0, See [LICENSE](LICENSE) file.
-test
