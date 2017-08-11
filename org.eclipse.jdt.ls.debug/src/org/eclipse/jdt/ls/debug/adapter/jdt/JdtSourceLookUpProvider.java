@@ -32,6 +32,7 @@ import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jdt.internal.core.SourceType;
 import org.eclipse.jdt.ls.core.internal.JDTUtils;
 import org.eclipse.jdt.ls.core.internal.handlers.JsonRpcHelpers;
+import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.adapter.ISourceLookUpProvider;
 import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
@@ -48,7 +49,7 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
     }
 
     @Override
-    public String[] getFullyQualifiedName(String uri, int[] lines, int[] columns) {
+    public String[] getFullyQualifiedName(String uri, int[] lines, int[] columns) throws DebugException {
         if (uri == null) {
             throw new IllegalArgumentException("sourceFilePath is null");
         }
@@ -81,7 +82,10 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
                         fqn = ((SourceType) javaElement).getFullyQualifiedName();
                     }
                 } catch (JavaModelException e) {
-                    Logger.logException("Add breakpoint exception", e);
+                    Logger.logException("Failed to parse the java element at line " + lines[i], e);
+                    throw new DebugException(
+                            String.format("Failed to parse the java element at line %s. Reason: ", lines[i], e.getMessage()),
+                            e);
                 }
             }
             fqns[i] = fqn;

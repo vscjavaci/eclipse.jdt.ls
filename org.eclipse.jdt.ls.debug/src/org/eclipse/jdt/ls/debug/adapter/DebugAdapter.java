@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.DebugUtility;
@@ -55,9 +56,9 @@ public class DebugAdapter implements IDebugAdapter {
     private Consumer<Events.DebugEvent> eventConsumer;
 
     private boolean debuggerLinesStartAt1 = true;
-    private boolean debuggerPathsAreURI = true;
+    private boolean debuggerPathsAreUri = true;
     private boolean clientLinesStartAt1 = true;
-    private boolean clientPathsAreURI = false;
+    private boolean clientPathsAreUri = false;
 
     private Requests.LaunchArguments launchArguments;
     private String cwd;
@@ -219,8 +220,10 @@ public class DebugAdapter implements IDebugAdapter {
                 }
         } catch (Exception e) {
             Logger.logException("DebugSession dispatch exception", e);
+            // When there are uncaught exception during dispatching, send an error response back and terminate debuggee.
             responseBody = new Responses.ErrorResponseBody(
                     this.convertDebuggerMessageToClient(e.getMessage() != null ? e.getMessage() : e.toString()));
+            this.sendEvent(new Events.TerminatedEvent());
         }
 
         Messages.Response response = new Messages.Response();
@@ -239,10 +242,10 @@ public class DebugAdapter implements IDebugAdapter {
         if (pathFormat != null) {
             switch (pathFormat) {
                 case "uri":
-                    this.clientPathsAreURI = true;
+                    this.clientPathsAreUri = true;
                     break;
                 default:
-                    this.clientPathsAreURI = false;
+                    this.clientPathsAreUri = false;
                 }
         }
         // Send an InitializedEvent
@@ -315,14 +318,16 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Responses.ResponseBody setBreakpoints(Requests.SetBreakpointArguments arguments) {
         String clientPath = arguments.source.path;
-        if (AdapterUtils.isWindows() && clientPath.length() > 2) {
+        if (AdapterUtils.isWindows()) {
             // VSCode may send drive letters with inconsistent casing which will mess up the key
             // in the BreakpointManager. See https://github.com/Microsoft/vscode/issues/6268
             // Normalize the drive letter casing. Note that drive letters
             // are not localized so invariant is safe here.
-            String drive = clientPath.substring(0, 2);
-            if (Character.isLowerCase(drive.charAt(0)) && drive.charAt(1) == ':') {
-                clientPath = clientPath.replaceFirst(drive, drive.toUpperCase());
+            String drivePrefix = FilenameUtils.getPrefix(clientPath);
+            if (drivePrefix != null && drivePrefix.length() >= 2
+                    && Character.isLowerCase(drivePrefix.charAt(0)) && drivePrefix.charAt(1) == ':') {
+                drivePrefix = drivePrefix.substring(0, 2); // d:\ is an illegal regex string, convert it to d:
+                clientPath = clientPath.replaceFirst(drivePrefix, drivePrefix.toUpperCase());
             }
         }
         String sourcePath = clientPath;
@@ -332,24 +337,33 @@ public class DebugAdapter implements IDebugAdapter {
             sourcePath = this.convertClientPathToDebugger(clientPath);
         }
 
-        List<Types.Breakpoint> res = new ArrayList<>();
-        IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(sourcePath, arguments.breakpoints);
-        IBreakpoint[] added = this.breakpointManager.setBreakpoints(sourcePath, toAdds, arguments.sourceModified);
-        for (int i = 0; i < arguments.breakpoints.length; i++) {
-            // For newly added breakpoint, should install it to debuggee first.
-            if (toAdds[i] == added[i] && added[i].className() != null) {
-                added[i].install().thenAccept(bp -> {
-                    Events.BreakpointEvent bpEvent = new Events.BreakpointEvent("new", this.convertDebuggerBreakpointToClient(bp));
-                    sendEvent(bpEvent);
-                });
-            } else if (toAdds[i].hitCount() != added[i].hitCount() && added[i].className() != null) {
-                // Update hitCount condition.
-                added[i].setHitCount(toAdds[i].hitCount());
-            }
-            res.add(this.convertDebuggerBreakpointToClient(added[i]));
+        // When breakpoint source path is null or an invalid file path, send an ErrorResponse back.
+        if (sourcePath == null) {
+            return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
+                    String.format("Failed to setBreakpoint. Reason: '%s' is an invalid path.", arguments.source.path)));
         }
-
-        return new Responses.SetBreakpointsResponseBody(res);
+        try {
+            List<Types.Breakpoint> res = new ArrayList<>();
+            IBreakpoint[] toAdds = this.convertClientBreakpointsToDebugger(sourcePath, arguments.breakpoints);
+            IBreakpoint[] added = this.breakpointManager.setBreakpoints(sourcePath, toAdds, arguments.sourceModified);
+            for (int i = 0; i < arguments.breakpoints.length; i++) {
+                // For newly added breakpoint, should install it to debuggee first.
+                if (toAdds[i] == added[i] && added[i].className() != null) {
+                    added[i].install().thenAccept(bp -> {
+                        Events.BreakpointEvent bpEvent = new Events.BreakpointEvent("new", this.convertDebuggerBreakpointToClient(bp));
+                        sendEvent(bpEvent);
+                    });
+                } else if (toAdds[i].hitCount() != added[i].hitCount() && added[i].className() != null) {
+                    // Update hitCount condition.
+                    added[i].setHitCount(toAdds[i].hitCount());
+                }
+                res.add(this.convertDebuggerBreakpointToClient(added[i]));
+            }
+            return new Responses.SetBreakpointsResponseBody(res);
+        } catch (DebugException e) {
+            return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
+                    String.format("Failed to setBreakpoint. Reason: '%s'", e.getMessage())));
+        }
     }
 
     private Responses.ResponseBody setExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments) {
@@ -615,27 +629,23 @@ public class DebugAdapter implements IDebugAdapter {
             return null;
         }
 
-        if (this.debuggerPathsAreURI) {
-            if (this.clientPathsAreURI) {
+        if (this.debuggerPathsAreUri) {
+            if (this.clientPathsAreUri) {
                 return clientPath;
             } else {
                 try {
                     return Paths.get(clientPath).toUri().toString();
                 } catch (InvalidPathException e) {
-                    try {
-                        return new URI(clientPath).toString();
-                    } catch (URISyntaxException e1) {
-                        return clientPath;
-                    }
+                    return null;
                 }
             }
         } else {
-            if (this.clientPathsAreURI) {
+            if (this.clientPathsAreUri) {
                 try {
                     return Paths.get(new URI(clientPath)).toString();
                 } catch (URISyntaxException | IllegalArgumentException
                         | FileSystemNotFoundException | SecurityException e) {
-                    return clientPath;
+                    return null;
                 }
             } else {
                 return clientPath;
@@ -644,27 +654,27 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private String convertDebuggerPathToClient(String debuggerPath) {
-        if (this.debuggerPathsAreURI) {
-            if (this.clientPathsAreURI) {
+        if (debuggerPath == null) {
+            return null;
+        }
+
+        if (this.debuggerPathsAreUri) {
+            if (this.clientPathsAreUri) {
                 return debuggerPath;
             } else {
                 try {
                     return Paths.get(new URI(debuggerPath)).toString();
                 } catch (URISyntaxException | IllegalArgumentException
                         | FileSystemNotFoundException | SecurityException e) {
-                    return debuggerPath;
+                    return null;
                 }
             }
         } else {
-            if (this.clientPathsAreURI) {
+            if (this.clientPathsAreUri) {
                 try {
                     return Paths.get(debuggerPath).toUri().toString();
                 } catch (InvalidPathException e) {
-                    try {
-                        return new URI(debuggerPath).toString();
-                    } catch (URISyntaxException e1) {
-                        return debuggerPath;
-                    }
+                    return null;
                 }
             } else {
                 return debuggerPath;
@@ -679,7 +689,7 @@ public class DebugAdapter implements IDebugAdapter {
         return new Types.Breakpoint(id, verified, lineNumber, "");
     }
 
-    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, Types.SourceBreakpoint[] sourceBreakpoints) {
+    private IBreakpoint[] convertClientBreakpointsToDebugger(String sourceFile, Types.SourceBreakpoint[] sourceBreakpoints) throws DebugException {
         int[] lines = Arrays.asList(sourceBreakpoints).stream().map(sourceBreakpoint -> {
             return sourceBreakpoint.line;
         }).mapToInt(line -> line).toArray();
@@ -701,26 +711,17 @@ public class DebugAdapter implements IDebugAdapter {
     private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
         String fullyQualifiedName = location.declaringType().name();
         String uri = context.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName);
-
         String sourceName = "";
         String relativeSourcePath = "";
         try {
             // When the .class file doesn't contain source information in meta data,
-            // invoking Location#sourceName() would throw AbsentInformation.
+            // invoking Location#sourceName() would throw AbsentInformationException.
             sourceName = location.sourceName();
             relativeSourcePath = location.sourcePath();
         } catch (AbsentInformationException e) {
-            int dollar = fullyQualifiedName.indexOf('$');
-            if (dollar > 0) {
-                fullyQualifiedName = fullyQualifiedName.substring(0, dollar);
-            }
-            int packageIndex = fullyQualifiedName.lastIndexOf('.');
-            if (packageIndex > 0) {
-                sourceName = fullyQualifiedName.substring(packageIndex + 1, fullyQualifiedName.length()) + ".java";
-            } else {
-                sourceName = fullyQualifiedName + ".java";
-            }
-            relativeSourcePath = fullyQualifiedName.replace('.', '/') + ".java";
+            String enclosingType = AdapterUtils.parseEnclosingType(fullyQualifiedName);
+            sourceName = enclosingType.substring(enclosingType.lastIndexOf('.') + 1) + ".java";
+            relativeSourcePath = enclosingType.replace('.', '/') + ".java";
         }
 
         // If the source lookup engine cannot find the source file, then lookup it in the source directories specified by user.
