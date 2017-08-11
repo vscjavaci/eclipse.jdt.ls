@@ -84,7 +84,7 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
                 } catch (JavaModelException e) {
                     Logger.logException("Failed to parse the java element at line " + lines[i], e);
                     throw new DebugException(
-                            String.format("Failed to parse the java element at line %s. Reason: ", lines[i], e.getMessage()),
+                            String.format("Failed to parse the java element at line %d. Reason: %s", lines[i], e.getMessage()),
                             e);
                 }
             }
