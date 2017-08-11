@@ -13,6 +13,7 @@ package org.eclipse.jdt.ls.debug.adapter;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import io.reactivex.functions.Consumer;
@@ -21,9 +22,10 @@ import io.reactivex.subjects.PublishSubject;
 public class ProcessConsole {
     private Process process;
     private String name;
-    private boolean isClosed = false;
     private PublishSubject<String> stdoutSubject = PublishSubject.<String>create();
     private PublishSubject<String> stderrSubject = PublishSubject.<String>create();
+    private Thread stdoutThread = null;
+    private Thread stderrThread = null;
     
     public ProcessConsole(Process process) {
         this(process, "Process");
@@ -38,47 +40,17 @@ public class ProcessConsole {
      * Start two separate threads to monitor the messages from stdout and stderr streams of the target process.
      */
     public void start() {
-        final int BUFFERSIZE = 4096;
-
-        BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        Thread stdoutThread = new Thread(this.name + " Stdout Handler") {
+        this.stdoutThread = new Thread(this.name + " Stdout Handler") {
             public void run() {
-                char[] buffer = new char[BUFFERSIZE];
-                while (!isClosed) {
-                    try {
-                        int read = stdout.read(buffer, 0, BUFFERSIZE);
-                        if (read == -1) {
-                            stdoutSubject.onComplete();
-                            break;
-                        }
-                        stdoutSubject.onNext(new String(buffer, 0, read));
-                    } catch (IOException e) {
-                        stdoutSubject.onComplete();
-                        break;
-                    }
-                }
+                monitor(process.getInputStream(), stdoutSubject);
             }
         };
         stdoutThread.setDaemon(true);
         stdoutThread.start();
 
-        BufferedReader stderr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-        Thread stderrThread = new Thread(this.name + " Stderr Handler") {
+        this.stderrThread = new Thread(this.name + " Stderr Handler") {
             public void run() {
-                char[] buffer = new char[BUFFERSIZE];
-                while (!isClosed) {
-                    try {
-                        int read = stderr.read(buffer, 0, BUFFERSIZE);
-                        if (read == -1) {
-                            stderrSubject.onComplete();
-                            break;
-                        }
-                        stderrSubject.onNext(new String(buffer, 0, read));
-                    } catch (IOException e) {
-                        stderrSubject.onComplete();
-                        break;
-                    }
-                }
+                monitor(process.getErrorStream(), stderrSubject);
             }
         };
         stderrThread.setDaemon(true);
@@ -86,7 +58,15 @@ public class ProcessConsole {
     }
 
     public void stop() {
-        this.isClosed = true;
+        if (this.stdoutThread != null) {
+            this.stdoutThread.interrupt();
+            this.stdoutThread = null;
+        }
+
+        if (this.stderrThread != null) {
+            this.stderrThread.interrupt();
+            this.stderrThread = null;
+        }
     }
 
     public void onStdout(Consumer<String> callback) {
@@ -95,5 +75,28 @@ public class ProcessConsole {
 
     public void onStderr(Consumer<String> callback) {
         stderrSubject.subscribe(callback);
+    }
+
+    private void monitor(InputStream input, PublishSubject<String> subject) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+        final int BUFFERSIZE = 4096;
+        char[] buffer = new char[BUFFERSIZE];
+        while (true) {
+            try {
+                if (Thread.interrupted()) {
+                    subject.onComplete();
+                    return;
+                }
+                int read = reader.read(buffer, 0, BUFFERSIZE);
+                if (read == -1) {
+                    subject.onComplete();
+                    return;
+                }
+                subject.onNext(new String(buffer, 0, read));
+            } catch (IOException e) {
+                subject.onComplete();
+                return;
+            }
+        }
     }
 }
