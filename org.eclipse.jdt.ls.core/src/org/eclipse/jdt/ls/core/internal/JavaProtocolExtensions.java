@@ -12,6 +12,7 @@ package org.eclipse.jdt.ls.core.internal;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
@@ -41,4 +42,7 @@ public interface JavaProtocolExtensions {
 
 	@JsonRequest
 	CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param);
+
+	@JsonRequest
+	CompletableFuture<Object> buildWorkspace(String type) throws CoreException;
 }

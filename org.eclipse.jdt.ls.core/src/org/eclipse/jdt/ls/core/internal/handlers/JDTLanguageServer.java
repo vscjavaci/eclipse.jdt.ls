@@ -22,7 +22,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.WorkingCopyOwner;
@@ -461,6 +465,16 @@ public class JDTLanguageServer implements LanguageServer, TextDocumentService, W
 		logInfo(">> java/resolveClasspath");
 		ResolveClasspathsHandler handler = new ResolveClasspathsHandler();
 		return handler.resolveClasspaths(param);
+	}
+
+	/* (non-Javadoc)
+	 * @see org.eclipse.jdt.ls.core.internal.JavaProtocolExtensions#buildWorkspace(java.lang.String)
+	 */
+	@Override
+	public CompletableFuture<Object> buildWorkspace(String type) throws CoreException {
+		logInfo(">> java/buildWorkspace");
+		ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.INCREMENTAL_BUILD, new NullProgressMonitor());
+		return CompletableFuture.completedFuture(new Object());
 	}
 
 	public void sendStatus(ServiceStatus serverStatus, String status) {
