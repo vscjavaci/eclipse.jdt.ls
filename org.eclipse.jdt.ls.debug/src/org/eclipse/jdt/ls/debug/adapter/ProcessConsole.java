@@ -57,6 +57,9 @@ public class ProcessConsole {
         stderrThread.start();
     }
 
+    /**
+     * Stop the process console handlers.
+     */
     public void stop() {
         if (this.stdoutThread != null) {
             this.stdoutThread.interrupt();
