@@ -23,8 +23,8 @@ public interface IValueFormatter extends IFormatter {
      *
      * @param value the string text.
      * @param type the expected value type.
-     * @param props additional information about expected format
+     * @param options additional information about expected format
      * @return the JDI value.
      */
-    Value valueOf(String value, Type type, Map<String, Object> props);
+    Value valueOf(String value, Type type, Map<String, Object> options);
 }

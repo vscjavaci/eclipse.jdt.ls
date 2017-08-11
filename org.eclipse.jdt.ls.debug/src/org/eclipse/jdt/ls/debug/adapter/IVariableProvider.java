@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.eclipse.jdt.ls.debug.adapter.formatter.ITypeFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
+import org.eclipse.jdt.ls.debug.adapter.Variable;
 
 /**
  * The interface for variable provider, implementations of this interface
@@ -38,20 +39,20 @@ public interface IVariableProvider {
     /**
      * Get display text of the value.
      *
-     * @param value the value.
-     * @param props additional information about expected format
+     * @param value   the value.
+     * @param options additional information about expected format
      * @return the display text of the value
      */
-    String valueToString(Value value, Map<String, Object> props);
+    String valueToString(Value value, Map<String, Object> options);
 
     /**
      * Get display name of type.
-     * @param type the JDI type
-     * @param props additional information about expected format
      *
+     * @param type    the JDI type
+     * @param options additional information about expected format
      * @return display name of type of the value.
      */
-    String typeToString(Type type, Map<String, Object> props);
+    String typeToString(Type type, Map<String, Object> options);
 
     /**
      * Get the variables of the object.
@@ -65,7 +66,7 @@ public interface IVariableProvider {
     /**
      * Get the variables of the object with pagination.
      *
-     * @param obj the object
+     * @param obj   the object
      * @param start the start of the pagination
      * @param count the number of variables needed
      * @return the variable list
@@ -104,7 +105,7 @@ public interface IVariableProvider {
      * priority which accepts the type will be used.
      *
      * @param typeFormatter the type formatter
-     * @param priority the priority for this formatter
+     * @param priority      the priority for this formatter
      */
     void registerTypeFormatter(ITypeFormatter typeFormatter, int priority);
 
@@ -113,7 +114,7 @@ public interface IVariableProvider {
      * priority which accepts the type will be used.
      *
      * @param formatter the value formatter
-     * @param priority the priority for this formatter
+     * @param priority  the priority for this formatter
      */
     void registerValueFormatter(IValueFormatter formatter, int priority);
 }

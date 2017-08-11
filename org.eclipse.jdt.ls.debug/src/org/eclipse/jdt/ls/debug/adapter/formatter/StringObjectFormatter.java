@@ -11,47 +11,52 @@
 
 package org.eclipse.jdt.ls.debug.adapter.formatter;
 
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING_SIGNATURE;
+
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.sun.jdi.ObjectReference;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
-public class StringObjectFormatter extends AbstractFormatter implements IValueFormatter {
+public class StringObjectFormatter extends ObjectFormatter implements IValueFormatter {
+    public static final String MAX_STRING_LENGTH_OPTION = "max_string_length";
 	private static final int DEFAULT_MAX_STRING_LENGTH = 100;
-	private static final String STRING_OBJECT_TEMPLATE = "\"%s\" (id=%s)";
-    private int maxStringLength = DEFAULT_MAX_STRING_LENGTH;
+    private static final String QUOTE_STRING = "\"";
 
-    /**
-     * Set the max displayed string length for <code>String</code> objects.
-     *
-     * @param maxStringLength
-     *            the max displayed string length
-     */
-    public void setMaxStringLength(int maxStringLength) {
-        this.maxStringLength = maxStringLength;
+    public StringObjectFormatter() {
+        super(null);
     }
 
     @Override
-    public String toString(Object value, Map<String, Object> props) {
-        return String.format(STRING_OBJECT_TEMPLATE, 
-                StringUtils.abbreviate(((StringReference) value).value(), this.maxStringLength), 
-                HexicalNumericFormatter.numbericToString(
-                        ((StringReference) value).uniqueID(),
-                        HexicalNumericFormatter.containsHexFormat(props)));
+    public Map<String, Object> getDefaultOptions() {
+        Map<String, Object> options = new HashMap<>();
+        options.put(MAX_STRING_LENGTH_OPTION, DEFAULT_MAX_STRING_LENGTH);
+        return options;
     }
 
     @Override
-    public boolean acceptType(Type type, Map<String, Object> props) {
+    public String toString(Object value, Map<String, Object> options) {
+        return String.format("\"%s\" %s",
+                StringUtils.abbreviate(((StringReference) value).value(),
+                        getMaxStringLength(options)),
+                getIdPostfix((ObjectReference)value, options));
+    }
+
+    @Override
+    public boolean acceptType(Type type, Map<String, Object> options) {
         return type != null && (type.signature().charAt(0) == STRING
                 || type.signature().equals(STRING_SIGNATURE));
     }
 
     @Override
-    public Value valueOf(String value, Type type, Map<String, Object> props) {
-        if (value == null || NULL_STRING.equals(value)) {
+    public Value valueOf(String value, Type type, Map<String, Object> options) {
+        if (value == null || NullObjectFormatter.NULL_STRING.equals(value)) {
             return null;
         }
         if (value.length() >= 2
@@ -60,5 +65,10 @@ public class StringObjectFormatter extends AbstractFormatter implements IValueFo
             return type.virtualMachine().mirrorOf(StringUtils.substring(value, 1, -1));
         }
         return type.virtualMachine().mirrorOf(value);
+    }
+
+    private static int getMaxStringLength(Map<String, Object> options) {
+        return options.containsKey(MAX_STRING_LENGTH_OPTION) 
+                ? (int)options.get(MAX_STRING_LENGTH_OPTION) : DEFAULT_MAX_STRING_LENGTH;
     }
 }
