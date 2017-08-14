@@ -97,7 +97,7 @@ public class ProcessConsole {
                 }
                 subject.onNext(new String(buffer, 0, read));
             } catch (IOException e) {
-                subject.onComplete();
+                subject.onError(e);
                 return;
             }
         }
