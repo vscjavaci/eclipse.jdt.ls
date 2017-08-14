@@ -23,6 +23,7 @@ import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING_
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatEnum;
@@ -186,7 +186,7 @@ public class VariableDebugAdapter {
         }
         // find variable name duplicates
         Set<String> duplicateNames = getDuplicateNames(
-                ArrayUtils.toStringArray(variables.stream().map(var -> var.name).toArray()));
+                variables.stream().map(var -> var.name).collect(Collectors.toList()));
         Map<Variable, String> variableNameMap = new HashMap<>();
         if (!duplicateNames.isEmpty()) {
             Map<String, List<Variable>> duplicateVars = variables.stream()
@@ -332,7 +332,7 @@ public class VariableDebugAdapter {
 
     }
 
-    private static Set<String> getDuplicateNames(String[] list) {
+    private static Set<String> getDuplicateNames(Collection<String> list) {
         Set<String> result = new HashSet<>();
         Set<String> set = new HashSet<>();
 
