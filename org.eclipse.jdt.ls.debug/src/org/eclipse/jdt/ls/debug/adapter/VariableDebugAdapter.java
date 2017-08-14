@@ -249,7 +249,7 @@ public class VariableDebugAdapter {
         Object obj = this.objectPool.getObjectById(arguments.variablesReference);
         ThreadReference thread;
         String name = arguments.name;
-        Value valueResponse = null;
+        Value newValue = null;
         String belongToClass = null;
         if (arguments.name.contains("(")) {
             name = arguments.name.substring(0, arguments.name.indexOf('(')).trim();
@@ -265,16 +265,16 @@ public class VariableDebugAdapter {
                 thread = frame.thread();
                 LocalVariable variable = frame.visibleVariableByName(name);
                 if (StringUtils.isBlank(belongToClass) && variable != null) {
-                    valueResponse = this.setFrameValue(frame, variable, arguments.value);
+                    newValue = this.setFrameValue(frame, variable, arguments.value);
                 } else {
                     if (showStaticVariables && frame.location().method().isStatic()) {
                         ReferenceType type = frame.location().declaringType();
                         if (StringUtils.isBlank(belongToClass)) {
                             Field field = type.fieldByName(name);
-                            valueResponse = setStaticFieldValue(type, field, arguments.name, arguments.value);
+                            newValue = setStaticFieldValue(type, field, arguments.name, arguments.value);
                         } else {
                             if (frame.location().method().isStatic() && showStaticVariables) {
-                                valueResponse = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
+                                newValue = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
                                         arguments.value);
                             }
                         }
@@ -290,16 +290,16 @@ public class VariableDebugAdapter {
                 if (currentObj instanceof ArrayReference) {
                     ArrayReference array = (ArrayReference) currentObj;
                     Type eleType = ((ArrayType) array.referenceType()).componentType();
-                    valueResponse = setArrayValue(array, eleType, Integer.parseInt(arguments.name), arguments.value);
+                    newValue = setArrayValue(array, eleType, Integer.parseInt(arguments.name), arguments.value);
                 } else {
                     if (StringUtils.isBlank(belongToClass)) {
                         Field field = currentObj.referenceType().fieldByName(name);
                         if (field != null) {
                             if (field.isStatic()) {
-                                valueResponse = this.setStaticFieldValue(currentObj.referenceType(), field,
+                                newValue = this.setStaticFieldValue(currentObj.referenceType(), field,
                                         arguments.name, arguments.value);
                             } else {
-                                valueResponse = this.setObjectFieldValue(currentObj, field, arguments.name,
+                                newValue = this.setObjectFieldValue(currentObj, field, arguments.name,
                                         arguments.value);
                             }
                         } else {
@@ -307,7 +307,7 @@ public class VariableDebugAdapter {
                                     String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
                         }
                     } else {
-                        valueResponse = setFieldValueWithConflict(currentObj, currentObj.referenceType().allFields(),
+                        newValue = setFieldValueWithConflict(currentObj, currentObj.referenceType().allFields(),
                                 name, belongToClass, arguments.value);
                     }
                 }
@@ -319,15 +319,15 @@ public class VariableDebugAdapter {
                 | UnsupportedOperationException | ClassNotLoadedException e) {
             return new Responses.ErrorResponseBody(parent.convertDebuggerMessageToClient(e.getMessage()));
         }
-        int referenceId = getReferenceId(thread, valueResponse);
+        int referenceId = getReferenceId(thread, newValue);
 
         int indexedVariables = 0;
-        if (valueResponse instanceof ArrayReference) {
-            indexedVariables = ((ArrayReference) valueResponse).length();
+        if (newValue instanceof ArrayReference) {
+            indexedVariables = ((ArrayReference) newValue).length();
         }
         return new Responses.SetVariablesResponseBody(
-                this.provider.typeToString(valueResponse == null ? null : valueResponse.type(), options), // type
-                this.provider.valueToString(valueResponse, options), // value,
+                this.provider.typeToString(newValue == null ? null : newValue.type(), options), // type
+                this.provider.valueToString(newValue, options), // value,
                 referenceId, indexedVariables);
 
     }
