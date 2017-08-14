@@ -9,7 +9,7 @@
 *     Microsoft Corporation - initial API and implementation
 *******************************************************************************/
 
-package org.eclipse.jdt.ls.debug.adapter;
+package org.eclipse.jdt.ls.debug.adapter.variables;
 
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
