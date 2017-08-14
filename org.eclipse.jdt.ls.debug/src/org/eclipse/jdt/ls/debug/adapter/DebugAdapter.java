@@ -1,39 +1,15 @@
 /*******************************************************************************
-* Copyright (c) 2017 Microsoft Corporation and others.
-* All rights reserved. This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
-* Contributors:
-*     Microsoft Corporation - initial API and implementation
-*******************************************************************************/
+ * Copyright (c) 2017 Microsoft Corporation and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Microsoft Corporation - initial API and implementation
+ *******************************************************************************/
 
 package org.eclipse.jdt.ls.debug.adapter;
-
-import com.google.gson.JsonObject;
-import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.Location;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.VMDisconnectedException;
-import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import com.sun.jdi.connect.VMStartException;
-import com.sun.jdi.event.BreakpointEvent;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.StepEvent;
-import com.sun.jdi.event.ThreadDeathEvent;
-import com.sun.jdi.event.ThreadStartEvent;
-import com.sun.jdi.event.VMDeathEvent;
-import com.sun.jdi.event.VMDisconnectEvent;
-import com.sun.jdi.event.VMStartEvent;
-import io.reactivex.disposables.Disposable;
-import org.apache.commons.io.FilenameUtils;
-import org.eclipse.jdt.ls.debug.DebugEvent;
-import org.eclipse.jdt.ls.debug.DebugException;
-import org.eclipse.jdt.ls.debug.DebugUtility;
-import org.eclipse.jdt.ls.debug.IBreakpoint;
-import org.eclipse.jdt.ls.debug.IDebugSession;
-import org.eclipse.jdt.ls.debug.internal.Logger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -46,6 +22,35 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
+import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jdt.ls.debug.DebugEvent;
+import org.eclipse.jdt.ls.debug.DebugException;
+import org.eclipse.jdt.ls.debug.DebugUtility;
+import org.eclipse.jdt.ls.debug.IBreakpoint;
+import org.eclipse.jdt.ls.debug.IDebugSession;
+import org.eclipse.jdt.ls.debug.internal.Logger;
+
+import com.google.gson.JsonObject;
+import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.Location;
+import com.sun.jdi.Method;
+import com.sun.jdi.StackFrame;
+import com.sun.jdi.ThreadReference;
+import com.sun.jdi.VMDisconnectedException;
+import com.sun.jdi.connect.IllegalConnectorArgumentsException;
+import com.sun.jdi.connect.VMStartException;
+import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.Event;
+import com.sun.jdi.event.StepEvent;
+import com.sun.jdi.event.ThreadDeathEvent;
+import com.sun.jdi.event.ThreadStartEvent;
+import com.sun.jdi.event.VMDeathEvent;
+import com.sun.jdi.event.VMDisconnectEvent;
+import com.sun.jdi.event.VMStartEvent;
+
+import io.reactivex.disposables.Disposable;
 
 public class DebugAdapter implements IDebugAdapter {
     private Consumer<Events.DebugEvent> eventConsumer;
@@ -63,10 +68,9 @@ public class DebugAdapter implements IDebugAdapter {
     private List<Disposable> eventSubscriptions;
     private IProviderContext context;
 
+    private IdCollection<StackFrame> frameCollection = new IdCollection<>();
     private IdCollection<String> sourceCollection = new IdCollection<>();
     private AtomicInteger messageId = new AtomicInteger(1);
-
-    private VariableDebugAdapter variableProxy;
 
     /**
      * Constructor.
@@ -76,7 +80,6 @@ public class DebugAdapter implements IDebugAdapter {
         this.breakpointManager = new BreakpointManager();
         this.eventSubscriptions = new ArrayList<>();
         this.context = context;
-        this.variableProxy = new VariableDebugAdapter(this);
     }
 
     @Override
@@ -170,7 +173,7 @@ public class DebugAdapter implements IDebugAdapter {
                     if (sourceArguments.sourceReference == -1) {
                         responseBody = new Responses.ErrorResponseBody(
                                 this.convertDebuggerMessageToClient("SourceRequest: property 'sourceReference' is missing, null, or empty"));
-                    } else {                        
+                    } else {
                         responseBody = source(sourceArguments);
                     }
                     break;
@@ -214,7 +217,7 @@ public class DebugAdapter implements IDebugAdapter {
                 default:
                     responseBody = new Responses.ErrorResponseBody(
                             this.convertDebuggerMessageToClient(String.format("unrecognized request: { _request: %s }", request.command)));
-                }
+            }
         } catch (Exception e) {
             Logger.logException("DebugSession dispatch exception", e);
             // When there are uncaught exception during dispatching, send an error response back and terminate debuggee.
@@ -243,7 +246,7 @@ public class DebugAdapter implements IDebugAdapter {
                     break;
                 default:
                     this.clientPathsAreUri = false;
-                }
+            }
         }
         // Send an InitializedEvent
         this.sendEvent(new Events.InitializedEvent());
@@ -372,10 +375,8 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             allThreadsContinued = false;
-            this.variableProxy.recyclableThreads(thread);
             thread.resume();
         } else {
-            this.variableProxy.recyclableAllObject();
             this.debugSession.resume();
         }
         return new Responses.ContinueResponseBody(allThreadsContinued);
@@ -384,7 +385,6 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody next(Requests.NextArguments arguments) {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
-            this.variableProxy.recyclableThreads(thread);
             DebugUtility.stepOver(thread, this.debugSession.eventHub());
         }
         return new Responses.ResponseBody();
@@ -393,7 +393,6 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody stepIn(Requests.StepInArguments arguments) {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
-            this.variableProxy.recyclableThreads(thread);
             DebugUtility.stepInto(thread, this.debugSession.eventHub());
         }
         return new Responses.ResponseBody();
@@ -402,7 +401,6 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody stepOut(Requests.StepOutArguments arguments) {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
-            this.variableProxy.recyclableThreads(thread);
             DebugUtility.stepOut(thread, this.debugSession.eventHub());
         }
         return new Responses.ResponseBody();
@@ -430,23 +428,48 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody stackTrace(Requests.StackTraceArguments arguments) {
-        return variableProxy.stackTrace(arguments);
+        List<Types.StackFrame> result = new ArrayList<>();
+        if (arguments.startFrame < 0 || arguments.levels < 0) {
+            return new Responses.StackTraceResponseBody(result, 0);
+        }
+        ThreadReference thread = getThread(arguments.threadId);
+        if (thread != null) {
+            try {
+                List<StackFrame> stackFrames = thread.frames();
+                if (arguments.startFrame >= stackFrames.size()) {
+                    return new Responses.StackTraceResponseBody(result, 0);
+                }
+                if (arguments.levels == 0) {
+                    arguments.levels = stackFrames.size() - arguments.startFrame;
+                } else {
+                    arguments.levels = Math.min(stackFrames.size() - arguments.startFrame, arguments.levels);
+                }
+
+                for (int i = 0; i < arguments.levels; i++) {
+                    StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
+                    Types.StackFrame clientStackFrame = this.convertDebuggerStackFrameToClient(stackFrame);
+                    result.add(clientStackFrame);
+                }
+            } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
+                Logger.logException("DebugSession#stackTrace exception", e);
+            }
+        }
+        return new Responses.StackTraceResponseBody(result, result.size());
     }
 
     private Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
-        return variableProxy.scopes(arguments);
+        List<Types.Scope> scps = new ArrayList<>();
+        scps.add(new Types.Scope("Local", 1000000 + arguments.frameId, false));
+        return new Responses.ScopesResponseBody(scps);
     }
 
     private Responses.ResponseBody variables(Requests.VariablesArguments arguments) {
-        return variableProxy.variables(arguments);
-    }
-    
-    private Responses.ResponseBody evaluate(Requests.EvaluateArguments arguments) {
-        return variableProxy.evaluate(arguments);
+        List<Types.Variable> list = new ArrayList<>();
+        return new Responses.VariablesResponseBody(list);
     }
 
     private Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
-        return variableProxy.setVariable(arguments);
+        return new Responses.ResponseBody();
     }
 
     private Responses.ResponseBody source(Requests.SourceArguments arguments) {
@@ -456,6 +479,9 @@ public class DebugAdapter implements IDebugAdapter {
         return new Responses.SourceResponseBody(contents);
     }
 
+    private Responses.ResponseBody evaluate(Requests.EvaluateArguments arguments) {
+        return new Responses.ResponseBody();
+    }
 
     /* ======================================================*/
     /* Dispatch logic End */
@@ -503,7 +529,7 @@ public class DebugAdapter implements IDebugAdapter {
             if (error.format != null) {
                 response.message = error.format;
             } else {
-                response.message = "Error response body";              
+                response.message = "Error response body";
             }
         } else {
             response.success = true;
@@ -512,7 +538,7 @@ public class DebugAdapter implements IDebugAdapter {
             }
         }
         return response;
-      }
+    }
 
     private void sendEvent(Events.DebugEvent event) {
         this.eventConsumer.accept(event);
@@ -546,7 +572,7 @@ public class DebugAdapter implements IDebugAdapter {
         });
         this.eventSubscriptions.clear();
         this.breakpointManager.reset();
-        this.variableProxy.recyclableAllObject();
+        this.frameCollection.reset();
         this.sourceCollection.reset();
         if (this.debugSession.process().isAlive()) {
             if (terminateDebuggee) {
@@ -557,7 +583,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
-    protected ThreadReference getThread(int threadId) {
+    private ThreadReference getThread(int threadId) {
         for (ThreadReference thread : this.safeGetAllThreads()) {
             if (thread.uniqueID() == threadId) {
                 return thread;
@@ -574,7 +600,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
-    protected int convertDebuggerLineToClient(int line) {
+    private int convertDebuggerLineToClient(int line) {
         if (this.debuggerLinesStartAt1) {
             return this.clientLinesStartAt1 ? line : line - 1;
         } else {
@@ -598,7 +624,7 @@ public class DebugAdapter implements IDebugAdapter {
         return newLines;
     }
 
-    protected String convertClientPathToDebugger(String clientPath) {
+    private String convertClientPathToDebugger(String clientPath) {
         if (clientPath == null) {
             return null;
         }
@@ -682,7 +708,7 @@ public class DebugAdapter implements IDebugAdapter {
         return breakpoints;
     }
 
-    protected Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
+    private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
         String fullyQualifiedName = location.declaringType().name();
         String uri = context.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName);
         String sourceName = "";
@@ -722,7 +748,17 @@ public class DebugAdapter implements IDebugAdapter {
         return new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]");
     }
 
-    protected Types.Message convertDebuggerMessageToClient(String message) {
+    private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame)
+            throws URISyntaxException, AbsentInformationException {
+        int frameId = this.frameCollection.create(stackFrame);
+        Location location = stackFrame.location();
+        Method method = location.method();
+        Types.Source clientSource = this.convertDebuggerSourceToClient(location);
+        return new Types.StackFrame(frameId, method.name(), clientSource,
+                this.convertDebuggerLineToClient(location.lineNumber()), 0);
+    }
+
+    private Types.Message convertDebuggerMessageToClient(String message) {
         return new Types.Message(this.messageId.getAndIncrement(), message);
     }
 }
