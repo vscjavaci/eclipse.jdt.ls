@@ -86,8 +86,12 @@ public final class DefaultVariableProvider implements IVariableProvider {
     public Map<String, Object> getDefaultOptions() {
         if (defaultOptions == null) {
             defaultOptions = new HashMap<>();
-            valueFormatterMap.keySet().forEach(this::mergeDefaultOptions);
-            typeFormatterMap.keySet().forEach(this::mergeDefaultOptions);
+            int count1 = valueFormatterMap.keySet().stream().mapToInt(this::mergeDefaultOptions).sum();
+            int count2 = typeFormatterMap.keySet().stream().mapToInt(this::mergeDefaultOptions).sum();
+            if (count1 + count2 != defaultOptions.size()) {
+                throw new IllegalStateException(
+                        "There is some configuartion conflicts on type and value formatters.");
+            }
         }
         return defaultOptions;
     }
@@ -282,11 +286,13 @@ public final class DefaultVariableProvider implements IVariableProvider {
         this.includeStatic = includeStatic;
     }
     
-    private void mergeDefaultOptions(IFormatter formatter) {
+    private int mergeDefaultOptions(IFormatter formatter) {
+        int count = 0;
         for (Map.Entry<String, Object> entry : formatter.getDefaultOptions().entrySet()) {
-            this.defaultOptions.put(entry.getKey(), entry.getValue());    
+            this.defaultOptions.put(entry.getKey(), entry.getValue());
+            count ++;
         }
-        
+        return count;
     }
 
     private static IFormatter getFormatter(Map<? extends IFormatter, Integer> formatterMap, Type type,
