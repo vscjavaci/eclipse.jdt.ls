@@ -95,6 +95,8 @@ public class ProcessConsole {
                     subject.onComplete();
                     return;
                 }
+                // TODO The buffer data may be not simple UTF8 chars,
+                // in future we should consider supporting decoding it with user specified Charset.
                 subject.onNext(new String(buffer, 0, read));
             } catch (IOException e) {
                 subject.onError(e);
