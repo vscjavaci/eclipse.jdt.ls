@@ -19,7 +19,9 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -374,8 +376,10 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             allThreadsContinued = false;
+            this.variableProxy.recyclableThreads(thread);
             thread.resume();
         } else {
+            this.variableProxy.recyclableAllObject();
             this.debugSession.resume();
         }
         return new Responses.ContinueResponseBody(allThreadsContinued);
@@ -384,6 +388,7 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody next(Requests.NextArguments arguments) {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
+            this.variableProxy.recyclableThreads(thread);
             DebugUtility.stepOver(thread, this.debugSession.eventHub());
         }
         return new Responses.ResponseBody();
@@ -392,6 +397,7 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody stepIn(Requests.StepInArguments arguments) {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
+            this.variableProxy.recyclableThreads(thread);
             DebugUtility.stepInto(thread, this.debugSession.eventHub());
         }
         return new Responses.ResponseBody();
@@ -400,6 +406,7 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody stepOut(Requests.StepOutArguments arguments) {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
+            this.variableProxy.recyclableThreads(thread);
             DebugUtility.stepOut(thread, this.debugSession.eventHub());
         }
         return new Responses.ResponseBody();
@@ -437,6 +444,10 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody variables(Requests.VariablesArguments arguments) {
         return variableProxy.variables(arguments);
     }
+    
+    private Responses.ResponseBody evaluate(Requests.EvaluateArguments arguments) {
+        return variableProxy.evaluate(arguments);
+    }
 
     private Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
         return variableProxy.setVariable(arguments);
@@ -449,9 +460,6 @@ public class DebugAdapter implements IDebugAdapter {
         return new Responses.SourceResponseBody(contents);
     }
 
-    private Responses.ResponseBody evaluate(Requests.EvaluateArguments arguments) {
-        return new Responses.ResponseBody();
-    }
 
     /* ======================================================*/
     /* Dispatch logic End */
@@ -528,6 +536,19 @@ public class DebugAdapter implements IDebugAdapter {
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
 
         try {
+            Map<String, Object> props = new HashMap<>();
+            props.put("type", arguments.type);
+            props.put("name", arguments.name);
+            props.put("request", arguments.request);
+            props.put("cwd", arguments.cwd);
+            props.put("startupClass", arguments.startupClass);
+            props.put("projectName", arguments.projectName);
+            props.put("classpath", classpath);
+            props.put("sourcePath", sourcePath);
+            props.put("stopOnEntry", arguments.stopOnEntry);
+            props.put("options", arguments.options);
+
+            context.getSourceLookUpProvider().initialize(props);
             this.debugSession = DebugUtility.launch(context.getVirtualMachineManagerProvider().getVirtualMachineManager(), mainClass, classpath);
         } catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
             Logger.logException("Launching debuggee vm exception", e);
@@ -542,7 +563,7 @@ public class DebugAdapter implements IDebugAdapter {
         });
         this.eventSubscriptions.clear();
         this.breakpointManager.reset();
-        this.variableProxy.reset();
+        this.variableProxy.recyclableAllObject();
         this.sourceCollection.reset();
         if (this.debugSession.process().isAlive()) {
             if (terminateDebuggee) {
@@ -553,7 +574,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
-    private ThreadReference getThread(int threadId) {
+    protected ThreadReference getThread(int threadId) {
         for (ThreadReference thread : this.safeGetAllThreads()) {
             if (thread.uniqueID() == threadId) {
                 return thread;
@@ -570,7 +591,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
-    private int convertDebuggerLineToClient(int line) {
+    protected int convertDebuggerLineToClient(int line) {
         if (this.debuggerLinesStartAt1) {
             return this.clientLinesStartAt1 ? line : line - 1;
         } else {
@@ -594,7 +615,7 @@ public class DebugAdapter implements IDebugAdapter {
         return newLines;
     }
 
-    private String convertClientPathToDebugger(String clientPath) {
+    protected String convertClientPathToDebugger(String clientPath) {
         if (clientPath == null) {
             return null;
         }
@@ -678,7 +699,7 @@ public class DebugAdapter implements IDebugAdapter {
         return breakpoints;
     }
 
-    private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
+    protected Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
         String fullyQualifiedName = location.declaringType().name();
         String uri = context.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName);
         String sourceName = "";
@@ -718,17 +739,7 @@ public class DebugAdapter implements IDebugAdapter {
         return new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]");
     }
 
-    private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame)
-            throws URISyntaxException, AbsentInformationException {
-        int frameId = this.frameCollection.create(stackFrame);
-        Location location = stackFrame.location();
-        Method method = location.method();
-        Types.Source clientSource = this.convertDebuggerSourceToClient(location);
-        return new Types.StackFrame(frameId, method.name(), clientSource,
-                this.convertDebuggerLineToClient(location.lineNumber()), 0);
-    }
-
-    private Types.Message convertDebuggerMessageToClient(String message) {
+    protected Types.Message convertDebuggerMessageToClient(String message) {
         return new Types.Message(this.messageId.getAndIncrement(), message);
     }
 }

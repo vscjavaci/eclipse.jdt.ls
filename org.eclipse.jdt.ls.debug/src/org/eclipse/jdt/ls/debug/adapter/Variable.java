@@ -11,8 +11,10 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
+import com.sun.jdi.Type;
 import com.sun.jdi.Value;
 
 import org.apache.commons.lang3.StringUtils;
@@ -75,21 +77,13 @@ public class Variable {
     }
 
     /**
-     * Get the addition information of this variable.
+     * Get the declaring type of this variable if it is a field declared by some class.
      *
-     * @return the addition information of this variable.
+     * @return the declaring type of this variable.
      */
-    public String getNameDifferentiator() {
-        if (this.local != null) {
-            return "Local";
-        }
-
-        if (this.argumentIndex >= 0) {
-            return "Argument";
-        }
-
-        if (this.field != null && this.field.declaringType() != null) {
-            return this.field.declaringType().name();
+    public Type getDeclaringType() throws ClassNotLoadedException {
+        if (this.field != null) {
+            return this.field.declaringType();
         }
         return null;
     }

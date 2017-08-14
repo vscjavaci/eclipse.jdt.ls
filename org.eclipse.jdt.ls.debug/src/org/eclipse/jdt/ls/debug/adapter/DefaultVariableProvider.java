@@ -57,7 +57,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
      * @param includeStatic whether to show static variables
      */
     public DefaultVariableProvider(boolean includeStatic) {
-        this.includeStatic = includeStatic;
+        this.setIncludeStatic(includeStatic);
         valueFormatterMap = new HashMap<>();
         typeFormatterMap = new HashMap<>();
         initialize();
@@ -86,10 +86,16 @@ public final class DefaultVariableProvider implements IVariableProvider {
                         .sorted((a, b) ->
                                 -Integer.compare(formatterMap.get(a), formatterMap.get(b))).collect(Collectors.toList());
         if (formatterList.isEmpty()) {
-            throw new UnsupportedOperationException(String.format("There is no related formatter for type %s.",
+            throw new IllegalArgumentException(String.format("There is no related formatter for type %s.",
                     type == null ? "null" : type.name()));
         }
         return formatterList.get(0);
+    }
+
+
+    @Override
+    public IValueFormatter getValueFormatter(Type type, Map<String, Object> options) {
+        return (IValueFormatter) getFormatter(this.valueFormatterMap, type, options);
     }
 
     @Override
@@ -132,7 +138,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
         }
         return value.type() instanceof ReferenceType
                 && ((ReferenceType) type).allFields().stream()
-                        .filter(t -> includeStatic || !t.isStatic()).toArray().length > 0;
+                        .filter(t -> isIncludeStatic() || !t.isStatic()).toArray().length > 0;
     }
 
     /**
@@ -156,7 +162,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
             return res;
         }
         List<Field> fields = obj.referenceType().allFields().stream()
-                .filter(t -> includeStatic || !t.isStatic()).sorted((a, b) -> {
+                .filter(t -> isIncludeStatic() || !t.isStatic()).sorted((a, b) -> {
                     try {
                         boolean v1isStatic = a.isStatic();
                         boolean v2isStatic = b.isStatic();
@@ -197,9 +203,7 @@ public final class DefaultVariableProvider implements IVariableProvider {
         if (type instanceof ArrayType) {
             int arrayIndex = start;
             for (Value elementValue : ((ArrayReference) obj).getValues(start, count)) {
-                Variable ele = new Variable(String.valueOf(arrayIndex++), elementValue);
-                arrayIndex++;
-                res.add(ele);
+                res.add(new Variable(String.valueOf(arrayIndex++), elementValue));
             }
             return res;
         }
@@ -266,5 +270,13 @@ public final class DefaultVariableProvider implements IVariableProvider {
             res.add(staticVar);
         });
         return res;
+    }
+
+    public boolean isIncludeStatic() {
+        return includeStatic;
+    }
+
+    public void setIncludeStatic(boolean includeStatic) {
+        this.includeStatic = includeStatic;
     }
 }

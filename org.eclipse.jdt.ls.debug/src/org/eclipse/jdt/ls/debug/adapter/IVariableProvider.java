@@ -117,4 +117,13 @@ public interface IVariableProvider {
      * @param priority  the priority for this formatter
      */
     void registerValueFormatter(IValueFormatter formatter, int priority);
+
+    /**
+     * Get the matched value formatter for the specified type.
+     * @param type the type of the valuer
+     * @param options the options about the formatters
+     * @return the matched value formatter, if no formatter matches,
+     * <code>IllegalArgumentException</code> will be thrown
+     */
+    IValueFormatter getValueFormatter(Type type, Map<String, Object> options);
 }
