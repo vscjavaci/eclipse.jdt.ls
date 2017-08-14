@@ -470,7 +470,8 @@ public class JDTLanguageServer implements LanguageServer, TextDocumentService, W
 	@Override
 	public CompletableFuture<BuildWorkspaceResult> buildWorkspace(String type) {
 		logInfo(">> java/buildWorkspace");
-		return new BuildWorkspaceHandler().buildWorkspace();
+		BuildWorkspaceHandler handler = new BuildWorkspaceHandler();
+		return computeAsync((cc) -> handler.buildWorkspace(toMonitor(cc)));
 	}
 
 	public void sendStatus(ServiceStatus serverStatus, String status) {
