@@ -11,12 +11,10 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Type;
 import com.sun.jdi.Value;
-
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -81,7 +79,7 @@ public class Variable {
      *
      * @return the declaring type of this variable.
      */
-    public Type getDeclaringType() throws ClassNotLoadedException {
+    public Type getDeclaringType() {
         if (this.field != null) {
             return this.field.declaringType();
         }

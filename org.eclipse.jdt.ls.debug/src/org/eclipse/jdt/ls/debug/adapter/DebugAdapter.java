@@ -11,28 +11,6 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
-import org.apache.commons.io.FilenameUtils;
-import org.eclipse.jdt.ls.debug.DebugEvent;
-import org.eclipse.jdt.ls.debug.DebugException;
-import org.eclipse.jdt.ls.debug.DebugUtility;
-import org.eclipse.jdt.ls.debug.IBreakpoint;
-import org.eclipse.jdt.ls.debug.IDebugSession;
-import org.eclipse.jdt.ls.debug.internal.Logger;
-
 import com.google.gson.JsonObject;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.Location;
@@ -48,8 +26,26 @@ import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
-
 import io.reactivex.disposables.Disposable;
+import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jdt.ls.debug.DebugEvent;
+import org.eclipse.jdt.ls.debug.DebugException;
+import org.eclipse.jdt.ls.debug.DebugUtility;
+import org.eclipse.jdt.ls.debug.IBreakpoint;
+import org.eclipse.jdt.ls.debug.IDebugSession;
+import org.eclipse.jdt.ls.debug.internal.Logger;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class DebugAdapter implements IDebugAdapter {
     private Consumer<Events.DebugEvent> eventConsumer;
@@ -536,19 +532,6 @@ public class DebugAdapter implements IDebugAdapter {
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
 
         try {
-            Map<String, Object> props = new HashMap<>();
-            props.put("type", arguments.type);
-            props.put("name", arguments.name);
-            props.put("request", arguments.request);
-            props.put("cwd", arguments.cwd);
-            props.put("startupClass", arguments.startupClass);
-            props.put("projectName", arguments.projectName);
-            props.put("classpath", classpath);
-            props.put("sourcePath", sourcePath);
-            props.put("stopOnEntry", arguments.stopOnEntry);
-            props.put("options", arguments.options);
-
-            context.getSourceLookUpProvider().initialize(props);
             this.debugSession = DebugUtility.launch(context.getVirtualMachineManagerProvider().getVirtualMachineManager(), mainClass, classpath);
         } catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
             Logger.logException("Launching debuggee vm exception", e);

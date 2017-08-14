@@ -69,7 +69,8 @@ public class VariableDebugAdapter {
     /**
      * A variable debug adapter for stacktrace/scopes/variables/setVariable.
      * 
-     * @param debugAdapter the parent debug adapter this variable adapter works for. 
+     * @param debugAdapter
+     *            the parent debug adapter this variable adapter works for.
      */
     public VariableDebugAdapter(DebugAdapter debugAdapter) {
         this.parent = debugAdapter;
@@ -90,7 +91,6 @@ public class VariableDebugAdapter {
         this.objectPool.removeAllObjects();
     }
 
-    
     /**
      * Clear all the variable caches related to the specified thread.
      */
@@ -115,7 +115,7 @@ public class VariableDebugAdapter {
                     List<StackFrame> stackFrames = arguments.levels == 0
                             ? thread.frames(arguments.startFrame, totalFrames - arguments.startFrame)
                             : thread.frames(arguments.startFrame,
-                            Math.min(totalFrames - arguments.startFrame, arguments.levels));
+                                    Math.min(totalFrames - arguments.startFrame, arguments.levels));
                     for (int i = 0; i < arguments.levels; i++) {
                         StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
                         int frameId = this.objectPool.addObject(stackFrame.thread(), stackFrame);
@@ -143,8 +143,8 @@ public class VariableDebugAdapter {
         localScope.stackFrame = stackFrame;
         localScope.scope = "Local";
 
-        scopes.add(new Types.Scope(
-                localScope.scope, this.objectPool.addObject(stackFrame.thread(), localScope), false));
+        scopes.add(
+                new Types.Scope(localScope.scope, this.objectPool.addObject(stackFrame.thread(), localScope), false));
 
         return new Responses.ScopesResponseBody(scopes);
     }
@@ -185,14 +185,13 @@ public class VariableDebugAdapter {
                     parent.convertDebuggerMessageToClient("VariablesRequest: Variable information is not available."));
         }
         // find variable name duplicates
-        Set<String> duplicateNames = getDuplicateNames(ArrayUtils.toStringArray(
-                variables.stream().map(var -> var.name).toArray()));
+        Set<String> duplicateNames = getDuplicateNames(
+                ArrayUtils.toStringArray(variables.stream().map(var -> var.name).toArray()));
         Map<Variable, String> variableNameMap = new HashMap<>();
         if (!duplicateNames.isEmpty()) {
-            Map<String, List<Variable>> duplicateVars =
-                    variables.stream()
-                            .filter(var -> duplicateNames.contains(var.name))
-                            .collect(Collectors.groupingBy(var -> var.name, Collectors.toList()));
+            Map<String, List<Variable>> duplicateVars = variables.stream()
+                    .filter(var -> duplicateNames.contains(var.name))
+                    .collect(Collectors.groupingBy(var -> var.name, Collectors.toList()));
 
             duplicateVars.forEach((k, duplicateVariables) -> {
                 Set<String> declarationTypeNames = new HashSet<>();
@@ -200,19 +199,14 @@ public class VariableDebugAdapter {
                 // try use type formatter to resolve name conflict
                 for (Variable javaVariable : duplicateVariables) {
                     String name;
-                    try {
-                        Type declarationType = javaVariable.getDeclaringType();
-                        if (declarationType != null) {
-                            String declarationTypeName = this.provider.typeToString(declarationType, options);
-                            name = String.format("%s (%s)", javaVariable.name, declarationTypeName);
-                            if (!declarationTypeNames.add(name)) {
-                                declarationTypeNameConflict = true;
-                                break;
-                            }
-                            variableNameMap.put(javaVariable, name);
+                    Type declarationType = javaVariable.getDeclaringType();
+                    if (declarationType != null) {
+                        String declarationTypeName = this.provider.typeToString(declarationType, options);
+                        name = String.format("%s (%s)", javaVariable.name, declarationTypeName);
+                        if (!declarationTypeNames.add(name)) {
+                            declarationTypeNameConflict = true;
+                            break;
                         }
-                    } catch (ClassNotLoadedException e) {
-                        name = String.format("%s (%s)", javaVariable.name, "unknown class");
                         variableNameMap.put(javaVariable, name);
                     }
 
@@ -220,15 +214,12 @@ public class VariableDebugAdapter {
                 // if there are duplicate names on declaration types, use fully qualified name
                 if (declarationTypeNameConflict) {
                     for (Variable javaVariable : duplicateVariables) {
-                        try {
-                            Type declarationType = javaVariable.getDeclaringType();
-                            if (declarationType != null) {
-                                variableNameMap.put(javaVariable, String.format("%s (%s)", javaVariable.name, declarationType.name()));
-                            }
-                        } catch (ClassNotLoadedException e) {
+                        Type declarationType = javaVariable.getDeclaringType();
+                        if (declarationType != null) {
                             variableNameMap.put(javaVariable,
-                                    String.format("%s (%s)", javaVariable.name, "unknown class"));
+                                    String.format("%s (%s)", javaVariable.name, declarationType.name()));
                         }
+
                     }
                 }
             });
@@ -250,26 +241,7 @@ public class VariableDebugAdapter {
         return new Responses.VariablesResponseBody(list);
     }
 
-
     Responses.ResponseBody evaluate(Requests.EvaluateArguments arguments) {
-        if (arguments.context.startsWith("repl") && arguments.expression.startsWith("@")) {
-            if (arguments.expression.equals("@hex")) {
-                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
-            } else if (arguments.expression.equals("@dec")) {
-                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.DEC);
-            }  else if (arguments.expression.equals("@static off")) {
-                this.showStaticVariables = false;
-                this.provider = new DefaultVariableProvider(showStaticVariables);
-            } else if (arguments.expression.equals("@static on")) {
-                this.showStaticVariables = true;
-                this.provider = new DefaultVariableProvider(showStaticVariables);
-            }  else if (arguments.expression.equals("@qualify on")) {
-                options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, true);
-            } else if (arguments.expression.equals("@qualify off")) {
-                options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, false);
-            }
-            return new Responses.EvaluateResponseBody("Done " + arguments.expression, 0, "String");
-        }
         return new Responses.ResponseBody();
     }
 
@@ -281,14 +253,13 @@ public class VariableDebugAdapter {
         String belongToClass = null;
         if (arguments.name.contains("(")) {
             name = arguments.name.substring(0, arguments.name.indexOf('(')).trim();
-            belongToClass = arguments.name.substring(arguments.name.indexOf('(') + 1,
-                    arguments.name.indexOf(')')).trim();
+            belongToClass = arguments.name.substring(arguments.name.indexOf('(') + 1, arguments.name.indexOf(')'))
+                    .trim();
         }
         try {
             if (obj instanceof StackFrameScope) {
                 if (arguments.name.equals("this")) {
-                    throw new UnsupportedOperationException(
-                            "SetVariableRequest: 'This' variable cannot be changed.");
+                    throw new UnsupportedOperationException("SetVariableRequest: 'This' variable cannot be changed.");
                 }
                 StackFrame frame = ((StackFrameScope) obj).stackFrame;
                 thread = frame.thread();
@@ -303,8 +274,8 @@ public class VariableDebugAdapter {
                             valueResponse = setStaticFieldValue(type, field, arguments.name, arguments.value);
                         } else {
                             if (frame.location().method().isStatic() && showStaticVariables) {
-                                valueResponse = setFieldValueWithConflict(null, type.allFields(), name,
-                                        belongToClass, arguments.value);
+                                valueResponse = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
+                                        arguments.value);
                             }
                         }
 
@@ -325,40 +296,41 @@ public class VariableDebugAdapter {
                         Field field = currentObj.referenceType().fieldByName(name);
                         if (field != null) {
                             if (field.isStatic()) {
-                                valueResponse = this.setStaticFieldValue(currentObj.referenceType(), field, arguments.name, arguments.value);
+                                valueResponse = this.setStaticFieldValue(currentObj.referenceType(), field,
+                                        arguments.name, arguments.value);
                             } else {
-                                valueResponse = this.setObjectFieldValue(currentObj, field, arguments.name, arguments.value);
+                                valueResponse = this.setObjectFieldValue(currentObj, field, arguments.name,
+                                        arguments.value);
                             }
                         } else {
                             throw new IllegalArgumentException(
                                     String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
                         }
                     } else {
-                        valueResponse = setFieldValueWithConflict(currentObj,
-                                currentObj.referenceType().allFields(), name, belongToClass, arguments.value);
+                        valueResponse = setFieldValueWithConflict(currentObj, currentObj.referenceType().allFields(),
+                                name, belongToClass, arguments.value);
                     }
                 }
             } else {
                 throw new IllegalArgumentException(
                         String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
             }
-        } catch (IllegalArgumentException | AbsentInformationException | InvalidTypeException | UnsupportedOperationException | ClassNotLoadedException  e) {
+        } catch (IllegalArgumentException | AbsentInformationException | InvalidTypeException
+                | UnsupportedOperationException | ClassNotLoadedException e) {
             return new Responses.ErrorResponseBody(parent.convertDebuggerMessageToClient(e.getMessage()));
         }
         int referenceId = getReferenceId(thread, valueResponse);
-        
+
         int indexedVariables = 0;
         if (valueResponse instanceof ArrayReference) {
-            indexedVariables = ((ArrayReference)valueResponse).length();
+            indexedVariables = ((ArrayReference) valueResponse).length();
         }
         return new Responses.SetVariablesResponseBody(
                 this.provider.typeToString(valueResponse == null ? null : valueResponse.type(), options), // type
                 this.provider.valueToString(valueResponse, options), // value,
-                referenceId, indexedVariables
-        );
+                referenceId, indexedVariables);
 
     }
-
 
     private static Set<String> getDuplicateNames(String[] list) {
         Set<String> result = new HashSet<>();
@@ -373,7 +345,7 @@ public class VariableDebugAdapter {
         }
         return result;
     }
-    
+
     private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame, int frameId)
             throws URISyntaxException, AbsentInformationException {
         Location location = stackFrame.location();
@@ -382,7 +354,6 @@ public class VariableDebugAdapter {
         return new Types.StackFrame(frameId, method.name(), clientSource,
                 parent.convertDebuggerLineToClient(location.lineNumber()), 0);
     }
-    
 
     private Value setValueProxy(Type type, String value, SetValueFunction setValueFunc)
             throws ClassNotLoadedException, InvalidTypeException {
@@ -395,22 +366,16 @@ public class VariableDebugAdapter {
     private IValueFormatter getFormatterForModification(Type type) {
         char signature0 = type.signature().charAt(0);
 
-        if (signature0 == LONG
-                || signature0 == INT
-                || signature0 == SHORT
-                || signature0 == BYTE
-                || signature0 == FLOAT
-                || signature0 == DOUBLE
-                || signature0 == BOOLEAN
-                || signature0 == CHAR
-                || type.signature().equals(STRING_SIGNATURE)
-                ) {
+        if (signature0 == LONG || signature0 == INT || signature0 == SHORT || signature0 == BYTE || signature0 == FLOAT
+                || signature0 == DOUBLE || signature0 == BOOLEAN || signature0 == CHAR
+                || type.signature().equals(STRING_SIGNATURE)) {
             return this.provider.getValueFormatter(type, this.options);
         }
         throw new UnsupportedOperationException(String.format("Set value for type %s is not supported.", type.name()));
     }
 
-    private Value setStaticFieldValue(Type declaringType, Field field, String name, String value) throws ClassNotLoadedException, InvalidTypeException {
+    private Value setStaticFieldValue(Type declaringType, Field field, String name, String value)
+            throws ClassNotLoadedException, InvalidTypeException {
         if (field.isFinal()) {
             throw new UnsupportedOperationException(
                     String.format("SetVariableRequest: Final field %s cannot be changed.", name));
@@ -419,68 +384,59 @@ public class VariableDebugAdapter {
             throw new UnsupportedOperationException(
                     String.format("SetVariableRequest: Field %s in interface cannot be changed.", name));
         }
-        return setValueProxy(field.type(), value, newValue -> {
-            ((ClassType) declaringType).setValue(field, newValue);
-        });
+        return setValueProxy(field.type(), value, newValue -> ((ClassType) declaringType).setValue(field, newValue));
     }
 
-    private Value setFrameValue(StackFrame frame, LocalVariable localVariable,
-                                 String value) throws ClassNotLoadedException, InvalidTypeException {
-        return setValueProxy(localVariable.type(), value, newValue -> {
-            frame.setValue(localVariable, newValue);
-        });
+    private Value setFrameValue(StackFrame frame, LocalVariable localVariable, String value)
+            throws ClassNotLoadedException, InvalidTypeException {
+        return setValueProxy(localVariable.type(), value, newValue -> frame.setValue(localVariable, newValue));
     }
 
-    private Value setObjectFieldValue(ObjectReference obj, Field field, String name, String value) throws ClassNotLoadedException, InvalidTypeException {
+    private Value setObjectFieldValue(ObjectReference obj, Field field, String name, String value)
+            throws ClassNotLoadedException, InvalidTypeException {
         if (field.isFinal()) {
             throw new UnsupportedOperationException(
                     String.format("SetVariableRequest: Final field %s cannot be changed.", name));
         }
-        return setValueProxy(field.type(), value, newValue -> {
-            obj.setValue(field, newValue);
-        });
+        return setValueProxy(field.type(), value, newValue -> obj.setValue(field, newValue));
     }
 
-    private Value setArrayValue(ArrayReference array, Type eleType, int index, String value) throws ClassNotLoadedException, InvalidTypeException {
-        return setValueProxy(eleType, value, newValue -> {
-            array.setValue(index, newValue);
-        });
-    }
-
-    private Value setFieldValueWithConflict(ObjectReference obj, List<Field> fields,
-                                             String name, String belongToClass, String value)
+    private Value setArrayValue(ArrayReference array, Type eleType, int index, String value)
             throws ClassNotLoadedException, InvalidTypeException {
+        return setValueProxy(eleType, value, newValue -> array.setValue(index, newValue));
+    }
+
+    private Value setFieldValueWithConflict(ObjectReference obj, List<Field> fields, String name, String belongToClass,
+            String value) throws ClassNotLoadedException, InvalidTypeException {
         Field field;
         // first try to resolve filed by fully qualified name
-        List<Field> narrowedFields = fields.stream().filter(TypeComponent::isStatic).filter(t ->
-                t.name().equals(name) && t.declaringType().name().equals(belongToClass)
-        ).collect(Collectors.toList());
+        List<Field> narrowedFields = fields.stream().filter(TypeComponent::isStatic)
+                .filter(t -> t.name().equals(name) && t.declaringType().name().equals(belongToClass))
+                .collect(Collectors.toList());
         if (narrowedFields.isEmpty()) {
             // second try to resolve filed by formatted name
-            narrowedFields = fields.stream().filter(TypeComponent::isStatic).filter(t ->
-                    t.name().equals(name)
-                            && this.provider.typeToString(t.declaringType(), this.options).equals(belongToClass)
-            ).collect(Collectors.toList());
+            narrowedFields = fields.stream().filter(TypeComponent::isStatic)
+                    .filter(t -> t.name().equals(name)
+                            && this.provider.typeToString(t.declaringType(), this.options).equals(belongToClass))
+                    .collect(Collectors.toList());
         }
         if (narrowedFields.size() == 1) {
             field = narrowedFields.get(0);
         } else {
-            throw new UnsupportedOperationException(
-                    String.format("SetVariableRequest: Name conflicted for %s.", name));
+            throw new UnsupportedOperationException(String.format("SetVariableRequest: Name conflicted for %s.", name));
         }
-        return field.isStatic() 
-                ? setStaticFieldValue(field.declaringType(), field, name, value)
+        return field.isStatic() ? setStaticFieldValue(field.declaringType(), field, name, value)
                 : this.setObjectFieldValue(obj, field, name, value);
 
     }
-    
+
     private int getReferenceId(ThreadReference thread, Value value) {
         if (value instanceof ObjectReference && this.provider.hasChildren(value)) {
             ThreadObjectReference threadObjectReference = new ThreadObjectReference();
             threadObjectReference.thread = thread;
-            threadObjectReference.object = (ObjectReference)value;
+            threadObjectReference.object = (ObjectReference) value;
             return this.objectPool.addObject(thread, threadObjectReference);
-        }        
+        }
         return 0;
     }
 }
