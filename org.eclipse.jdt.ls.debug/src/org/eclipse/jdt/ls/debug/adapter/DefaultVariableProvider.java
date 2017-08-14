@@ -50,13 +50,12 @@ public final class DefaultVariableProvider implements IVariableProvider {
     private boolean includeStatic;
     private Map<IValueFormatter, Integer> valueFormatterMap;
     private Map<ITypeFormatter, Integer> typeFormatterMap;
-    
-    private Map<String, Object> defaultOptions;
 
     /**
      * Creates a default variable provider.
      *
-     * @param includeStatic whether to show static variables
+     * @param includeStatic
+     *            whether to show static variables
      */
     public DefaultVariableProvider(boolean includeStatic) {
         this.setIncludeStatic(includeStatic);
@@ -78,24 +77,22 @@ public final class DefaultVariableProvider implements IVariableProvider {
 
         registerValueFormatter(new StringObjectFormatter(), 2);
         registerValueFormatter(new ArrayObjectFormatter(this::typeToString), 2);
-        registerValueFormatter(new ClassObjectFormatter(this::typeToString), 2);        
-        
+        registerValueFormatter(new ClassObjectFormatter(this::typeToString), 2);
+
     }
-    
+
     @Override
     public Map<String, Object> getDefaultOptions() {
-        if (defaultOptions == null) {
-            defaultOptions = new HashMap<>();
-            int count1 = valueFormatterMap.keySet().stream().mapToInt(this::mergeDefaultOptions).sum();
-            int count2 = typeFormatterMap.keySet().stream().mapToInt(this::mergeDefaultOptions).sum();
-            if (count1 + count2 != defaultOptions.size()) {
-                throw new IllegalStateException(
-                        "There is some configuartion conflicts on type and value formatters.");
-            }
+        Map<String, Object> defaultOptions = new HashMap<>();
+        int count1 = valueFormatterMap.keySet().stream().mapToInt(
+                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
+        int count2 = typeFormatterMap.keySet().stream().mapToInt(
+                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
+        if (count1 + count2 != defaultOptions.size()) {
+            throw new IllegalStateException("There is some configuartion conflicts on type and value formatters.");
         }
         return defaultOptions;
     }
-    
 
     @Override
     public IValueFormatter getValueFormatter(Type type, Map<String, Object> options) {
@@ -118,19 +115,18 @@ public final class DefaultVariableProvider implements IVariableProvider {
     @Override
     public void registerValueFormatter(IValueFormatter formatter, int priority) {
         valueFormatterMap.put(formatter, priority);
-        defaultOptions = null;
     }
 
     @Override
     public void registerTypeFormatter(ITypeFormatter typeFormatter, int priority) {
         typeFormatterMap.put(typeFormatter, priority);
-        defaultOptions = null;
     }
 
     /**
      * Test whether the value has referenced objects.
      *
-     * @param value the value.
+     * @param value
+     *            the value.
      * @return true if this value is reference objects.
      */
     @Override
@@ -142,21 +138,21 @@ public final class DefaultVariableProvider implements IVariableProvider {
         if (type instanceof ArrayType) {
             return ((ArrayReference) value).length() > 0;
         }
-        return value.type() instanceof ReferenceType
-                && ((ReferenceType) type).allFields().stream()
-                        .filter(t -> isIncludeStatic() || !t.isStatic()).toArray().length > 0;
+        return value.type() instanceof ReferenceType && ((ReferenceType) type).allFields().stream()
+                .filter(t -> isIncludeStatic() || !t.isStatic()).toArray().length > 0;
     }
 
     /**
      * Get the variables of the object.
      *
-     * @param obj the object
+     * @param obj
+     *            the object
      * @return the variable list
-     * @throws AbsentInformationException when there is any error in retrieving information
+     * @throws AbsentInformationException
+     *             when there is any error in retrieving information
      */
     @Override
-    public List<Variable> listFieldVariables(ObjectReference obj)
-            throws AbsentInformationException {
+    public List<Variable> listFieldVariables(ObjectReference obj) throws AbsentInformationException {
         List<Variable> res = new ArrayList<>();
         Type type = obj.type();
         if (type instanceof ArrayType) {
@@ -167,8 +163,8 @@ public final class DefaultVariableProvider implements IVariableProvider {
             }
             return res;
         }
-        List<Field> fields = obj.referenceType().allFields().stream()
-                .filter(t -> isIncludeStatic() || !t.isStatic()).sorted((a, b) -> {
+        List<Field> fields = obj.referenceType().allFields().stream().filter(t -> isIncludeStatic() || !t.isStatic())
+                .sorted((a, b) -> {
                     try {
                         boolean v1isStatic = a.isStatic();
                         boolean v2isStatic = b.isStatic();
@@ -195,11 +191,15 @@ public final class DefaultVariableProvider implements IVariableProvider {
     /**
      * Get the variables of the object with pagination.
      *
-     * @param obj   the object
-     * @param start the start of the pagination
-     * @param count the number of variables needed
+     * @param obj
+     *            the object
+     * @param start
+     *            the start of the pagination
+     * @param count
+     *            the number of variables needed
      * @return the variable list
-     * @throws AbsentInformationException when there is any error in retrieving information
+     * @throws AbsentInformationException
+     *             when there is any error in retrieving information
      */
     @Override
     public List<Variable> listFieldVariables(ObjectReference obj, int start, int count)
@@ -219,18 +219,18 @@ public final class DefaultVariableProvider implements IVariableProvider {
     /**
      * Get the local variables of an stack frame.
      *
-     * @param stackFrame the stack frame
+     * @param stackFrame
+     *            the stack frame
      * @return local variable list
-     * @throws AbsentInformationException when there is any error in retrieving information
+     * @throws AbsentInformationException
+     *             when there is any error in retrieving information
      */
     @Override
-    public List<Variable> listLocalVariables(StackFrame stackFrame)
-            throws AbsentInformationException {
+    public List<Variable> listLocalVariables(StackFrame stackFrame) throws AbsentInformationException {
         List<Variable> res = new ArrayList<>();
         try {
             for (LocalVariable localVariable : stackFrame.visibleVariables()) {
-                Variable var = new Variable(localVariable.name(),
-                        stackFrame.getValue(localVariable));
+                Variable var = new Variable(localVariable.name(), stackFrame.getValue(localVariable));
                 var.local = localVariable;
                 res.add(var);
             }
@@ -248,7 +248,8 @@ public final class DefaultVariableProvider implements IVariableProvider {
     /**
      * Get the this variable of an stack frame.
      *
-     * @param stackFrame the stack frame
+     * @param stackFrame
+     *            the stack frame
      * @return this variable
      */
     @Override
@@ -263,7 +264,8 @@ public final class DefaultVariableProvider implements IVariableProvider {
     /**
      * Get the static variable of an stack frame.
      *
-     * @param stackFrame the stack frame
+     * @param stackFrame
+     *            the stack frame
      * @return the static variable of an stack frame.
      */
     @Override
@@ -285,25 +287,25 @@ public final class DefaultVariableProvider implements IVariableProvider {
     public void setIncludeStatic(boolean includeStatic) {
         this.includeStatic = includeStatic;
     }
-    
-    private int mergeDefaultOptions(IFormatter formatter) {
+
+    private int mergeDefaultOptions(IFormatter formatter, Map<String, Object> options) {
         int count = 0;
         for (Map.Entry<String, Object> entry : formatter.getDefaultOptions().entrySet()) {
-            this.defaultOptions.put(entry.getKey(), entry.getValue());
-            count ++;
+            options.put(entry.getKey(), entry.getValue());
+            count++;
         }
         return count;
     }
 
     private static IFormatter getFormatter(Map<? extends IFormatter, Integer> formatterMap, Type type,
-                                           Map<String, Object> options) {
-        List<? extends IFormatter> formatterList =
-                formatterMap.keySet().stream().filter(t -> t.acceptType(type, options))
-                        .sorted((a, b) ->
-                                -Integer.compare(formatterMap.get(a), formatterMap.get(b))).collect(Collectors.toList());
+            Map<String, Object> options) {
+        List<? extends IFormatter> formatterList = formatterMap.keySet().stream()
+                .filter(t -> t.acceptType(type, options))
+                .sorted((a, b) -> -Integer.compare(formatterMap.get(a), formatterMap.get(b)))
+                .collect(Collectors.toList());
         if (formatterList.isEmpty()) {
-            throw new IllegalArgumentException(String.format("There is no related formatter for type %s.",
-                    type == null ? "null" : type.name()));
+            throw new IllegalArgumentException(
+                    String.format("There is no related formatter for type %s.", type == null ? "null" : type.name()));
         }
         return formatterList.get(0);
     }
