@@ -50,6 +50,8 @@ public final class DefaultVariableProvider implements IVariableProvider {
     private boolean includeStatic;
     private Map<IValueFormatter, Integer> valueFormatterMap;
     private Map<ITypeFormatter, Integer> typeFormatterMap;
+    
+    private Map<String, Object> defaultOptions;
 
     /**
      * Creates a default variable provider.
@@ -76,22 +78,20 @@ public final class DefaultVariableProvider implements IVariableProvider {
 
         registerValueFormatter(new StringObjectFormatter(), 2);
         registerValueFormatter(new ArrayObjectFormatter(this::typeToString), 2);
-        registerValueFormatter(new ClassObjectFormatter(this::typeToString), 2);
+        registerValueFormatter(new ClassObjectFormatter(this::typeToString), 2);        
+        
     }
-
-    private static IFormatter getFormatter(Map<? extends IFormatter, Integer> formatterMap, Type type,
-                                           Map<String, Object> options) {
-        List<? extends IFormatter> formatterList =
-                formatterMap.keySet().stream().filter(t -> t.acceptType(type, options))
-                        .sorted((a, b) ->
-                                -Integer.compare(formatterMap.get(a), formatterMap.get(b))).collect(Collectors.toList());
-        if (formatterList.isEmpty()) {
-            throw new IllegalArgumentException(String.format("There is no related formatter for type %s.",
-                    type == null ? "null" : type.name()));
+    
+    @Override
+    public Map<String, Object> getDefaultOptions() {
+        if (defaultOptions == null) {
+            defaultOptions = new HashMap<>();
+            valueFormatterMap.keySet().forEach(this::mergeDefaultOptions);
+            typeFormatterMap.keySet().forEach(this::mergeDefaultOptions);
         }
-        return formatterList.get(0);
+        return defaultOptions;
     }
-
+    
 
     @Override
     public IValueFormatter getValueFormatter(Type type, Map<String, Object> options) {
@@ -114,11 +114,13 @@ public final class DefaultVariableProvider implements IVariableProvider {
     @Override
     public void registerValueFormatter(IValueFormatter formatter, int priority) {
         valueFormatterMap.put(formatter, priority);
+        defaultOptions = null;
     }
 
     @Override
     public void registerTypeFormatter(ITypeFormatter typeFormatter, int priority) {
         typeFormatterMap.put(typeFormatter, priority);
+        defaultOptions = null;
     }
 
     /**
@@ -279,4 +281,25 @@ public final class DefaultVariableProvider implements IVariableProvider {
     public void setIncludeStatic(boolean includeStatic) {
         this.includeStatic = includeStatic;
     }
+    
+    private void mergeDefaultOptions(IFormatter formatter) {
+        for (Map.Entry<String, Object> entry : formatter.getDefaultOptions().entrySet()) {
+            this.defaultOptions.put(entry.getKey(), entry.getValue());    
+        }
+        
+    }
+
+    private static IFormatter getFormatter(Map<? extends IFormatter, Integer> formatterMap, Type type,
+                                           Map<String, Object> options) {
+        List<? extends IFormatter> formatterList =
+                formatterMap.keySet().stream().filter(t -> t.acceptType(type, options))
+                        .sorted((a, b) ->
+                                -Integer.compare(formatterMap.get(a), formatterMap.get(b))).collect(Collectors.toList());
+        if (formatterList.isEmpty()) {
+            throw new IllegalArgumentException(String.format("There is no related formatter for type %s.",
+                    type == null ? "null" : type.name()));
+        }
+        return formatterList.get(0);
+    }
+
 }

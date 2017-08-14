@@ -126,4 +126,10 @@ public interface IVariableProvider {
      * <code>IllegalArgumentException</code> will be thrown
      */
     IValueFormatter getValueFormatter(Type type, Map<String, Object> options);
+
+    /**
+     * Get the default options for all formatters registered.
+     * @return The default options.
+     */
+    Map<String, Object> getDefaultOptions();
 }
