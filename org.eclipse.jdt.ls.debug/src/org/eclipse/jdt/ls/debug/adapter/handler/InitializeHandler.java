@@ -44,10 +44,10 @@ public class InitializeHandler implements IDebugRequestHandler {
         if (pathFormat != null) {
             switch (pathFormat) {
                 case "uri":
-                    settings.clientPathsAreUri(true);
+                    settings.setClientPathsAreUri(true);
                     break;
                 default:
-                    settings.clientPathsAreUri(false);
+                    settings.setClientPathsAreUri(false);
             }
         }
 
