@@ -575,19 +575,6 @@ public class DebugAdapter implements IDebugAdapter {
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
 
         try {
-            Map<String, Object> props = new HashMap<>();
-            props.put("type", arguments.type);
-            props.put("name", arguments.name);
-            props.put("request", arguments.request);
-            props.put("cwd", arguments.cwd);
-            props.put("startupClass", arguments.startupClass);
-            props.put("projectName", arguments.projectName);
-            props.put("classpath", classpath);
-            props.put("sourcePath", sourcePath);
-            props.put("stopOnEntry", arguments.stopOnEntry);
-            props.put("options", arguments.options);
-
-            context.getSourceLookUpProvider().initialize(props);
             this.debugSession = DebugUtility.launch(context.getVirtualMachineManagerProvider().getVirtualMachineManager(), mainClass, classpath);
             ProcessConsole debuggeeConsole = new ProcessConsole(this.debugSession.process(), "Debuggee");
             debuggeeConsole.onStdout((output) -> {
