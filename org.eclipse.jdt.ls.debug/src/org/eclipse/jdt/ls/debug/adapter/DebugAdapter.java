@@ -545,10 +545,18 @@ public class DebugAdapter implements IDebugAdapter {
         return response;
     }
 
+    /**
+     * Send event to DA immediately.
+     * @see ProtocolServer#sendEvent(String,Object)
+     */
     private void sendEvent(Events.DebugEvent event) {
         this.eventConsumer.accept(event, false);
     }
 
+    /**
+     * Send event to DA after the current dispatching request is resolved.
+     * @see ProtocolServer#sendEventLater(String,Object)
+     */
     private void sendEventLater(Events.DebugEvent event) {
         this.eventConsumer.accept(event, true);
     }
