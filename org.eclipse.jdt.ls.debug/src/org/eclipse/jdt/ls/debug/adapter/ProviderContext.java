@@ -1,16 +1,13 @@
-package org.eclipse.jdt.ls.debug.adapter.impl;
+package org.eclipse.jdt.ls.debug.adapter;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jdt.ls.debug.adapter.IProvider;
-import org.eclipse.jdt.ls.debug.adapter.IProviderAdapter;
-
-public class DefaultProviderAdapter implements IProviderAdapter {
+public class ProviderContext implements IProviderContext {
 
     private Map<Class<? extends IProvider>, IProvider> providerMap;
     
-    public DefaultProviderAdapter() {
+    public ProviderContext() {
         providerMap = new HashMap<>();  
     }
     
@@ -29,5 +26,15 @@ public class DefaultProviderAdapter implements IProviderAdapter {
             throw new IllegalArgumentException(String.format("%s has already been registered.", clazz.getName()));
         }
         providerMap.put(clazz, provider);
+    }
+
+    @Override
+    public ISourceLookUpProvider getSourceLookUpProvider() {
+        return getProvider(ISourceLookUpProvider.class);
+    }
+
+    @Override
+    public IVirtualMachineManagerProvider getVirtualMachineManagerProvider() {
+        return getProvider(IVirtualMachineManagerProvider.class);
     }
 }

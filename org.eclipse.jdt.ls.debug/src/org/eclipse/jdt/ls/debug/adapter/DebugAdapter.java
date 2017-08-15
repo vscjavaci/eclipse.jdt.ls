@@ -732,7 +732,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Types.Source convertDebuggerSourceToClient(Location location) throws URISyntaxException {
         String fullyQualifiedName = location.declaringType().name();
-        String uri = context.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName);
+        String uri = context.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName, "");
         String sourceName = "";
         String relativeSourcePath = "";
         try {
