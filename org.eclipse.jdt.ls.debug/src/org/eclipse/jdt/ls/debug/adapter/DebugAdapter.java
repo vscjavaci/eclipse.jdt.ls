@@ -60,7 +60,7 @@ public class DebugAdapter implements IDebugAdapter {
     private boolean clientLinesStartAt1 = true;
     private boolean clientPathsAreUri = false;
 
-    private boolean isAttaching = false;
+    private boolean attachingMode = false;
 
     private String cwd;
     private String[] sourcePath;
@@ -257,7 +257,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Responses.ResponseBody launch(Requests.LaunchArguments arguments) {
         try {
-            this.isAttaching = false;
+            this.attachingMode = false;
             this.launchDebugSession(arguments);
         } catch (DebugException e) {
             // When launching failed, send a TerminatedEvent to tell DA the debugger would exit.
@@ -270,7 +270,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Responses.ResponseBody attach(Requests.AttachArguments arguments) {
         try {
-            this.isAttaching = true;
+            this.attachingMode = true;
             this.attachDebugSession(arguments);
         } catch (DebugException e) {
             // When attaching failed, send a TerminatedEvent to tell DA the debugger would exit.
@@ -285,7 +285,7 @@ public class DebugAdapter implements IDebugAdapter {
      * VS Code terminates a debug session with the disconnect request.
      */
     private Responses.ResponseBody disconnect(Requests.DisconnectArguments arguments) {
-        this.shutdownDebugSession(arguments.terminateDebuggee && !this.isAttaching);
+        this.shutdownDebugSession(arguments.terminateDebuggee && !this.attachingMode);
         return new Responses.ResponseBody();
     }
 

@@ -23,11 +23,11 @@ import org.eclipse.jdt.ls.debug.adapter.ProtocolServer;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class JavaDebugServer implements IDebugServer {
-    private static SingletonDebugServer singletonServer;
+    private static InternalDebugServer singletonServer;
 
     private static synchronized void createIfNotExist() {
         if (singletonServer == null) {
-            singletonServer = new SingletonDebugServer();
+            singletonServer = new InternalDebugServer("Singleton Java Debug Server");
         }
     }
 
@@ -57,19 +57,17 @@ public class JavaDebugServer implements IDebugServer {
         }
     }
 
-    private static class SingletonDebugServer {
+    private static class InternalDebugServer {
         private ServerSocket serverSocket = null;
         private boolean isStarted = false;
+        private String serverName;
 
-        /**
-         * Constructs a SingletonDebugServer instance which will launch a ServerSocket to
-         * listen for incoming socket connection.
-         */
-        SingletonDebugServer() {
+        InternalDebugServer(String serverName) {
             try {
+                this.serverName = serverName;
                 this.serverSocket = new ServerSocket(0, 1);
             } catch (IOException e) {
-                Logger.logException("Create ServerSocket exception", e);
+                Logger.logException("Failed to create Internal Debug Server", e);
             }
         }
 
@@ -103,7 +101,7 @@ public class JavaDebugServer implements IDebugServer {
                         }
                     }
 
-                }, "Singleton Java Debug Server").start();
+                }, this.serverName).start();
             }
         }
 
