@@ -35,7 +35,6 @@ import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
 import io.reactivex.disposables.Disposable;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.DebugUtility;
@@ -61,6 +60,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -545,18 +545,10 @@ public class DebugAdapter implements IDebugAdapter {
         return response;
     }
 
-    /**
-     * Send event to DA immediately.
-     * @see ProtocolServer#sendEvent(String,Object)
-     */
     private void sendEvent(Events.DebugEvent event) {
         this.eventConsumer.accept(event, false);
     }
 
-    /**
-     * Send event to DA after the current dispatching request is resolved.
-     * @see ProtocolServer#sendEventLater(String,Object)
-     */
     private void sendEventLater(Events.DebugEvent event) {
         this.eventConsumer.accept(event, true);
     }
@@ -575,6 +567,19 @@ public class DebugAdapter implements IDebugAdapter {
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
 
         try {
+            Map<String, Object> props = new HashMap<>();
+            props.put("type", arguments.type);
+            props.put("name", arguments.name);
+            props.put("request", arguments.request);
+            props.put("cwd", arguments.cwd);
+            props.put("startupClass", arguments.startupClass);
+            props.put("projectName", arguments.projectName);
+            props.put("classpath", classpath);
+            props.put("sourcePath", sourcePath);
+            props.put("stopOnEntry", arguments.stopOnEntry);
+            props.put("options", arguments.options);
+
+            context.getSourceLookUpProvider().initialize(props);
             this.debugSession = DebugUtility.launch(context.getVirtualMachineManagerProvider().getVirtualMachineManager(), mainClass, classpath);
             ProcessConsole debuggeeConsole = new ProcessConsole(this.debugSession.process(), "Debuggee");
             debuggeeConsole.onStdout((output) -> {
@@ -891,8 +896,8 @@ public class DebugAdapter implements IDebugAdapter {
                         .format("VariablesRequest: Invalid variablesReference %d.", arguments.variablesReference));
             }
             // find variable name duplicates
-            Set<String> duplicateNames = getDuplicateNames(ArrayUtils.toStringArray(
-                    variables.stream().map(var -> var.name).toArray()));
+            Set<String> duplicateNames = getDuplicateNames(variables.stream().map(var -> var.name)
+                    .collect(Collectors.toList()));
             Map<Variable, String> variableNameMap = new HashMap<>();
             if (!duplicateNames.isEmpty()) {
                 Map<String, List<Variable>> duplicateVars =
@@ -948,7 +953,7 @@ public class DebugAdapter implements IDebugAdapter {
             return new Responses.VariablesResponseBody(list);
         }
 
-        private Set<String> getDuplicateNames(String[] list) {
+        private Set<String> getDuplicateNames(Collection<String> list) {
             Set<String> result = new HashSet<>();
             Set<String> set = new HashSet<>();
 
