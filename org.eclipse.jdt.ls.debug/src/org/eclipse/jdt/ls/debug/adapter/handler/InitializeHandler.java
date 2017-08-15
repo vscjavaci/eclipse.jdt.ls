@@ -14,7 +14,6 @@ package org.eclipse.jdt.ls.debug.adapter.handler;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jdt.ls.debug.adapter.DebugRequestHandleStage;
 import org.eclipse.jdt.ls.debug.adapter.Events;
 import org.eclipse.jdt.ls.debug.adapter.IDebugAdapterContext;
 import org.eclipse.jdt.ls.debug.adapter.IDebugRequestHandler;
@@ -29,10 +28,6 @@ public class InitializeHandler implements IDebugRequestHandler {
         return Arrays.asList("initialize");
     }
 
-    @Override
-    public DebugRequestHandleStage getExecutingStage() {
-        return DebugRequestHandleStage.PROCESS_RESPONSE;
-    }
 
     @Override
     public void handle(String command, Requests.Arguments argument, Messages.Response response,

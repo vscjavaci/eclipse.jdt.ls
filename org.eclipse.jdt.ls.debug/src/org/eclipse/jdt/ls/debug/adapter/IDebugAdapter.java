@@ -12,5 +12,6 @@
 package org.eclipse.jdt.ls.debug.adapter;
 
 public interface IDebugAdapter {
+
     Messages.Response dispatchRequest(Messages.Request request);
 }

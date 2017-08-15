@@ -16,8 +16,6 @@ import java.util.List;
 public interface IDebugRequestHandler {
     List<String> getTargetCommands();
     
-    DebugRequestHandleStage getExecutingStage();
-    
     void handle(String command, Requests.Arguments arguments, Messages.Response response,
                 IDebugAdapterContext context);
 

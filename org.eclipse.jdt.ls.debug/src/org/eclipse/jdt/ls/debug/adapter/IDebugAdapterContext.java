@@ -11,15 +11,15 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-import com.sun.jdi.ThreadReference;
+import org.eclipse.jdt.ls.debug.IDebugSession;
 
 public interface IDebugAdapterContext extends IProviderContext {
+    
     /**
-     * Get a JDI thread from a thread id.
-     * @param threadId the thread id
-     * @return the JDI thread
+     * Get the debug session.
+     * @return the debug session.
      */
-    ThreadReference getThread(int threadId);
+    IDebugSession getDebugSession();
     
     /**
      * Send debug event synchronously. 
@@ -32,20 +32,4 @@ public interface IDebugAdapterContext extends IProviderContext {
      * @param event the debug event
      */
     void sendEventLater(Events.DebugEvent event);
-
-    /**
-     * Set a key/value pair for the handler during the handle processing session.
-     *
-     * @param key the object key
-     * @param value the object 
-     */
-    void setSession(String key, Object value);
-
-    /**
-     * Get a session object during the handle processing.
-     * 
-     * @param key the object key
-     * @return the object in the handle processing session
-     */
-    Object getSession(String key);
 }
