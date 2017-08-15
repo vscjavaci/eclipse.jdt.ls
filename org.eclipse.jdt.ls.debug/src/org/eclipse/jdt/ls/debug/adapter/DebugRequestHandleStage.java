@@ -13,6 +13,5 @@
 package org.eclipse.jdt.ls.debug.adapter;
 
 public enum DebugRequestHandleStage {
-    PROCESS_RESPONSE,
-    LOGGINE
+    PROCESS_RESPONSE
 }
