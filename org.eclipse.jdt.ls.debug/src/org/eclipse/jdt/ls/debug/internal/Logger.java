@@ -23,16 +23,19 @@ public class Logger {
      */
     public static void logInfo(String message) {
         if (isVerbose) {
-            JavaDebuggerServerPlugin.logInfo(message);            
+            JavaDebuggerServerPlugin.logInfo(message);
         }
+        System.out.println(message);
     }
 
     public static void logException(String message, Exception e) {
         JavaDebuggerServerPlugin.logException(message, e);
+        e.printStackTrace();
     }
 
     public static void logError(String error) {
         JavaDebuggerServerPlugin.logError(error);
+        System.err.println(error);
     }
-    
+
 }

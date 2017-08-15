@@ -797,6 +797,7 @@ public class DebugAdapter implements IDebugAdapter {
                                boolean hexFormat, boolean showQualified) {
             this.objectPool = new RecyclableObjectPool<>();
             this.variableFormatter = variableFormatter;
+            this.showStaticVariables = showStaticVariables;
 
             this.options = new HashMap<>();
             if (hexFormat) {
