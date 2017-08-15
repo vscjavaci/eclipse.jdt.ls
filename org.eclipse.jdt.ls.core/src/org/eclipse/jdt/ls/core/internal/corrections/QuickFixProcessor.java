@@ -32,6 +32,7 @@ import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.CUCorrectionProposal;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.IProposalRelevance;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.JavadocTagsSubProcessor;
+import org.eclipse.jdt.ls.core.internal.corrections.proposals.LocalCorrectionsSubProcessor;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.ReorgCorrectionsSubProcessor;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.ReplaceCorrectionProposal;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.TypeMismatchSubProcessor;
@@ -276,11 +277,10 @@ public class QuickFixProcessor {
 			// ModifierCorrectionSubProcessor.addAbstractTypeProposals(context,
 			// problem, proposals);
 			// break;
-			// case IProblem.AbstractMethodMustBeImplemented:
-			// case IProblem.EnumConstantMustImplementAbstractMethod:
-			// LocalCorrectionsSubProcessor.addUnimplementedMethodsProposals(context,
-			// problem, proposals);
-			// break;
+			case IProblem.AbstractMethodMustBeImplemented:
+			case IProblem.EnumConstantMustImplementAbstractMethod:
+				LocalCorrectionsSubProcessor.addUnimplementedMethodsProposals(context, problem, proposals);
+				break;
 			// case IProblem.ShouldImplementHashcode:
 			// LocalCorrectionsSubProcessor.addMissingHashCodeProposals(context,
 			// problem, proposals);
@@ -314,13 +314,13 @@ public class QuickFixProcessor {
 			// break;
 			// case IProblem.UnusedPrivateMethod:
 			// case IProblem.UnusedPrivateConstructor:
-			// case IProblem.UnusedPrivateField:
+
 			// case IProblem.UnusedPrivateType:
 			// case IProblem.LocalVariableIsNeverUsed:
 			// case IProblem.ArgumentIsNeverUsed:
-			// LocalCorrectionsSubProcessor.addUnusedMemberProposal(context,
-			// problem, proposals);
-			// break;
+			case IProblem.UnusedPrivateField:
+				LocalCorrectionsSubProcessor.addUnusedMemberProposal(context, problem, proposals);
+				break;
 			// case IProblem.NeedToEmulateFieldReadAccess:
 			// case IProblem.NeedToEmulateFieldWriteAccess:
 			// case IProblem.NeedToEmulateMethodAccess:
