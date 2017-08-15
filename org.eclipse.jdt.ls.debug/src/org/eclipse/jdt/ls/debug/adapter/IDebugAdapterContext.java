@@ -36,7 +36,7 @@ public interface IDebugAdapterContext {
      * @param event
      *            the debug event
      */
-    void sendEventLater(Events.DebugEvent event);
+    void sendEventAsync(Events.DebugEvent event);
 
     <T extends IProvider> T getProvider(Class<T> clazz);
 

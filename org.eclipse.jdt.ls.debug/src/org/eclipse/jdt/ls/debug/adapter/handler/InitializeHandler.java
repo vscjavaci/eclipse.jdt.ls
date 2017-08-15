@@ -45,7 +45,7 @@ public class InitializeHandler implements IDebugRequestHandler {
         }
 
         // Send an InitializedEvent
-        context.sendEventLater(new Events.InitializedEvent());
+        context.sendEventAsync(new Events.InitializedEvent());
 
         Types.Capabilities caps = new Types.Capabilities();
         caps.supportsConfigurationDoneRequest = true;
