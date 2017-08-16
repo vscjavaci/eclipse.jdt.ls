@@ -21,7 +21,14 @@ import org.eclipse.jdt.ls.debug.adapter.formatter.ObjectFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.SimpleTypeFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.StringObjectFormatter;
 
-public abstract class VariableFormatterFactory {
+public final class VariableFormatterFactory {
+    /**
+     * Private constructor to prevent instance of <code>VariableFormatterFactory</code>.
+     */
+    private VariableFormatterFactory() {
+        
+    }
+    
     /**
      * Create an <code>IVariableFormatter</code> instance with proper value and type formatters.  
      * @return an <code>IVariableFormatter</code> instance
