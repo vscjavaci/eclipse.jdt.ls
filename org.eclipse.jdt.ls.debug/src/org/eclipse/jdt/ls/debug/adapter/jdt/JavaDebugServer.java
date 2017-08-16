@@ -23,118 +23,94 @@ import org.eclipse.jdt.ls.debug.adapter.ProtocolServer;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class JavaDebugServer implements IDebugServer {
-    private static InternalDebugServer singletonServer;
+    private static JavaDebugServer singletonInstance;
 
-    private static synchronized void createIfNotExist() {
-        if (singletonServer == null) {
-            singletonServer = new InternalDebugServer("Singleton Java Debug Server");
+    private ServerSocket serverSocket = null;
+    private boolean isStarted = false;
+
+    /**
+     * Gets the single instance of JavaDebugServer.
+     * @return the JavaDebugServer instance
+     */
+    public synchronized static IDebugServer getInstance() {
+        if (singletonInstance == null) {
+            singletonInstance = new JavaDebugServer();
+        }
+        return singletonInstance;
+    }
+
+    private JavaDebugServer() {
+        try {
+            this.serverSocket = new ServerSocket(0, 1);
+        } catch (IOException e) {
+            Logger.logException("Failed to create Internal Debug Server", e);
         }
     }
 
-    public JavaDebugServer() {
-        createIfNotExist();
-    }
-
-    @Override
-    public int getPort() {
-        if (singletonServer != null) {
-            return singletonServer.getPort();
+    public synchronized int getPort() {
+        if (this.serverSocket != null) {
+            return this.serverSocket.getLocalPort();
         }
         return -1;
     }
 
-    @Override
-    public void start() {
-        if (singletonServer != null) {
-            singletonServer.start();
-        }
-    }
+    public synchronized void start() {
+        if (this.serverSocket != null && !this.isStarted) {
+            this.isStarted = true;
+            // Execute eventLoop in a new thread.
+            new Thread(new Runnable() {
 
-    @Override
-    public void stop() {
-        if (singletonServer != null) {
-            singletonServer.stop();
-        }
-    }
-
-    private static class InternalDebugServer {
-        private ServerSocket serverSocket = null;
-        private boolean isStarted = false;
-        private String serverName;
-
-        InternalDebugServer(String serverName) {
-            try {
-                this.serverName = serverName;
-                this.serverSocket = new ServerSocket(0, 1);
-            } catch (IOException e) {
-                Logger.logException("Failed to create Internal Debug Server", e);
-            }
-        }
-
-        synchronized int getPort() {
-            if (this.serverSocket != null) {
-                return this.serverSocket.getLocalPort();
-            }
-            return -1;
-        }
-
-        synchronized void start() {
-            if (this.serverSocket != null && !this.isStarted) {
-                this.isStarted = true;
-                // Execute eventLoop in a new thread.
-                new Thread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        while (true) {
-                            try {
-                                // Allow server socket to service multiple clients at the same time.
-                                // When a request comes in, create a connection thread to process it.
-                                // Then the server goes back to listen for new connection request.
-                                Socket connection = serverSocket.accept();
-                                createConnectionThread(connection);
-                            } catch (IOException e1) {
-                                Logger.logException("Setup socket connection exception", e1);
-                                closeServerSocket();
-                                return;
-                            }
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            // Allow server socket to service multiple clients at the same time.
+                            // When a request comes in, create a connection thread to process it.
+                            // Then the server goes back to listen for new connection request.
+                            Socket connection = serverSocket.accept();
+                            createConnectionThread(connection);
+                        } catch (IOException e1) {
+                            Logger.logException("Setup socket connection exception", e1);
+                            closeServerSocket();
+                            return;
                         }
                     }
-
-                }, this.serverName).start();
-            }
-        }
-
-        synchronized void stop() {
-            closeServerSocket();
-        }
-
-        private void closeServerSocket() {
-            if (serverSocket != null) {
-                try {
-                    Logger.logInfo("Close debugserver socket port " + serverSocket.getLocalPort());
-                    serverSocket.close();
-                } catch (IOException e) {
-                    Logger.logException("Close ServerSocket exception", e);
                 }
-            }
-            serverSocket = null;
-        }
 
-        private void createConnectionThread(Socket connection) {
-            new Thread(() -> {
-                try {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    PrintWriter out = new PrintWriter(connection.getOutputStream(), true);
-                    ProtocolServer protocolServer = new ProtocolServer(in, out, JdtProviderContextFactory.createProviderContext());
-                    // protocol server will dispatch request and send response in a while-loop.
-                    protocolServer.start();
-                } catch (IOException e) {
-                    Logger.logException("Socket connection exception", e);
-                } finally {
-                    Logger.logInfo("Debug connection closed");
-                }
-            }, "Debug Protocol Server").start();
+            }, "Java Debug Server").start();
         }
     }
+
+    public synchronized void stop() {
+        closeServerSocket();
+    }
+
+    private void closeServerSocket() {
+        if (serverSocket != null) {
+            try {
+                Logger.logInfo("Close debugserver socket port " + serverSocket.getLocalPort());
+                serverSocket.close();
+            } catch (IOException e) {
+                Logger.logException("Close ServerSocket exception", e);
+            }
+        }
+        serverSocket = null;
+    }
+
+    private void createConnectionThread(Socket connection) {
+        new Thread(() -> {
+            try {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                PrintWriter out = new PrintWriter(connection.getOutputStream(), true);
+                ProtocolServer protocolServer = new ProtocolServer(in, out, JdtProviderContextFactory.createProviderContext());
+                // protocol server will dispatch request and send response in a while-loop.
+                protocolServer.start();
+            } catch (IOException e) {
+                Logger.logException("Socket connection exception", e);
+            } finally {
+                Logger.logInfo("Debug connection closed");
+            }
+        }, "Debug Protocol Server").start();
+    }
+
 }
