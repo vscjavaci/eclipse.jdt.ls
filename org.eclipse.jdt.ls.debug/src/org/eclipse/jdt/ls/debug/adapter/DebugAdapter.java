@@ -85,7 +85,7 @@ public class DebugAdapter implements IDebugAdapter {
     private BreakpointManager breakpointManager;
     private List<Disposable> eventSubscriptions;
     private IProviderContext context;
-    private VariableHandler variableHandler;
+    private VariableRequestHandler variableRequestHandler;
     private IdCollection<String> sourceCollection = new IdCollection<>();
     private AtomicInteger messageId = new AtomicInteger(1);
 
@@ -97,7 +97,7 @@ public class DebugAdapter implements IDebugAdapter {
         this.breakpointManager = new BreakpointManager();
         this.eventSubscriptions = new ArrayList<>();
         this.context = context;
-        this.variableHandler = new VariableHandler(VariableFormatterFactory.createVariableFormatter(),
+        this.variableRequestHandler = new VariableRequestHandler(VariableFormatterFactory.createVariableFormatter(),
                 true, false, true);
     }
 
@@ -395,10 +395,10 @@ public class DebugAdapter implements IDebugAdapter {
         if (thread != null) {
             allThreadsContinued = false;
             thread.resume();
-            this.variableHandler.recyclableThreads(thread);
+            this.variableRequestHandler.recyclableThreads(thread);
         } else {
             this.debugSession.resume();
-            this.variableHandler.recyclableAllObject();
+            this.variableRequestHandler.recyclableAllObject();
         }
         return new Responses.ContinueResponseBody(allThreadsContinued);
     }
@@ -407,7 +407,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepOver(thread, this.debugSession.eventHub());
-            this.variableHandler.recyclableThreads(thread);
+            this.variableRequestHandler.recyclableThreads(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -416,7 +416,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepInto(thread, this.debugSession.eventHub());
-            this.variableHandler.recyclableThreads(thread);
+            this.variableRequestHandler.recyclableThreads(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -425,7 +425,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepOut(thread, this.debugSession.eventHub());
-            this.variableHandler.recyclableThreads(thread);
+            this.variableRequestHandler.recyclableThreads(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -453,7 +453,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Responses.ResponseBody stackTrace(Requests.StackTraceArguments arguments) {
         try {
-            return this.variableHandler.stackTrace(arguments);
+            return this.variableRequestHandler.stackTrace(arguments);
         } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
             return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
                     String.format("Failed to get stackTrace. Reason: '%s'", e.getMessage())));
@@ -461,12 +461,12 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
-        return this.variableHandler.scopes(arguments);
+        return this.variableRequestHandler.scopes(arguments);
     }
 
     private Responses.ResponseBody variables(Requests.VariablesArguments arguments) {
         try {
-            return this.variableHandler.variables(arguments);
+            return this.variableRequestHandler.variables(arguments);
         } catch (AbsentInformationException e) {
             return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
                     String.format("Failed to get variables. Reason: '%s'", e.getMessage())));
@@ -599,7 +599,7 @@ public class DebugAdapter implements IDebugAdapter {
         });
         this.eventSubscriptions.clear();
         this.breakpointManager.reset();
-        this.variableHandler.recyclableAllObject();
+        this.variableRequestHandler.recyclableAllObject();
         this.sourceCollection.reset();
         if (this.debugSession.process().isAlive()) {
             if (terminateDebuggee) {
@@ -787,23 +787,17 @@ public class DebugAdapter implements IDebugAdapter {
         return new Types.Message(this.messageId.getAndIncrement(), message);
     }
 
-    private class VariableHandler {
+    private class VariableRequestHandler {
         private boolean showStaticVariables = true;
         private IVariableFormatter variableFormatter;
         private RecyclableObjectPool<ThreadReference, Object> objectPool;
-        private Map<String, Object> options;
         
-        public VariableHandler(IVariableFormatter variableFormatter, boolean showStaticVariables,
+        public VariableRequestHandler(IVariableFormatter variableFormatter, boolean showStaticVariables,
                                boolean hexFormat, boolean showQualified) {
             this.objectPool = new RecyclableObjectPool<>();
             this.variableFormatter = variableFormatter;
             this.showStaticVariables = showStaticVariables;
 
-            this.options = new HashMap<>();
-            if (hexFormat) {
-                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
-            }
-            options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, showQualified);
         }
         
         public void recyclableAllObject() {
@@ -861,6 +855,16 @@ public class DebugAdapter implements IDebugAdapter {
 
 
         Responses.ResponseBody variables(Requests.VariablesArguments arguments) throws AbsentInformationException {
+            Map<String, Object> options = new HashMap<>();
+            // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
+            boolean showQualified = true;
+            if (arguments.format != null && arguments.format.hex) {
+                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
+            }
+            if (showQualified) {
+                options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, showQualified);
+            }
+            
             List<Types.Variable> list = new ArrayList<>();
             List<Variable> variables;
             Object obj = this.objectPool.getObjectById(arguments.variablesReference);
