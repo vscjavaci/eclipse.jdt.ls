@@ -395,7 +395,7 @@ public class DebugAdapter implements IDebugAdapter {
         if (thread != null) {
             allThreadsContinued = false;
             thread.resume();
-            this.variableRequestHandler.recyclableThreads(thread);
+            checkThreadRunningAndRecycleIds(thread);
         } else {
             this.debugSession.resume();
             this.variableRequestHandler.recyclableAllObject();
@@ -407,7 +407,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepOver(thread, this.debugSession.eventHub());
-            this.variableRequestHandler.recyclableThreads(thread);
+            checkThreadRunningAndRecycleIds(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -416,7 +416,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepInto(thread, this.debugSession.eventHub());
-            this.variableRequestHandler.recyclableThreads(thread);
+            checkThreadRunningAndRecycleIds(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -425,7 +425,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepOut(thread, this.debugSession.eventHub());
-            this.variableRequestHandler.recyclableThreads(thread);
+            checkThreadRunningAndRecycleIds(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -785,6 +785,18 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Types.Message convertDebuggerMessageToClient(String message) {
         return new Types.Message(this.messageId.getAndIncrement(), message);
+    }
+
+    private void checkThreadRunningAndRecycleIds(ThreadReference thread) {
+        if (allThreadRunning()) {
+            this.variableRequestHandler.recyclableAllObject();
+        } else {
+            this.variableRequestHandler.recyclableThreads(thread);
+        }
+    }
+    
+    private boolean allThreadRunning() {
+        return !safeGetAllThreads().stream().anyMatch(ThreadReference::isSuspended);
     }
 
     private class VariableRequestHandler {
