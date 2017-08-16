@@ -19,10 +19,10 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.eclipse.jdt.ls.debug.internal" level="debug" additivity="true">
+        <Logger name="org.eclipse.jdt.ls.debug.adapter.logger" level="debug" additivity="true">
             <appender-ref ref="fileLogger" level="debug" />
         </Logger>
-        <Root level="error">
+        <Root level="debug">
             <appender-ref ref="console"/>
         </Root>
     </Loggers>

@@ -11,33 +11,42 @@
 
 package org.eclipse.jdt.ls.debug.internal;
 
-import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
-import org.apache.logging.log4j.LogManager;
+import java.util.ArrayList;
+
+import org.eclipse.jdt.ls.debug.adapter.logger.BundleLogger;
+import org.eclipse.jdt.ls.debug.adapter.logger.CompositeLogger;
+import org.eclipse.jdt.ls.debug.adapter.logger.DefaultLogger;
+import org.eclipse.jdt.ls.debug.adapter.logger.ILogger;
+import org.eclipse.jdt.ls.debug.adapter.logger.LoggerWithFilter;
 
 public class Logger {
-    private static final org.apache.logging.log4j.Logger inner = LogManager.getLogger(JavaDebuggerServerPlugin.class.getName());
+    private static ILogger provider;
 
+    static {
+        ArrayList<ILogger> list = new ArrayList<ILogger>();
+        list.add(new DefaultLogger());
+        list.add(new LoggerWithFilter(new BundleLogger()));
+        provider = new CompositeLogger(list);
+    }
+    
     /**
-     * Log the info message with the plugin's logger.
+     * Log the info message with the provider.
      * @param message
      *               message to log
      */
     public static void logInfo(String message) {
-        JavaDebuggerServerPlugin.logInfo(message);
-        inner.info(message);
+        provider.logInfo(message);
     }
 
     public static void logException(String message, Exception e) {
-        JavaDebuggerServerPlugin.logException(message, e);
-        inner.error(message, e);
+        provider.logException(message, e);
     }
 
     public static void logError(String error) {
-        JavaDebuggerServerPlugin.logError(error);
-        inner.error(error);
+        provider.logError(error);
     }
     
     public static void logWarn(String warn) {
-        inner.warn(warn);
+        provider.logInfo(warn);
     }
 }
