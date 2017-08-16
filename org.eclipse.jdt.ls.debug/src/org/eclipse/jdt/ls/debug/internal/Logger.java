@@ -12,8 +12,11 @@
 package org.eclipse.jdt.ls.debug.internal;
 
 import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
+import org.apache.logging.log4j.LogManager;
 
 public class Logger {
+    private static final org.apache.logging.log4j.Logger inner = LogManager.getLogger(JavaDebuggerServerPlugin.class.getName());
+
     /**
      * Log the info message with the plugin's logger.
      * @param message
@@ -21,14 +24,20 @@ public class Logger {
      */
     public static void logInfo(String message) {
         JavaDebuggerServerPlugin.logInfo(message);
+        inner.info(message);
     }
 
     public static void logException(String message, Exception e) {
         JavaDebuggerServerPlugin.logException(message, e);
+        inner.error(message, e);
     }
 
     public static void logError(String error) {
         JavaDebuggerServerPlugin.logError(error);
+        inner.error(error);
     }
-
+    
+    public static void logWarn(String warn) {
+        inner.warn(warn);
+    }
 }
