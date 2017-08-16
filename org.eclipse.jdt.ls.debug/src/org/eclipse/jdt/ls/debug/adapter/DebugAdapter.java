@@ -788,7 +788,6 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private class VariableRequestHandler {
-        private boolean showStaticVariables = true;
         private IVariableFormatter variableFormatter;
         private RecyclableObjectPool<ThreadReference, Object> objectPool;
         
@@ -796,8 +795,6 @@ public class DebugAdapter implements IDebugAdapter {
                                boolean hexFormat, boolean showQualified) {
             this.objectPool = new RecyclableObjectPool<>();
             this.variableFormatter = variableFormatter;
-            this.showStaticVariables = showStaticVariables;
-
         }
         
         public void recyclableAllObject() {
@@ -857,6 +854,7 @@ public class DebugAdapter implements IDebugAdapter {
         Responses.ResponseBody variables(Requests.VariablesArguments arguments) throws AbsentInformationException {
             Map<String, Object> options = new HashMap<>();
             // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
+            boolean showStaticVariables = true;
             boolean showQualified = true;
             if (arguments.format != null && arguments.format.hex) {
                 options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
