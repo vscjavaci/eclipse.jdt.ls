@@ -47,10 +47,6 @@ public class VariableFormatter implements IVariableFormatter {
         return formatterList.get(0);
     }
 
-    public IValueFormatter getValueFormatter(Type type, Map<String, Object> options) {
-        return (IValueFormatter) getFormatter(this.valueFormatterMap, type, options);
-    }
-
     /**
      * Get display name of type.
      *
@@ -58,9 +54,27 @@ public class VariableFormatter implements IVariableFormatter {
      * @param options additional information about expected format
      * @return display name of type of the value.
      */
+    @Override
     public String typeToString(Type type, Map<String, Object> options) {
         IFormatter formatter = getFormatter(this.typeFormatterMap, type, options);
         return formatter.toString(type, options);
+    }
+    
+    /**
+     * Get the default options for all formatters registered.
+     * @return The default options.
+     */
+    @Override
+    public Map<String, Object> getDefaultOptions() {
+        Map<String, Object> defaultOptions = new HashMap<>();
+        int count1 = valueFormatterMap.keySet().stream().mapToInt(
+                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
+        int count2 = typeFormatterMap.keySet().stream().mapToInt(
+                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
+        if (count1 + count2 != defaultOptions.size()) {
+            throw new IllegalStateException("There is some configuration conflicts on type and value formatters.");
+        }
+        return defaultOptions;
     }
 
     
@@ -71,6 +85,7 @@ public class VariableFormatter implements IVariableFormatter {
      * @param options additional information about expected format
      * @return the display text of the value
      */
+    @Override
     public String valueToString(Value value, Map<String, Object> options) {
         Type type = value == null ? null : value.type();
         IFormatter formatter = getFormatter(this.valueFormatterMap, type, options);
@@ -85,6 +100,7 @@ public class VariableFormatter implements IVariableFormatter {
         typeFormatterMap.put(typeFormatter, priority);
     }
 
+    
     private int mergeDefaultOptions(IFormatter formatter, Map<String, Object> options) {
         int count = 0;
         for (Map.Entry<String, Object> entry : formatter.getDefaultOptions().entrySet()) {
@@ -92,18 +108,5 @@ public class VariableFormatter implements IVariableFormatter {
             count++;
         }
         return count;
-    }
-    
-    @Override
-    public Map<String, Object> getDefaultOptions() {
-        Map<String, Object> defaultOptions = new HashMap<>();
-        int count1 = valueFormatterMap.keySet().stream().mapToInt(
-                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
-        int count2 = typeFormatterMap.keySet().stream().mapToInt(
-                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
-        if (count1 + count2 != defaultOptions.size()) {
-            throw new IllegalStateException("There is some configuration conflicts on type and value formatters.");
-        }
-        return defaultOptions;
     }
 }
