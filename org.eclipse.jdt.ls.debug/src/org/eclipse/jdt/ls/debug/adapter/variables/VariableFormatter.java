@@ -92,6 +92,11 @@ public class VariableFormatter implements IVariableFormatter {
         return formatter.toString(value, options);
     }
 
+    @Override
+    public IValueFormatter getValueFormatter(Type type, Map<String, Object> options) {
+        return (IValueFormatter) getFormatter(this.valueFormatterMap, type, options);
+    }
+
     public void registerValueFormatter(IValueFormatter formatter, int priority) {
         valueFormatterMap.put(formatter, priority);
     }
