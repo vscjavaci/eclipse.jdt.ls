@@ -14,6 +14,7 @@ package org.eclipse.jdt.ls.debug;
 import java.util.List;
 
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.request.EventRequestManager;
 
 public interface IDebugSession {
     void start();
@@ -39,5 +40,7 @@ public interface IDebugSession {
     List<ThreadReference> allThreads();
 
     IEventHub eventHub();
+    
+    EventRequestManager eventRequestManager();
 }
 
