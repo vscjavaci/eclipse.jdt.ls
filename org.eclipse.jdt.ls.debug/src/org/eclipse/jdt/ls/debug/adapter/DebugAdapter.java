@@ -11,21 +11,10 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BOOLEAN;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BYTE;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.CHAR;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.DOUBLE;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.FLOAT;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.INT;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.LONG;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.SHORT;
-import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING_SIGNATURE;
-
 import com.google.gson.JsonObject;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ArrayType;
-import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
 import com.sun.jdi.Field;
@@ -65,8 +54,6 @@ import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatEnum;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.SimpleTypeFormatter;
-import org.eclipse.jdt.ls.debug.adapter.headless.ClassPathEntry;
-import org.eclipse.jdt.ls.debug.adapter.headless.utility.CompileUtils;
 import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
 import org.eclipse.jdt.ls.debug.adapter.variables.JdiObjectProxy;
 import org.eclipse.jdt.ls.debug.adapter.variables.SetValueFunction;
@@ -77,7 +64,6 @@ import org.eclipse.jdt.ls.debug.adapter.variables.VariableFormatterFactory;
 import org.eclipse.jdt.ls.debug.adapter.variables.VariableUtils;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -95,6 +81,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BOOLEAN;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BYTE;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.CHAR;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.DOUBLE;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.FLOAT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.INT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.LONG;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.SHORT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING_SIGNATURE;
 
 public class DebugAdapter implements IDebugAdapter {
     private BiConsumer<Events.DebugEvent, Boolean> eventConsumer;
