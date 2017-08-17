@@ -11,16 +11,35 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BOOLEAN;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BYTE;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.CHAR;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.DOUBLE;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.FLOAT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.INT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.LONG;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.SHORT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING_SIGNATURE;
+
 import com.google.gson.JsonObject;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
+import com.sun.jdi.ArrayType;
+import com.sun.jdi.ClassLoaderReference;
+import com.sun.jdi.ClassNotLoadedException;
+import com.sun.jdi.ClassType;
+import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
+import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Type;
+import com.sun.jdi.TypeComponent;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
@@ -35,16 +54,22 @@ import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
 import io.reactivex.disposables.Disposable;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.DebugUtility;
 import org.eclipse.jdt.ls.debug.IBreakpoint;
 import org.eclipse.jdt.ls.debug.IDebugSession;
 import org.eclipse.jdt.ls.debug.adapter.Requests.StackTraceArguments;
+import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatEnum;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.SimpleTypeFormatter;
+import org.eclipse.jdt.ls.debug.adapter.headless.ClassPathEntry;
+import org.eclipse.jdt.ls.debug.adapter.headless.utility.CompileUtils;
 import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
+import org.eclipse.jdt.ls.debug.adapter.variables.JdiObjectProxy;
+import org.eclipse.jdt.ls.debug.adapter.variables.SetValueFunction;
 import org.eclipse.jdt.ls.debug.adapter.variables.StackFrameScope;
 import org.eclipse.jdt.ls.debug.adapter.variables.ThreadObjectReference;
 import org.eclipse.jdt.ls.debug.adapter.variables.Variable;
@@ -52,6 +77,7 @@ import org.eclipse.jdt.ls.debug.adapter.variables.VariableFormatterFactory;
 import org.eclipse.jdt.ls.debug.adapter.variables.VariableUtils;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -462,7 +488,7 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
-        return new Responses.ResponseBody();
+        return this.variableRequestHandler.setVariable(arguments);
     }
 
     private Responses.ResponseBody source(Requests.SourceArguments arguments) {
@@ -803,7 +829,7 @@ public class DebugAdapter implements IDebugAdapter {
 
     private class VariableRequestHandler {
         private IVariableFormatter variableFormatter;
-        private RecyclableObjectPool<ThreadReference, Object> objectPool;
+        private RecyclableObjectPool<Long, Object> objectPool;
         
         public VariableRequestHandler(IVariableFormatter variableFormatter, boolean showStaticVariables,
                                boolean hexFormat, boolean showQualified) {
@@ -816,7 +842,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
 
         public void recyclableThreads(ThreadReference thread) {
-            this.objectPool.removeObjectsByOwner(thread);
+            this.objectPool.removeObjectsByOwner(thread.uniqueID());
         }
 
         Responses.ResponseBody stackTrace(StackTraceArguments arguments)
@@ -839,7 +865,8 @@ public class DebugAdapter implements IDebugAdapter {
                             Math.min(totalFrames - arguments.startFrame, arguments.levels));
                     for (int i = 0; i < arguments.levels; i++) {
                         StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
-                        int frameId = this.objectPool.addObject(stackFrame.thread(), stackFrame);
+                        int frameId = this.objectPool.addObject(stackFrame.thread().uniqueID(),
+                                new JdiObjectProxy<>(stackFrame));
                         Types.StackFrame clientStackFrame = convertDebuggerStackFrameToClient(stackFrame, frameId);
                         result.add(clientStackFrame);
                     }
@@ -853,13 +880,14 @@ public class DebugAdapter implements IDebugAdapter {
 
         Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
             List<Types.Scope> scopes = new ArrayList<>();
-            StackFrame stackFrame = (StackFrame) this.objectPool.getObjectById(arguments.frameId);
-            if (stackFrame == null) {
+            JdiObjectProxy<StackFrame> stackFrameProxy = (JdiObjectProxy<StackFrame>)this.objectPool.getObjectById(arguments.frameId);
+            if (stackFrameProxy == null) {
                 return new Responses.ScopesResponseBody(scopes);
             }
-            StackFrameScope localScope = new StackFrameScope(stackFrame, "Local");
+            StackFrameScope localScope = new StackFrameScope(stackFrameProxy.getProxiedObject(), "Local");
             scopes.add(new Types.Scope(
-                    localScope.getScope(), this.objectPool.addObject(stackFrame.thread(), localScope), false));
+                    localScope.getScope(), this.objectPool.addObject(stackFrameProxy.getProxiedObject()
+                    .thread().uniqueID(), localScope), false));
 
             return new Responses.ScopesResponseBody(scopes);
         }
@@ -952,7 +980,7 @@ public class DebugAdapter implements IDebugAdapter {
                 int referenceId = 0;
                 if (value instanceof ObjectReference && VariableUtils.hasChildren(value, showStaticVariables)) {
                     ThreadObjectReference threadObjectReference = new ThreadObjectReference(thread, (ObjectReference) value);
-                    referenceId = this.objectPool.addObject(thread, threadObjectReference);
+                    referenceId = this.objectPool.addObject(thread.uniqueID(), threadObjectReference);
                 }
                 Types.Variable typedVariables = new Types.Variable(name, variableFormatter.valueToString(value, options),
                         variableFormatter.typeToString(value == null ? null : value.type(), options), referenceId, null);
@@ -963,6 +991,188 @@ public class DebugAdapter implements IDebugAdapter {
             }
             return new Responses.VariablesResponseBody(list);
         }
+
+        Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
+            Map<String, Object> options = new HashMap<>();
+            // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
+            boolean showStaticVariables = true;
+            boolean showQualified = true;
+            if (arguments.format != null && arguments.format.hex) {
+                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
+            }
+            if (showQualified) {
+                options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, showQualified);
+            }
+
+            Object obj = this.objectPool.getObjectById(arguments.variablesReference);
+            ThreadReference thread;
+            String name = arguments.name;
+            Value newValue = null;
+            String belongToClass = null;
+            if (arguments.name.contains("(")) {
+                name = arguments.name.substring(0, arguments.name.indexOf('(')).trim();
+                belongToClass = arguments.name.substring(arguments.name.indexOf('(') + 1, arguments.name.indexOf(')'))
+                        .trim();
+            }
+            try {
+                if (obj instanceof StackFrameScope) {
+                    if (arguments.name.equals("this")) {
+                        throw new UnsupportedOperationException("SetVariableRequest: 'This' variable cannot be changed.");
+                    }
+                    StackFrame frame = ((StackFrameScope) obj).getStackFrame();
+                    thread = frame.thread();
+                    LocalVariable variable = frame.visibleVariableByName(name);
+                    if (StringUtils.isBlank(belongToClass) && variable != null) {
+                        newValue = this.setFrameValue(frame, variable, arguments.value, options);
+                    } else {
+                        if (showStaticVariables && frame.location().method().isStatic()) {
+                            ReferenceType type = frame.location().declaringType();
+                            if (StringUtils.isBlank(belongToClass)) {
+                                Field field = type.fieldByName(name);
+                                newValue = setStaticFieldValue(type, field, arguments.name, arguments.value, options);
+                            } else {
+                                if (frame.location().method().isStatic() && showStaticVariables) {
+                                    newValue = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
+                                            arguments.value, options);
+                                }
+                            }
+
+                        } else {
+                            throw new UnsupportedOperationException(
+                                    String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
+                        }
+                    }
+                } else if (obj instanceof ThreadObjectReference) {
+                    ObjectReference currentObj = ((ThreadObjectReference) obj).getObject();
+                    thread = ((ThreadObjectReference) obj).getThread();
+                    if (currentObj instanceof ArrayReference) {
+                        ArrayReference array = (ArrayReference) currentObj;
+                        Type eleType = ((ArrayType) array.referenceType()).componentType();
+                        newValue = setArrayValue(array, eleType, Integer.parseInt(arguments.name), arguments.value, options);
+                    } else {
+                        if (StringUtils.isBlank(belongToClass)) {
+                            Field field = currentObj.referenceType().fieldByName(name);
+                            if (field != null) {
+                                if (field.isStatic()) {
+                                    newValue = this.setStaticFieldValue(currentObj.referenceType(), field,
+                                            arguments.name, arguments.value, options);
+                                } else {
+                                    newValue = this.setObjectFieldValue(currentObj, field, arguments.name,
+                                            arguments.value, options);
+                                }
+                            } else {
+                                throw new IllegalArgumentException(
+                                        String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
+                            }
+                        } else {
+                            newValue = setFieldValueWithConflict(currentObj, currentObj.referenceType().allFields(),
+                                    name, belongToClass, arguments.value, options);
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException(
+                            String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
+                }
+            } catch (IllegalArgumentException | AbsentInformationException | InvalidTypeException
+                    | UnsupportedOperationException | ClassNotLoadedException e) {
+                return new Responses.ErrorResponseBody(convertDebuggerMessageToClient(e.getMessage()));
+            }
+            int referenceId = getReferenceId(thread, newValue, showStaticVariables);
+
+            int indexedVariables = 0;
+            if (newValue instanceof ArrayReference) {
+                indexedVariables = ((ArrayReference) newValue).length();
+            }
+            return new Responses.SetVariablesResponseBody(
+                    this.variableFormatter.typeToString(newValue == null ? null : newValue.type(), options), // type
+                    this.variableFormatter.valueToString(newValue, options), // value,
+                    referenceId, indexedVariables);
+
+        }
+
+        private Value setValueProxy(Type type, String value, SetValueFunction setValueFunc, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            IValueFormatter formatter = getFormatterForModification(type, options);
+            Value newValue = formatter.valueOf(value, type, options);
+            setValueFunc.apply(newValue);
+            return newValue;
+        }
+
+        private IValueFormatter getFormatterForModification(Type type, Map<String, Object> options) {
+            char signature0 = type.signature().charAt(0);
+
+            if (signature0 == LONG || signature0 == INT || signature0 == SHORT || signature0 == BYTE || signature0 == FLOAT
+                    || signature0 == DOUBLE || signature0 == BOOLEAN || signature0 == CHAR
+                    || type.signature().equals(STRING_SIGNATURE)) {
+                return this.variableFormatter.getValueFormatter(type, options);
+            }
+            throw new UnsupportedOperationException(String.format("Set value for type %s is not supported.", type.name()));
+        }
+
+        private Value setStaticFieldValue(Type declaringType, Field field, String name, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            if (field.isFinal()) {
+                throw new UnsupportedOperationException(
+                        String.format("SetVariableRequest: Final field %s cannot be changed.", name));
+            }
+            if (!(declaringType instanceof ClassType)) {
+                throw new UnsupportedOperationException(
+                        String.format("SetVariableRequest: Field %s in interface cannot be changed.", name));
+            }
+            return setValueProxy(field.type(), value, newValue -> ((ClassType) declaringType).setValue(field, newValue), options);
+        }
+
+        private Value setFrameValue(StackFrame frame, LocalVariable localVariable, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            return setValueProxy(localVariable.type(), value, newValue -> frame.setValue(localVariable, newValue), options);
+        }
+
+        private Value setObjectFieldValue(ObjectReference obj, Field field, String name, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            if (field.isFinal()) {
+                throw new UnsupportedOperationException(
+                        String.format("SetVariableRequest: Final field %s cannot be changed.", name));
+            }
+            return setValueProxy(field.type(), value, newValue -> obj.setValue(field, newValue), options);
+        }
+
+        private Value setArrayValue(ArrayReference array, Type eleType, int index, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            return setValueProxy(eleType, value, newValue -> array.setValue(index, newValue), options);
+        }
+
+        private Value setFieldValueWithConflict(ObjectReference obj, List<Field> fields, String name, String belongToClass,
+                                                String value, Map<String, Object> options) throws ClassNotLoadedException, InvalidTypeException {
+            Field field;
+            // first try to resolve filed by fully qualified name
+            List<Field> narrowedFields = fields.stream().filter(TypeComponent::isStatic)
+                    .filter(t -> t.name().equals(name) && t.declaringType().name().equals(belongToClass))
+                    .collect(Collectors.toList());
+            if (narrowedFields.isEmpty()) {
+                // second try to resolve filed by formatted name
+                narrowedFields = fields.stream().filter(TypeComponent::isStatic)
+                        .filter(t -> t.name().equals(name)
+                                && this.variableFormatter.typeToString(t.declaringType(), options).equals(belongToClass))
+                        .collect(Collectors.toList());
+            }
+            if (narrowedFields.size() == 1) {
+                field = narrowedFields.get(0);
+            } else {
+                throw new UnsupportedOperationException(String.format("SetVariableRequest: Name conflicted for %s.", name));
+            }
+            return field.isStatic() ? setStaticFieldValue(field.declaringType(), field, name, value, options)
+                    : this.setObjectFieldValue(obj, field, name, value, options);
+
+        }
+
+        private int getReferenceId(ThreadReference thread, Value value, boolean includeStatic) {
+            if (value instanceof ObjectReference && VariableUtils.hasChildren(value, includeStatic)) {
+                ThreadObjectReference threadObjectReference = new ThreadObjectReference(thread, (ObjectReference)value);
+                return this.objectPool.addObject(thread.uniqueID(), threadObjectReference);
+            }
+            return 0;
+        }
+
 
         private Set<String> getDuplicateNames(Collection<String> list) {
             Set<String> result = new HashSet<>();
