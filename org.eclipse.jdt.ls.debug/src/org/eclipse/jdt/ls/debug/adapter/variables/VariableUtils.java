@@ -154,8 +154,7 @@ public abstract class VariableUtils {
                 // This could be a JPDA bug. Unexpected JDWP Error: 32 means that an 'opaque' frame was
                 // detected at the lower JPDA levels,
                 // typically a native frame.
-                /*opaque frame JDI bug*/
-                if (ex2.errorCode() != 32 ) {
+                if (ex2.errorCode() != 32) {
                     throw ex;
                 }
             }
