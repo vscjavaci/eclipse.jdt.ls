@@ -13,6 +13,7 @@ package org.eclipse.jdt.ls.debug;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -149,10 +150,10 @@ public class DebugUtility {
      *               whether to notify uncaught exceptions
      */
     public static void sendExceptionRequest(EventRequestManager manager, boolean notifyCaught, boolean notifyUncaught) {
-        List<ExceptionRequest> legacy = manager.exceptionRequests();
+        ArrayList<ExceptionRequest> legacy = new ArrayList<ExceptionRequest>(manager.exceptionRequests());
+        manager.deleteEventRequests(legacy);
         ExceptionRequest request = manager.createExceptionRequest(null, notifyCaught, notifyUncaught);
         request.enable();
-        manager.deleteEventRequests(legacy);
     }
 
     private static CompletableFuture<Location> step(ThreadReference thread, IEventHub eventHub, int stepSize,
