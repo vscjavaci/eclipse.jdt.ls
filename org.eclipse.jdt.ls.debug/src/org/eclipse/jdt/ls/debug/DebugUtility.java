@@ -29,6 +29,8 @@ import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.connect.VMStartException;
 import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.request.EventRequest;
+import com.sun.jdi.request.EventRequestManager;
+import com.sun.jdi.request.ExceptionRequest;
 import com.sun.jdi.request.StepRequest;
 
 public class DebugUtility {
@@ -135,6 +137,22 @@ public class DebugUtility {
      */
     public static CompletableFuture<Location> stepOut(ThreadReference thread, IEventHub eventHub) {
         return DebugUtility.step(thread, eventHub, StepRequest.STEP_LINE, StepRequest.STEP_OUT);
+    }
+    
+    /**
+     * Send exception request.
+     * @param manager
+     *               the event request manager
+     * @param notifyCaught
+     *               whether to notify caught exceptions
+     * @param notifyUncaught
+     *               whether to notify uncaught exceptions
+     */
+    public static void sendExceptionRequest(EventRequestManager manager, boolean notifyCaught, boolean notifyUncaught) {
+        List<ExceptionRequest> legacy = manager.exceptionRequests();
+        ExceptionRequest request = manager.createExceptionRequest(null, notifyCaught, notifyUncaught);
+        request.enable();
+        manager.deleteEventRequests(legacy);
     }
 
     private static CompletableFuture<Location> step(ThreadReference thread, IEventHub eventHub, int stepSize,

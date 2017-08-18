@@ -81,7 +81,7 @@ import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
-import com.sun.jdi.request.ExceptionRequest;
+import com.sun.jdi.request.EventRequestManager;
 
 import io.reactivex.disposables.Disposable;
 
@@ -396,9 +396,10 @@ public class DebugAdapter implements IDebugAdapter {
         String[] filters = arguments.filters;
         try {
             boolean notifyCaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_UserHandled);
-            boolean notifyUnCaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_UserUnhandled);
-            ExceptionRequest request = this.debugSession.eventRequestManager().createExceptionRequest(null, notifyCaught, notifyUnCaught);
-            request.enable();
+            boolean notifyUncaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_UserUnhandled);
+            
+            EventRequestManager manager = this.debugSession.eventRequestManager();
+            DebugUtility.sendExceptionRequest(manager, notifyCaught, notifyUncaught);
         } catch (Exception ex) {
             return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
                     String.format("Failed to setExceptionBreakpoint. Reason: '%s'", ex.getMessage())));

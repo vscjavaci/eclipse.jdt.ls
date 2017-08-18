@@ -24,12 +24,10 @@ import com.sun.jdi.request.EventRequestManager;
 
 public class DebugSession implements IDebugSession {
     private VirtualMachine vm;
-    private EventRequestManager eventRequestManager;
     private EventHub eventHub = new EventHub();
 
     public DebugSession(VirtualMachine virtualMachine) {
         vm = virtualMachine;
-        eventRequestManager = vm.eventRequestManager();
     }
 
     @Override
@@ -95,7 +93,7 @@ public class DebugSession implements IDebugSession {
 
     @Override
     public EventRequestManager eventRequestManager() {
-        return eventRequestManager;
+        return vm.eventRequestManager();
     }
 
 }
