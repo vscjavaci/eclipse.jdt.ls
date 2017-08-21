@@ -81,7 +81,6 @@ import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
-import com.sun.jdi.request.EventRequestManager;
 
 import io.reactivex.disposables.Disposable;
 

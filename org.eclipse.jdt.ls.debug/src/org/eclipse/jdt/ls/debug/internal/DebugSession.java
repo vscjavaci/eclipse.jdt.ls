@@ -77,6 +77,15 @@ public class DebugSession implements IDebugSession {
     public IBreakpoint createBreakpoint(String className, int lineNumber, int hitCount) {
         return new Breakpoint(this.vm, this.eventHub(), className, lineNumber, hitCount);
     }
+    
+    @Override
+    public void setExceptionBreakpoints(boolean notifyCaught, boolean notifyUncaught) {
+        EventRequestManager manager = vm.eventRequestManager();
+        ArrayList<ExceptionRequest> legacy = new ArrayList<ExceptionRequest>(manager.exceptionRequests());
+        manager.deleteEventRequests(legacy);
+        ExceptionRequest request = manager.createExceptionRequest(null, notifyCaught, notifyUncaught);
+        request.enable();
+    }
 
     @Override
     public Process process() {
@@ -92,14 +101,4 @@ public class DebugSession implements IDebugSession {
     public IEventHub eventHub() {
         return eventHub;
     }
-
-    @Override
-    public void setExceptionBreakpoints(boolean notifyCaught, boolean notifyUncaught) {
-        EventRequestManager manager = vm.eventRequestManager();
-        ArrayList<ExceptionRequest> legacy = new ArrayList<ExceptionRequest>(manager.exceptionRequests());
-        manager.deleteEventRequests(legacy);
-        ExceptionRequest request = manager.createExceptionRequest(null, notifyCaught, notifyUncaught);
-        request.enable();
-    }
-
 }

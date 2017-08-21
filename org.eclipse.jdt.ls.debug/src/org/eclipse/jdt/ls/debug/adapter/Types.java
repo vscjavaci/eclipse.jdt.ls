@@ -191,7 +191,6 @@ public class Types {
     }
 
     public static class ExceptionBreakpointFilter {
-        public static final String Filter_All = "all";
         public static final String Filter_UserUnhandled = "user-unhandled";
         public static final String Filter_UserHandled = "user-handled";
 
@@ -202,8 +201,7 @@ public class Types {
             this.filter = value;
             this.label = label;
         }
-        
-        public static ExceptionBreakpointFilter All = new ExceptionBreakpointFilter(Filter_All, "All Exceptions");
+
         public static ExceptionBreakpointFilter UserUnhandled = new ExceptionBreakpointFilter(Filter_UserUnhandled, "Uncaught Exceptions");
         public static ExceptionBreakpointFilter UserHandled = new ExceptionBreakpointFilter(Filter_UserHandled, "Caught Exceptions");
     }

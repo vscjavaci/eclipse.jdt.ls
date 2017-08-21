@@ -13,7 +13,6 @@ package org.eclipse.jdt.ls.debug;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,8 +29,6 @@ import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.connect.VMStartException;
 import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.request.EventRequest;
-import com.sun.jdi.request.EventRequestManager;
-import com.sun.jdi.request.ExceptionRequest;
 import com.sun.jdi.request.StepRequest;
 
 public class DebugUtility {
