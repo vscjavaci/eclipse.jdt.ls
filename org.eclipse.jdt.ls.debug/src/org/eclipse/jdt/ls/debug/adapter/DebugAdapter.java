@@ -120,8 +120,7 @@ public class DebugAdapter implements IDebugAdapter {
         this.breakpointManager = new BreakpointManager();
         this.eventSubscriptions = new ArrayList<>();
         this.context = context;
-        this.variableRequestHandler = new VariableRequestHandler(VariableFormatterFactory.createVariableFormatter(),
-                true, false, true);
+        this.variableRequestHandler = new VariableRequestHandler(VariableFormatterFactory.createVariableFormatter());
     }
 
     @Override
@@ -824,11 +823,11 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private class VariableRequestHandler {
+        private static final String PATTERN = "([a-zA-Z_0-9$]+)\\s*\\(([^)]+)\\)";
         private IVariableFormatter variableFormatter;
         private RecyclableObjectPool<Long, Object> objectPool;
-        private final String PATTERN = "([a-zA-Z_0-9$]+)\\s*\\(([^)]+)\\)";
-        public VariableRequestHandler(IVariableFormatter variableFormatter, boolean showStaticVariables,
-                               boolean hexFormat, boolean showQualified) {
+
+        public VariableRequestHandler(IVariableFormatter variableFormatter) {
             this.objectPool = new RecyclableObjectPool<>();
             this.variableFormatter = variableFormatter;
         }
