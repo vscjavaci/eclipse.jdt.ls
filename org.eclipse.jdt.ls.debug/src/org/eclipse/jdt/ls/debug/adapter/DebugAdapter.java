@@ -826,7 +826,7 @@ public class DebugAdapter implements IDebugAdapter {
     private class VariableRequestHandler {
         private IVariableFormatter variableFormatter;
         private RecyclableObjectPool<Long, Object> objectPool;
-        
+        private final String PATTERN = "([a-zA-Z_0-9$]+)\\s*\\(([^)]+)\\)";
         public VariableRequestHandler(IVariableFormatter variableFormatter, boolean showStaticVariables,
                                boolean hexFormat, boolean showQualified) {
             this.objectPool = new RecyclableObjectPool<>();
@@ -1006,9 +1006,8 @@ public class DebugAdapter implements IDebugAdapter {
             Value newValue = null;
             String belongToClass = null;
             if (arguments.name.contains("(")) {
-                name = arguments.name.substring(0, arguments.name.indexOf('(')).trim();
-                belongToClass = arguments.name.substring(arguments.name.indexOf('(') + 1, arguments.name.indexOf(')'))
-                        .trim();
+                name = arguments.name.replaceFirst(PATTERN, "$1");
+                belongToClass = arguments.name.replaceFirst(PATTERN, "$2");
             }
             try {
                 if (obj instanceof StackFrameScope) {
@@ -1027,10 +1026,8 @@ public class DebugAdapter implements IDebugAdapter {
                                 Field field = type.fieldByName(name);
                                 newValue = setStaticFieldValue(type, field, arguments.name, arguments.value, options);
                             } else {
-                                if (frame.location().method().isStatic() && showStaticVariables) {
-                                    newValue = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
-                                            arguments.value, options);
-                                }
+                                newValue = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
+                                    arguments.value, options);
                             }
 
                         } else {
@@ -1140,12 +1137,12 @@ public class DebugAdapter implements IDebugAdapter {
         private Value setFieldValueWithConflict(ObjectReference obj, List<Field> fields, String name, String belongToClass,
                                                 String value, Map<String, Object> options) throws ClassNotLoadedException, InvalidTypeException {
             Field field;
-            // first try to resolve filed by fully qualified name
+            // first try to resolve field by fully qualified name
             List<Field> narrowedFields = fields.stream().filter(TypeComponent::isStatic)
                     .filter(t -> t.name().equals(name) && t.declaringType().name().equals(belongToClass))
                     .collect(Collectors.toList());
             if (narrowedFields.isEmpty()) {
-                // second try to resolve filed by formatted name
+                // second try to resolve field by formatted name
                 narrowedFields = fields.stream().filter(TypeComponent::isStatic)
                         .filter(t -> t.name().equals(name)
                                 && this.variableFormatter.typeToString(t.declaringType(), options).equals(belongToClass))
