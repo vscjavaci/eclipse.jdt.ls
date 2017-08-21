@@ -397,12 +397,11 @@ public class DebugAdapter implements IDebugAdapter {
         try {
             boolean notifyCaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_UserHandled);
             boolean notifyUncaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_UserUnhandled);
-            
-            EventRequestManager manager = this.debugSession.eventRequestManager();
-            DebugUtility.sendExceptionRequest(manager, notifyCaught, notifyUncaught);
+
+            this.debugSession.setExceptionBreakpoints(notifyCaught, notifyUncaught);
         } catch (Exception ex) {
             return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
-                    String.format("Failed to setExceptionBreakpoint. Reason: '%s'", ex.getMessage())));
+                    String.format("Failed to setExceptionBreakpoints. Reason: '%s'", ex.getMessage())));
         }
         
         return new Responses.ResponseBody();

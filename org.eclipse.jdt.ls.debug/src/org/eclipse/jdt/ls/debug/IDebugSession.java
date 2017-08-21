@@ -14,7 +14,6 @@ package org.eclipse.jdt.ls.debug;
 import java.util.List;
 
 import com.sun.jdi.ThreadReference;
-import com.sun.jdi.request.EventRequestManager;
 
 public interface IDebugSession {
     void start();
@@ -32,7 +31,6 @@ public interface IDebugSession {
 
     IBreakpoint createBreakpoint(String className, int lineNumber, int hitCount);
 
-    // TODO: createExeptionBreakpoint
     // TODO: createFunctionBreakpoint
 
     Process process();
@@ -41,6 +39,6 @@ public interface IDebugSession {
 
     IEventHub eventHub();
     
-    EventRequestManager eventRequestManager();
+    void setExceptionBreakpoints(boolean notifyCaught, boolean notifyUncaught);
 }
 

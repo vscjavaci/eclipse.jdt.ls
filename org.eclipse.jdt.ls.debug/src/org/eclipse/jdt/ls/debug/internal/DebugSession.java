@@ -11,6 +11,7 @@
 
 package org.eclipse.jdt.ls.debug.internal;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.ls.debug.IBreakpoint;
@@ -21,6 +22,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
+import com.sun.jdi.request.ExceptionRequest;
 
 public class DebugSession implements IDebugSession {
     private VirtualMachine vm;
@@ -92,8 +94,12 @@ public class DebugSession implements IDebugSession {
     }
 
     @Override
-    public EventRequestManager eventRequestManager() {
-        return vm.eventRequestManager();
+    public void setExceptionBreakpoints(boolean notifyCaught, boolean notifyUncaught) {
+        EventRequestManager manager = vm.eventRequestManager();
+        ArrayList<ExceptionRequest> legacy = new ArrayList<ExceptionRequest>(manager.exceptionRequests());
+        manager.deleteEventRequests(legacy);
+        ExceptionRequest request = manager.createExceptionRequest(null, notifyCaught, notifyUncaught);
+        request.enable();
     }
 
 }
