@@ -11,34 +11,26 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-
-import org.apache.commons.io.FilenameUtils;
-import org.eclipse.jdt.ls.debug.DebugEvent;
-import org.eclipse.jdt.ls.debug.DebugException;
-import org.eclipse.jdt.ls.debug.DebugUtility;
-import org.eclipse.jdt.ls.debug.IBreakpoint;
-import org.eclipse.jdt.ls.debug.IDebugSession;
-import org.eclipse.jdt.ls.debug.internal.Logger;
-
 import com.google.gson.JsonObject;
 import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.ArrayReference;
+import com.sun.jdi.ArrayType;
+import com.sun.jdi.ClassNotLoadedException;
+import com.sun.jdi.ClassType;
+import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.InvalidTypeException;
+import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
+import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.ThreadReference;
+import com.sun.jdi.Type;
+import com.sun.jdi.TypeComponent;
 import com.sun.jdi.VMDisconnectedException;
+import com.sun.jdi.Value;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.connect.VMStartException;
 import com.sun.jdi.event.BreakpointEvent;
@@ -49,8 +41,56 @@ import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
-
 import io.reactivex.disposables.Disposable;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jdt.ls.debug.DebugEvent;
+import org.eclipse.jdt.ls.debug.DebugException;
+import org.eclipse.jdt.ls.debug.DebugUtility;
+import org.eclipse.jdt.ls.debug.IBreakpoint;
+import org.eclipse.jdt.ls.debug.IDebugSession;
+import org.eclipse.jdt.ls.debug.adapter.Requests.StackTraceArguments;
+import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
+import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatEnum;
+import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatter;
+import org.eclipse.jdt.ls.debug.adapter.formatter.SimpleTypeFormatter;
+import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
+import org.eclipse.jdt.ls.debug.adapter.variables.JdiObjectProxy;
+import org.eclipse.jdt.ls.debug.adapter.variables.SetValueFunction;
+import org.eclipse.jdt.ls.debug.adapter.variables.StackFrameScope;
+import org.eclipse.jdt.ls.debug.adapter.variables.ThreadObjectReference;
+import org.eclipse.jdt.ls.debug.adapter.variables.Variable;
+import org.eclipse.jdt.ls.debug.adapter.variables.VariableFormatterFactory;
+import org.eclipse.jdt.ls.debug.adapter.variables.VariableUtils;
+import org.eclipse.jdt.ls.debug.internal.Logger;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BOOLEAN;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.BYTE;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.CHAR;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.DOUBLE;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.FLOAT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.INT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.LONG;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.SHORT;
+import static org.eclipse.jdt.ls.debug.adapter.formatter.TypeIdentifiers.STRING_SIGNATURE;
 
 public class DebugAdapter implements IDebugAdapter {
     private BiConsumer<Events.DebugEvent, Boolean> eventConsumer;
@@ -60,15 +100,15 @@ public class DebugAdapter implements IDebugAdapter {
     private boolean clientLinesStartAt1 = true;
     private boolean clientPathsAreUri = false;
 
-    private Requests.LaunchArguments launchArguments;
+    private boolean isAttached = false;
+
     private String cwd;
     private String[] sourcePath;
     private IDebugSession debugSession;
     private BreakpointManager breakpointManager;
     private List<Disposable> eventSubscriptions;
     private IProviderContext context;
-
-    private IdCollection<StackFrame> frameCollection = new IdCollection<>();
+    private VariableRequestHandler variableRequestHandler;
     private IdCollection<String> sourceCollection = new IdCollection<>();
     private AtomicInteger messageId = new AtomicInteger(1);
 
@@ -80,6 +120,8 @@ public class DebugAdapter implements IDebugAdapter {
         this.breakpointManager = new BreakpointManager();
         this.eventSubscriptions = new ArrayList<>();
         this.context = context;
+        this.variableRequestHandler = new VariableRequestHandler(VariableFormatterFactory.createVariableFormatter(),
+                true, false, true);
     }
 
     @Override
@@ -99,10 +141,6 @@ public class DebugAdapter implements IDebugAdapter {
 
                 case "attach":
                     responseBody = attach(JsonUtils.fromJson(arguments, Requests.AttachArguments.class));
-                    break;
-
-                case "restart":
-                    responseBody = restart(JsonUtils.fromJson(arguments, Requests.RestartArguments.class));
                     break;
 
                 case "disconnect":
@@ -254,17 +292,17 @@ public class DebugAdapter implements IDebugAdapter {
         Types.Capabilities caps = new Types.Capabilities();
         caps.supportsConfigurationDoneRequest = true;
         caps.supportsHitConditionalBreakpoints = true;
-        caps.supportsRestartRequest = true;
         caps.supportTerminateDebuggee = true;
         return new Responses.InitializeResponseBody(caps);
     }
 
     private Responses.ResponseBody launch(Requests.LaunchArguments arguments) {
-        // Need cache the launch json because VSCode doesn't resend the launch json at the RestartRequest.
-        this.launchArguments = arguments;
         try {
+            this.isAttached = false;
             this.launchDebugSession(arguments);
         } catch (DebugException e) {
+            // When launching failed, send a TerminatedEvent to tell DA the debugger would exit.
+            this.sendEventLater(new Events.TerminatedEvent());
             return new Responses.ErrorResponseBody(
                     this.convertDebuggerMessageToClient("Cannot launch debuggee vm: " + e.getMessage()));
         }
@@ -272,24 +310,15 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody attach(Requests.AttachArguments arguments) {
-        return new Responses.ResponseBody();
-    }
-
-    private Responses.ResponseBody restart(Requests.RestartArguments arguments) {
-        // Shutdown the old debug session.
-        this.shutdownDebugSession(true);
-        // Launch new debug session.
         try {
-            this.launchDebugSession(this.launchArguments);
+            this.isAttached = true;
+            this.attachDebugSession(arguments);
         } catch (DebugException e) {
+            // When attaching failed, send a TerminatedEvent to tell DA the debugger would exit.
+            this.sendEventLater(new Events.TerminatedEvent());
             return new Responses.ErrorResponseBody(
-                    this.convertDebuggerMessageToClient("Cannot restart debuggee vm: " + e.getMessage()));
+                    this.convertDebuggerMessageToClient(e.getMessage()));
         }
-        // See VSCode bug 28175 (https://github.com/Microsoft/vscode/issues/28175).
-        // Need send a ContinuedEvent to clean up the old debugger's call stacks.
-        this.sendEventLater(new Events.ContinuedEvent(true));
-        // Send an InitializedEvent to ask VSCode to restore the existing breakpoints.
-        this.sendEventLater(new Events.InitializedEvent());
         return new Responses.ResponseBody();
     }
 
@@ -297,7 +326,7 @@ public class DebugAdapter implements IDebugAdapter {
      * VS Code terminates a debug session with the disconnect request.
      */
     private Responses.ResponseBody disconnect(Requests.DisconnectArguments arguments) {
-        this.shutdownDebugSession(arguments.terminateDebuggee);
+        this.shutdownDebugSession(arguments.terminateDebuggee && !this.isAttached);
         return new Responses.ResponseBody();
     }
 
@@ -376,8 +405,10 @@ public class DebugAdapter implements IDebugAdapter {
         if (thread != null) {
             allThreadsContinued = false;
             thread.resume();
+            checkThreadRunningAndRecycleIds(thread);
         } else {
             this.debugSession.resume();
+            this.variableRequestHandler.recyclableAllObject();
         }
         return new Responses.ContinueResponseBody(allThreadsContinued);
     }
@@ -386,6 +417,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepOver(thread, this.debugSession.eventHub());
+            checkThreadRunningAndRecycleIds(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -394,6 +426,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepInto(thread, this.debugSession.eventHub());
+            checkThreadRunningAndRecycleIds(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -402,6 +435,7 @@ public class DebugAdapter implements IDebugAdapter {
         ThreadReference thread = getThread(arguments.threadId);
         if (thread != null) {
             DebugUtility.stepOut(thread, this.debugSession.eventHub());
+            checkThreadRunningAndRecycleIds(thread);
         }
         return new Responses.ResponseBody();
     }
@@ -428,48 +462,29 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody stackTrace(Requests.StackTraceArguments arguments) {
-        List<Types.StackFrame> result = new ArrayList<>();
-        if (arguments.startFrame < 0 || arguments.levels < 0) {
-            return new Responses.StackTraceResponseBody(result, 0);
+        try {
+            return this.variableRequestHandler.stackTrace(arguments);
+        } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
+            return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
+                    String.format("Failed to get stackTrace. Reason: '%s'", e.getMessage())));
         }
-        ThreadReference thread = getThread(arguments.threadId);
-        if (thread != null) {
-            try {
-                List<StackFrame> stackFrames = thread.frames();
-                if (arguments.startFrame >= stackFrames.size()) {
-                    return new Responses.StackTraceResponseBody(result, 0);
-                }
-                if (arguments.levels == 0) {
-                    arguments.levels = stackFrames.size() - arguments.startFrame;
-                } else {
-                    arguments.levels = Math.min(stackFrames.size() - arguments.startFrame, arguments.levels);
-                }
-
-                for (int i = 0; i < arguments.levels; i++) {
-                    StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
-                    Types.StackFrame clientStackFrame = this.convertDebuggerStackFrameToClient(stackFrame);
-                    result.add(clientStackFrame);
-                }
-            } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
-                Logger.logException("DebugSession#stackTrace exception", e);
-            }
-        }
-        return new Responses.StackTraceResponseBody(result, result.size());
     }
 
     private Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
-        List<Types.Scope> scps = new ArrayList<>();
-        scps.add(new Types.Scope("Local", 1000000 + arguments.frameId, false));
-        return new Responses.ScopesResponseBody(scps);
+        return this.variableRequestHandler.scopes(arguments);
     }
 
     private Responses.ResponseBody variables(Requests.VariablesArguments arguments) {
-        List<Types.Variable> list = new ArrayList<>();
-        return new Responses.VariablesResponseBody(list);
+        try {
+            return this.variableRequestHandler.variables(arguments);
+        } catch (AbsentInformationException e) {
+            return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
+                    String.format("Failed to get variables. Reason: '%s'", e.getMessage())));
+        }
     }
 
     private Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
-        return new Responses.ResponseBody();
+        return this.variableRequestHandler.setVariable(arguments);
     }
 
     private Responses.ResponseBody source(Requests.SourceArguments arguments) {
@@ -587,16 +602,30 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
+    private void attachDebugSession(Requests.AttachArguments arguments) throws DebugException {
+        this.cwd = arguments.cwd;
+        if (arguments.sourcePath == null || arguments.sourcePath.length == 0) {
+            this.sourcePath = new String[] { cwd };
+        } else {
+            this.sourcePath = new String[arguments.sourcePath.length];
+            System.arraycopy(arguments.sourcePath, 0, this.sourcePath, 0, arguments.sourcePath.length);
+        }
+
+        try {
+            this.debugSession = DebugUtility.attach(context.getVirtualMachineManagerProvider().getVirtualMachineManager(),
+                    arguments.hostName, arguments.port, arguments.attachTimeout);
+        } catch (IOException | IllegalConnectorArgumentsException e) {
+            Logger.logException("Failed to attach to remote debuggee vm. Reason: " + e.getMessage(), e);
+            throw new DebugException("Failed to attach to remote debuggee vm. Reason: " + e.getMessage(), e);
+        }
+    }
+
     private void shutdownDebugSession(boolean terminateDebuggee) {
-        // Unsubscribe event handler.
-        this.eventSubscriptions.forEach(subscription -> {
-            subscription.dispose();
-        });
         this.eventSubscriptions.clear();
         this.breakpointManager.reset();
-        this.frameCollection.reset();
+        this.variableRequestHandler.recyclableAllObject();
         this.sourceCollection.reset();
-        if (this.debugSession.process().isAlive()) {
+        if (this.debugSession != null) {
             if (terminateDebuggee) {
                 this.debugSession.terminate();
             } else {
@@ -769,9 +798,8 @@ public class DebugAdapter implements IDebugAdapter {
         return new Types.Thread(thread.uniqueID(), "Thread [" + thread.name() + "]");
     }
 
-    private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame)
+    private Types.StackFrame convertDebuggerStackFrameToClient(StackFrame stackFrame, int frameId)
             throws URISyntaxException, AbsentInformationException {
-        int frameId = this.frameCollection.create(stackFrame);
         Location location = stackFrame.location();
         Method method = location.method();
         Types.Source clientSource = this.convertDebuggerSourceToClient(location);
@@ -781,5 +809,379 @@ public class DebugAdapter implements IDebugAdapter {
 
     private Types.Message convertDebuggerMessageToClient(String message) {
         return new Types.Message(this.messageId.getAndIncrement(), message);
+    }
+
+    private void checkThreadRunningAndRecycleIds(ThreadReference thread) {
+        if (allThreadRunning()) {
+            this.variableRequestHandler.recyclableAllObject();
+        } else {
+            this.variableRequestHandler.recyclableThreads(thread);
+        }
+    }
+    
+    private boolean allThreadRunning() {
+        return !safeGetAllThreads().stream().anyMatch(ThreadReference::isSuspended);
+    }
+
+    private class VariableRequestHandler {
+        private IVariableFormatter variableFormatter;
+        private RecyclableObjectPool<Long, Object> objectPool;
+        
+        public VariableRequestHandler(IVariableFormatter variableFormatter, boolean showStaticVariables,
+                               boolean hexFormat, boolean showQualified) {
+            this.objectPool = new RecyclableObjectPool<>();
+            this.variableFormatter = variableFormatter;
+        }
+        
+        public void recyclableAllObject() {
+            this.objectPool.removeAllObjects();
+        }
+
+        public void recyclableThreads(ThreadReference thread) {
+            this.objectPool.removeObjectsByOwner(thread.uniqueID());
+        }
+
+        Responses.ResponseBody stackTrace(StackTraceArguments arguments)
+                throws IncompatibleThreadStateException, AbsentInformationException, URISyntaxException {
+            List<Types.StackFrame> result = new ArrayList<>();
+            if (arguments.startFrame < 0 || arguments.levels < 0) {
+                return new Responses.StackTraceResponseBody(result, 0);
+            }
+            ThreadReference thread = getThread(arguments.threadId);
+            int totalFrames = 0;
+            if (thread != null) {
+                totalFrames = thread.frameCount();
+                if (totalFrames <= arguments.startFrame) {
+                    return new Responses.StackTraceResponseBody(result, totalFrames);
+                }
+                try {
+                    List<StackFrame> stackFrames = arguments.levels == 0
+                            ? thread.frames(arguments.startFrame, totalFrames - arguments.startFrame)
+                            : thread.frames(arguments.startFrame,
+                            Math.min(totalFrames - arguments.startFrame, arguments.levels));
+                    for (int i = 0; i < arguments.levels; i++) {
+                        StackFrame stackFrame = stackFrames.get(arguments.startFrame + i);
+                        int frameId = this.objectPool.addObject(stackFrame.thread().uniqueID(),
+                                new JdiObjectProxy<>(stackFrame));
+                        Types.StackFrame clientStackFrame = convertDebuggerStackFrameToClient(stackFrame, frameId);
+                        result.add(clientStackFrame);
+                    }
+                } catch (IndexOutOfBoundsException ex) {
+                    // ignore if stack frames overflow
+                    return new Responses.StackTraceResponseBody(result, totalFrames);
+                }
+            }
+            return new Responses.StackTraceResponseBody(result, totalFrames);
+        }
+
+        Responses.ResponseBody scopes(Requests.ScopesArguments arguments) {
+            List<Types.Scope> scopes = new ArrayList<>();
+            JdiObjectProxy<StackFrame> stackFrameProxy = (JdiObjectProxy<StackFrame>)this.objectPool.getObjectById(arguments.frameId);
+            if (stackFrameProxy == null) {
+                return new Responses.ScopesResponseBody(scopes);
+            }
+            StackFrameScope localScope = new StackFrameScope(stackFrameProxy.getProxiedObject(), "Local");
+            scopes.add(new Types.Scope(
+                    localScope.getScope(), this.objectPool.addObject(stackFrameProxy.getProxiedObject()
+                    .thread().uniqueID(), localScope), false));
+
+            return new Responses.ScopesResponseBody(scopes);
+        }
+
+
+        Responses.ResponseBody variables(Requests.VariablesArguments arguments) throws AbsentInformationException {
+            Map<String, Object> options = new HashMap<>();
+            // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
+            boolean showStaticVariables = true;
+            boolean showQualified = true;
+            if (arguments.format != null && arguments.format.hex) {
+                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
+            }
+            if (showQualified) {
+                options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, showQualified);
+            }
+            
+            List<Types.Variable> list = new ArrayList<>();
+            List<Variable> variables;
+            Object obj = this.objectPool.getObjectById(arguments.variablesReference);
+            ThreadReference thread;
+            if (obj instanceof StackFrameScope) {
+                StackFrame frame = ((StackFrameScope) obj).getStackFrame();
+                thread = frame.thread();
+                variables = VariableUtils.listLocalVariables(frame);
+                Variable thisVariable = VariableUtils.getThisVariable(frame);
+                if (thisVariable != null) {
+                    variables.add(thisVariable);
+                }
+                if (showStaticVariables && frame.location().method().isStatic()) {
+                    variables.addAll(VariableUtils.listStaticVariables(frame));
+                }
+            } else if (obj instanceof ThreadObjectReference) {
+                ObjectReference currentObj = ((ThreadObjectReference) obj).getObject();
+                thread = ((ThreadObjectReference) obj).getThread();
+
+                if (arguments.count > 0) {
+                    variables = VariableUtils.listFieldVariables(currentObj, arguments.start, arguments.count);
+                } else {
+                    variables = VariableUtils.listFieldVariables(currentObj, showStaticVariables);
+                }
+
+            } else {
+                throw new IllegalArgumentException(String
+                        .format("VariablesRequest: Invalid variablesReference %d.", arguments.variablesReference));
+            }
+            // find variable name duplicates
+            Set<String> duplicateNames = getDuplicateNames(variables.stream().map(var -> var.name)
+                    .collect(Collectors.toList()));
+            Map<Variable, String> variableNameMap = new HashMap<>();
+            if (!duplicateNames.isEmpty()) {
+                Map<String, List<Variable>> duplicateVars =
+                        variables.stream()
+                                .filter(var -> duplicateNames.contains(var.name))
+                                .collect(Collectors.groupingBy(var -> var.name, Collectors.toList()));
+
+                duplicateVars.forEach((k, duplicateVariables) -> {
+                    Set<String> declarationTypeNames = new HashSet<>();
+                    boolean declarationTypeNameConflict = false;
+                    // try use type formatter to resolve name conflict
+                    for (Variable javaVariable : duplicateVariables) {
+                        Type declarationType = javaVariable.getDeclaringType();
+                        if (declarationType != null) {
+                            String declarationTypeName = this.variableFormatter.typeToString(declarationType, options);
+                            String compositeName = String.format("%s (%s)", javaVariable.name, declarationTypeName);
+                            if (!declarationTypeNames.add(compositeName)) {
+                                declarationTypeNameConflict = true;
+                                break;
+                            }
+                            variableNameMap.put(javaVariable, compositeName);
+                        }
+                    }
+                    // if there are duplicate names on declaration types, use fully qualified name
+                    if (declarationTypeNameConflict) {
+                        for (Variable javaVariable : duplicateVariables) {
+                            Type declarationType = javaVariable.getDeclaringType();
+                            if (declarationType != null) {
+                                variableNameMap.put(javaVariable, String.format("%s (%s)", javaVariable.name, declarationType.name()));
+                            }
+                        }
+                    }
+                });
+            }
+            for (Variable javaVariable : variables) {
+                Value value = javaVariable.value;
+                String name = javaVariable.name;
+                if (variableNameMap.containsKey(javaVariable)) {
+                    name = variableNameMap.get(javaVariable);
+                }
+                int referenceId = 0;
+                if (value instanceof ObjectReference && VariableUtils.hasChildren(value, showStaticVariables)) {
+                    ThreadObjectReference threadObjectReference = new ThreadObjectReference(thread, (ObjectReference) value);
+                    referenceId = this.objectPool.addObject(thread.uniqueID(), threadObjectReference);
+                }
+                Types.Variable typedVariables = new Types.Variable(name, variableFormatter.valueToString(value, options),
+                        variableFormatter.typeToString(value == null ? null : value.type(), options), referenceId, null);
+                if (javaVariable.value instanceof ArrayReference) {
+                    typedVariables.indexedVariables = ((ArrayReference) javaVariable.value).length();
+                }
+                list.add(typedVariables);
+            }
+            return new Responses.VariablesResponseBody(list);
+        }
+
+        Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
+            Map<String, Object> options = new HashMap<>();
+            // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
+            boolean showStaticVariables = true;
+            boolean showQualified = true;
+            if (arguments.format != null && arguments.format.hex) {
+                options.put(NumericFormatter.NUMERIC_FORMAT_OPTION, NumericFormatEnum.HEX);
+            }
+            if (showQualified) {
+                options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, showQualified);
+            }
+
+            Object obj = this.objectPool.getObjectById(arguments.variablesReference);
+            ThreadReference thread;
+            String name = arguments.name;
+            Value newValue = null;
+            String belongToClass = null;
+            if (arguments.name.contains("(")) {
+                name = arguments.name.substring(0, arguments.name.indexOf('(')).trim();
+                belongToClass = arguments.name.substring(arguments.name.indexOf('(') + 1, arguments.name.indexOf(')'))
+                        .trim();
+            }
+            try {
+                if (obj instanceof StackFrameScope) {
+                    if (arguments.name.equals("this")) {
+                        throw new UnsupportedOperationException("SetVariableRequest: 'This' variable cannot be changed.");
+                    }
+                    StackFrame frame = ((StackFrameScope) obj).getStackFrame();
+                    thread = frame.thread();
+                    LocalVariable variable = frame.visibleVariableByName(name);
+                    if (StringUtils.isBlank(belongToClass) && variable != null) {
+                        newValue = this.setFrameValue(frame, variable, arguments.value, options);
+                    } else {
+                        if (showStaticVariables && frame.location().method().isStatic()) {
+                            ReferenceType type = frame.location().declaringType();
+                            if (StringUtils.isBlank(belongToClass)) {
+                                Field field = type.fieldByName(name);
+                                newValue = setStaticFieldValue(type, field, arguments.name, arguments.value, options);
+                            } else {
+                                if (frame.location().method().isStatic() && showStaticVariables) {
+                                    newValue = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
+                                            arguments.value, options);
+                                }
+                            }
+
+                        } else {
+                            throw new UnsupportedOperationException(
+                                    String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
+                        }
+                    }
+                } else if (obj instanceof ThreadObjectReference) {
+                    ObjectReference currentObj = ((ThreadObjectReference) obj).getObject();
+                    thread = ((ThreadObjectReference) obj).getThread();
+                    if (currentObj instanceof ArrayReference) {
+                        ArrayReference array = (ArrayReference) currentObj;
+                        Type eleType = ((ArrayType) array.referenceType()).componentType();
+                        newValue = setArrayValue(array, eleType, Integer.parseInt(arguments.name), arguments.value, options);
+                    } else {
+                        if (StringUtils.isBlank(belongToClass)) {
+                            Field field = currentObj.referenceType().fieldByName(name);
+                            if (field != null) {
+                                if (field.isStatic()) {
+                                    newValue = this.setStaticFieldValue(currentObj.referenceType(), field,
+                                            arguments.name, arguments.value, options);
+                                } else {
+                                    newValue = this.setObjectFieldValue(currentObj, field, arguments.name,
+                                            arguments.value, options);
+                                }
+                            } else {
+                                throw new IllegalArgumentException(
+                                        String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
+                            }
+                        } else {
+                            newValue = setFieldValueWithConflict(currentObj, currentObj.referenceType().allFields(),
+                                    name, belongToClass, arguments.value, options);
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException(
+                            String.format("SetVariableRequest: Variable %s cannot be found.", arguments.name));
+                }
+            } catch (IllegalArgumentException | AbsentInformationException | InvalidTypeException
+                    | UnsupportedOperationException | ClassNotLoadedException e) {
+                return new Responses.ErrorResponseBody(convertDebuggerMessageToClient(e.getMessage()));
+            }
+            int referenceId = getReferenceId(thread, newValue, showStaticVariables);
+
+            int indexedVariables = 0;
+            if (newValue instanceof ArrayReference) {
+                indexedVariables = ((ArrayReference) newValue).length();
+            }
+            return new Responses.SetVariablesResponseBody(
+                    this.variableFormatter.typeToString(newValue == null ? null : newValue.type(), options), // type
+                    this.variableFormatter.valueToString(newValue, options), // value,
+                    referenceId, indexedVariables);
+
+        }
+
+        private Value setValueProxy(Type type, String value, SetValueFunction setValueFunc, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            IValueFormatter formatter = getFormatterForModification(type, options);
+            Value newValue = formatter.valueOf(value, type, options);
+            setValueFunc.apply(newValue);
+            return newValue;
+        }
+
+        private IValueFormatter getFormatterForModification(Type type, Map<String, Object> options) {
+            char signature0 = type.signature().charAt(0);
+
+            if (signature0 == LONG || signature0 == INT || signature0 == SHORT || signature0 == BYTE || signature0 == FLOAT
+                    || signature0 == DOUBLE || signature0 == BOOLEAN || signature0 == CHAR
+                    || type.signature().equals(STRING_SIGNATURE)) {
+                return this.variableFormatter.getValueFormatter(type, options);
+            }
+            throw new UnsupportedOperationException(String.format("Set value for type %s is not supported.", type.name()));
+        }
+
+        private Value setStaticFieldValue(Type declaringType, Field field, String name, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            if (field.isFinal()) {
+                throw new UnsupportedOperationException(
+                        String.format("SetVariableRequest: Final field %s cannot be changed.", name));
+            }
+            if (!(declaringType instanceof ClassType)) {
+                throw new UnsupportedOperationException(
+                        String.format("SetVariableRequest: Field %s in interface cannot be changed.", name));
+            }
+            return setValueProxy(field.type(), value, newValue -> ((ClassType) declaringType).setValue(field, newValue), options);
+        }
+
+        private Value setFrameValue(StackFrame frame, LocalVariable localVariable, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            return setValueProxy(localVariable.type(), value, newValue -> frame.setValue(localVariable, newValue), options);
+        }
+
+        private Value setObjectFieldValue(ObjectReference obj, Field field, String name, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            if (field.isFinal()) {
+                throw new UnsupportedOperationException(
+                        String.format("SetVariableRequest: Final field %s cannot be changed.", name));
+            }
+            return setValueProxy(field.type(), value, newValue -> obj.setValue(field, newValue), options);
+        }
+
+        private Value setArrayValue(ArrayReference array, Type eleType, int index, String value, Map<String, Object> options)
+                throws ClassNotLoadedException, InvalidTypeException {
+            return setValueProxy(eleType, value, newValue -> array.setValue(index, newValue), options);
+        }
+
+        private Value setFieldValueWithConflict(ObjectReference obj, List<Field> fields, String name, String belongToClass,
+                                                String value, Map<String, Object> options) throws ClassNotLoadedException, InvalidTypeException {
+            Field field;
+            // first try to resolve filed by fully qualified name
+            List<Field> narrowedFields = fields.stream().filter(TypeComponent::isStatic)
+                    .filter(t -> t.name().equals(name) && t.declaringType().name().equals(belongToClass))
+                    .collect(Collectors.toList());
+            if (narrowedFields.isEmpty()) {
+                // second try to resolve filed by formatted name
+                narrowedFields = fields.stream().filter(TypeComponent::isStatic)
+                        .filter(t -> t.name().equals(name)
+                                && this.variableFormatter.typeToString(t.declaringType(), options).equals(belongToClass))
+                        .collect(Collectors.toList());
+            }
+            if (narrowedFields.size() == 1) {
+                field = narrowedFields.get(0);
+            } else {
+                throw new UnsupportedOperationException(String.format("SetVariableRequest: Name conflicted for %s.", name));
+            }
+            return field.isStatic() ? setStaticFieldValue(field.declaringType(), field, name, value, options)
+                    : this.setObjectFieldValue(obj, field, name, value, options);
+
+        }
+
+        private int getReferenceId(ThreadReference thread, Value value, boolean includeStatic) {
+            if (value instanceof ObjectReference && VariableUtils.hasChildren(value, includeStatic)) {
+                ThreadObjectReference threadObjectReference = new ThreadObjectReference(thread, (ObjectReference)value);
+                return this.objectPool.addObject(thread.uniqueID(), threadObjectReference);
+            }
+            return 0;
+        }
+
+
+        private Set<String> getDuplicateNames(Collection<String> list) {
+            Set<String> result = new HashSet<>();
+            Set<String> set = new HashSet<>();
+
+            for (String item : list) {
+                if (!set.contains(item)) {
+                    set.add(item);
+                } else {
+                    result.add(item);
+                }
+            }
+            return result;
+        }
     }
 }
