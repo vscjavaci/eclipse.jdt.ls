@@ -36,12 +36,14 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.connect.VMStartException;
 import com.sun.jdi.event.BreakpointEvent;
 import com.sun.jdi.event.Event;
+import com.sun.jdi.event.ExceptionEvent;
 import com.sun.jdi.event.StepEvent;
 import com.sun.jdi.event.ThreadDeathEvent;
 import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
+
 import io.reactivex.disposables.Disposable;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -283,6 +285,11 @@ public class DebugAdapter implements IDebugAdapter {
         caps.supportsConfigurationDoneRequest = true;
         caps.supportsHitConditionalBreakpoints = true;
         caps.supportTerminateDebuggee = true;
+        Types.ExceptionBreakpointFilter[] exceptionFilters = {
+                Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER,
+                Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER,
+        };
+        caps.exceptionBreakpointFilters = exceptionFilters;
         return new Responses.InitializeResponseBody(caps);
     }
 
@@ -386,6 +393,17 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private Responses.ResponseBody setExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments) {
+        String[] filters = arguments.filters;
+        try {
+            boolean notifyCaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER_NAME);
+            boolean notifyUncaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER_NAME);
+
+            this.debugSession.setExceptionBreakpoints(notifyCaught, notifyUncaught);
+        } catch (Exception ex) {
+            return new Responses.ErrorResponseBody(this.convertDebuggerMessageToClient(
+                    String.format("Failed to setExceptionBreakpoints. Reason: '%s'", ex.getMessage())));
+        }
+
         return new Responses.ResponseBody();
     }
 
@@ -528,6 +546,10 @@ public class DebugAdapter implements IDebugAdapter {
         } else if (event instanceof StepEvent) {
             ThreadReference stepThread = ((StepEvent) event).thread();
             this.sendEventLater(new Events.StoppedEvent("step", stepThread.uniqueID()));
+            debugEvent.shouldResume = false;
+        } else if (event instanceof ExceptionEvent) {
+            ThreadReference thread = ((ExceptionEvent) event).thread();
+            this.sendEventLater(new Events.StoppedEvent("exception", thread.uniqueID()));
             debugEvent.shouldResume = false;
         }
     }
