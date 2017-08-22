@@ -14,6 +14,12 @@ package org.eclipse.jdt.ls.debug.adapter;
 import org.eclipse.jdt.ls.debug.IDebugSession;
 
 public interface IDebugAdapterContext {
+    /**
+     * Set the debug session.
+     * @param session
+     *              the new debug session
+     */
+    void setDebugSession(IDebugSession session);
 
     /**
      * Get the debug session.
@@ -55,4 +61,10 @@ public interface IDebugAdapterContext {
     boolean isClientPathsAreUri();
 
     void setClientPathsAreUri(boolean clientPathsAreUri);
+
+    boolean isAttached();
+
+    void setAttached(boolean attached);
+
+    int createMessageId();
 }
