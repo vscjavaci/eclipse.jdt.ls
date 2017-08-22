@@ -56,7 +56,6 @@ import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.SimpleTypeFormatter;
 import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
 import org.eclipse.jdt.ls.debug.adapter.variables.JdiObjectProxy;
-import org.eclipse.jdt.ls.debug.adapter.variables.SetValueFunction;
 import org.eclipse.jdt.ls.debug.adapter.variables.StackFrameScope;
 import org.eclipse.jdt.ls.debug.adapter.variables.ThreadObjectReference;
 import org.eclipse.jdt.ls.debug.adapter.variables.Variable;
@@ -817,7 +816,7 @@ public class DebugAdapter implements IDebugAdapter {
             this.variableRequestHandler.recyclableThreads(thread);
         }
     }
-    
+
     private boolean allThreadRunning() {
         return !safeGetAllThreads().stream().anyMatch(ThreadReference::isSuspended);
     }
@@ -831,7 +830,7 @@ public class DebugAdapter implements IDebugAdapter {
             this.objectPool = new RecyclableObjectPool<>();
             this.variableFormatter = variableFormatter;
         }
-        
+
         public void recyclableAllObject() {
             this.objectPool.removeAllObjects();
         }
@@ -889,7 +888,7 @@ public class DebugAdapter implements IDebugAdapter {
 
 
         Responses.ResponseBody variables(Requests.VariablesArguments arguments) throws AbsentInformationException {
-            Map<String, Object> options = new HashMap<>();
+            Map<String, Object> options = variableFormatter.getDefaultOptions();
             // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
             boolean showStaticVariables = true;
             boolean showQualified = true;
@@ -899,7 +898,7 @@ public class DebugAdapter implements IDebugAdapter {
             if (showQualified) {
                 options.put(SimpleTypeFormatter.QUALIFIED_CLASS_NAME_OPTION, showQualified);
             }
-            
+
             List<Types.Variable> list = new ArrayList<>();
             List<Variable> variables;
             Object obj = this.objectPool.getObjectById(arguments.variablesReference);
@@ -988,7 +987,7 @@ public class DebugAdapter implements IDebugAdapter {
         }
 
         Responses.ResponseBody setVariable(Requests.SetVariableArguments arguments) {
-            Map<String, Object> options = new HashMap<>();
+            Map<String, Object> options = variableFormatter.getDefaultOptions();
             // TODO: when vscode protocol support customize settings of value format, showQualified should be one of the options.
             boolean showStaticVariables = true;
             boolean showQualified = true;
@@ -1026,7 +1025,7 @@ public class DebugAdapter implements IDebugAdapter {
                                 newValue = setStaticFieldValue(type, field, arguments.name, arguments.value, options);
                             } else {
                                 newValue = setFieldValueWithConflict(null, type.allFields(), name, belongToClass,
-                                    arguments.value, options);
+                                        arguments.value, options);
                             }
 
                         } else {
@@ -1084,21 +1083,9 @@ public class DebugAdapter implements IDebugAdapter {
 
         private Value setValueProxy(Type type, String value, SetValueFunction setValueFunc, Map<String, Object> options)
                 throws ClassNotLoadedException, InvalidTypeException {
-            IValueFormatter formatter = getFormatterForModification(type, options);
-            Value newValue = formatter.valueOf(value, type, options);
+            Value newValue = this.variableFormatter.stringToValue(value, type, options);
             setValueFunc.apply(newValue);
             return newValue;
-        }
-
-        private IValueFormatter getFormatterForModification(Type type, Map<String, Object> options) {
-            char signature0 = type.signature().charAt(0);
-
-            if (signature0 == LONG || signature0 == INT || signature0 == SHORT || signature0 == BYTE || signature0 == FLOAT
-                    || signature0 == DOUBLE || signature0 == BOOLEAN || signature0 == CHAR
-                    || type.signature().equals(STRING_SIGNATURE)) {
-                return this.variableFormatter.getValueFormatter(type, options);
-            }
-            throw new UnsupportedOperationException(String.format("Set value for type %s is not supported.", type.name()));
         }
 
         private Value setStaticFieldValue(Type declaringType, Field field, String name, String value, Map<String, Object> options)
@@ -1179,5 +1166,10 @@ public class DebugAdapter implements IDebugAdapter {
             }
             return result;
         }
+    }
+
+    @FunctionalInterface
+    static interface SetValueFunction {
+        void apply(Value value) throws InvalidTypeException, ClassNotLoadedException;
     }
 }

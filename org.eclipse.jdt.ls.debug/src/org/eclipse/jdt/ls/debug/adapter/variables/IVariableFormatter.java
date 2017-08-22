@@ -38,15 +38,6 @@ public interface IVariableFormatter {
     void registerValueFormatter(IValueFormatter formatter, int priority);
 
     /**
-     * Get the matched value formatter for the specified type.
-     * @param type the type of the valuer
-     * @param options the options about the formatters
-     * @return the matched value formatter, if no formatter matches,
-     * <code>IllegalArgumentException</code> will be thrown
-     */
-    IValueFormatter getValueFormatter(Type type, Map<String, Object> options);
-
-    /**
      * Get the default options for all formatters registered.
      * @return The default options.
      */
@@ -60,6 +51,15 @@ public interface IVariableFormatter {
      * @return the display text of the value
      */
     String valueToString(Value value, Map<String, Object> options);
+
+    /**
+     * Get the JDI value of a String.
+     *
+     * @param stringValue  the text of the value need to be converted.
+     * @param options additional information about expected format
+     * @return the jdi value
+     */
+    Value stringToValue(String stringValue, Type type, Map<String, Object> options);
 
     /**
      * Get display name of type.
