@@ -43,9 +43,9 @@ import com.sun.jdi.event.ThreadStartEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.event.VMStartEvent;
-
 import io.reactivex.disposables.Disposable;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jdt.ls.debug.DebugEvent;
 import org.eclipse.jdt.ls.debug.DebugException;
@@ -65,7 +65,6 @@ import org.eclipse.jdt.ls.debug.adapter.variables.VariableFormatterFactory;
 import org.eclipse.jdt.ls.debug.adapter.variables.VariableUtils;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
