@@ -53,8 +53,6 @@ import org.eclipse.jdt.ls.debug.adapter.Requests.StackTraceArguments;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatEnum;
 import org.eclipse.jdt.ls.debug.adapter.formatter.NumericFormatter;
 import org.eclipse.jdt.ls.debug.adapter.formatter.SimpleTypeFormatter;
-import org.eclipse.jdt.ls.debug.adapter.headless.ClassPathEntry;
-import org.eclipse.jdt.ls.debug.adapter.headless.utility.CompileUtils;
 import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
 import org.eclipse.jdt.ls.debug.adapter.variables.JdiObjectProxy;
 import org.eclipse.jdt.ls.debug.adapter.variables.StackFrameScope;
