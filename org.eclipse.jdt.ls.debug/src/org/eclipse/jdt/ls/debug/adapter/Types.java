@@ -191,8 +191,10 @@ public class Types {
     }
 
     public static class ExceptionBreakpointFilter {
-        public static final String Filter_Uncaught = "uncaught";
-        public static final String Filter_Caught = "caught";
+        public static final String UNCAUGHT_EXCEPTION_FILTER_NAME = "uncaught";
+        public static final String CAUGHT_EXCEPTION_FILTER_NAME = "caught";
+        public static final String UNCAUGHT_EXCEPTION_FILTER_LABEL = "Uncaught Exceptions";
+        public static final String CAUGHT_EXCEPTION_FILTER_LABEL = "Caught Exceptions";
 
         public String label;
         public String filter;
@@ -202,8 +204,10 @@ public class Types {
             this.label = label;
         }
 
-        public static ExceptionBreakpointFilter UnCaught = new ExceptionBreakpointFilter(Filter_Uncaught, "Uncaught Exceptions");
-        public static ExceptionBreakpointFilter Caught = new ExceptionBreakpointFilter(Filter_Caught, "Caught Exceptions");
+        public static final ExceptionBreakpointFilter UNCAUGHT_EXCEPTION_FILTER =
+                new ExceptionBreakpointFilter(UNCAUGHT_EXCEPTION_FILTER_NAME, UNCAUGHT_EXCEPTION_FILTER_LABEL);
+        public static final ExceptionBreakpointFilter CAUGHT_EXCEPTION_FILTER =
+                new ExceptionBreakpointFilter(CAUGHT_EXCEPTION_FILTER_NAME, CAUGHT_EXCEPTION_FILTER_LABEL);
     }
 
     public static class Capabilities {

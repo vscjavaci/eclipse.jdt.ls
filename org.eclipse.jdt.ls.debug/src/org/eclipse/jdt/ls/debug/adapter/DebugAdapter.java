@@ -285,8 +285,8 @@ public class DebugAdapter implements IDebugAdapter {
         caps.supportsHitConditionalBreakpoints = true;
         caps.supportTerminateDebuggee = true;
         Types.ExceptionBreakpointFilter[] exceptionFilters = {
-                Types.ExceptionBreakpointFilter.UnCaught,
-                Types.ExceptionBreakpointFilter.Caught,
+                Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER,
+                Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER,
         };
         caps.exceptionBreakpointFilters = exceptionFilters;
         return new Responses.InitializeResponseBody(caps);
@@ -394,8 +394,8 @@ public class DebugAdapter implements IDebugAdapter {
     private Responses.ResponseBody setExceptionBreakpoints(Requests.SetExceptionBreakpointsArguments arguments) {
         String[] filters = arguments.filters;
         try {
-            boolean notifyCaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_Caught);
-            boolean notifyUncaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.Filter_Uncaught);
+            boolean notifyCaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER_NAME);
+            boolean notifyUncaught = ArrayUtils.contains(filters, Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER_NAME);
 
             this.debugSession.setExceptionBreakpoints(notifyCaught, notifyUncaught);
         } catch (Exception ex) {
