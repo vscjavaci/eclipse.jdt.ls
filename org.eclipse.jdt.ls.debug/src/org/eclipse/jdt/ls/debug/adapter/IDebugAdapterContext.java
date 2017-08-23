@@ -15,20 +15,6 @@ import org.eclipse.jdt.ls.debug.IDebugSession;
 
 public interface IDebugAdapterContext {
     /**
-     * Set the debug session.
-     * @param session
-     *              the new debug session
-     */
-    void setDebugSession(IDebugSession session);
-
-    /**
-     * Get the debug session.
-     * 
-     * @return the debug session.
-     */
-    IDebugSession getDebugSession();
-
-    /**
      * Send debug event synchronously.
      * 
      * @param event
@@ -45,6 +31,20 @@ public interface IDebugAdapterContext {
     void sendEventAsync(Events.DebugEvent event);
 
     <T extends IProvider> T getProvider(Class<T> clazz);
+
+    /**
+     * Set the debug session.
+     * @param session
+     *              the new debug session
+     */
+    void setDebugSession(IDebugSession session);
+
+    /**
+     * Get the debug session.
+     * 
+     * @return the debug session.
+     */
+    IDebugSession getDebugSession();
 
     boolean isDebuggerLinesStartAt1();
 
@@ -65,6 +65,4 @@ public interface IDebugAdapterContext {
     boolean isAttached();
 
     void setAttached(boolean attached);
-
-    int createMessageId();
 }

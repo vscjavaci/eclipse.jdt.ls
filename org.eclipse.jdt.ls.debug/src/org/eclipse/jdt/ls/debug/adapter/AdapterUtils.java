@@ -11,11 +11,23 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.eclipse.jdt.ls.debug.IDebugSession;
+import org.eclipse.jdt.ls.debug.adapter.Messages.Response;
+
+import com.sun.jdi.ThreadReference;
+import com.sun.jdi.VMDisconnectedException;
 
 public class AdapterUtils {
     private static final String osName = System.getProperty("os.name", "").toLowerCase();
@@ -66,5 +78,126 @@ public class AdapterUtils {
             return matcher.group();
         }
         return null;
+    }
+
+    /**
+     * Convert the source platform's line number to the target platform's line number.
+     * @param line
+     *           the line number from the source platform
+     * @param sourceLinesStartAt1
+     *           the source platform's line starts at 1 or not
+     * @param targetLinesStartAt1
+     *           the target platform's line starts at 1 or not
+     * @return the new line number
+     */
+    public static int formatLineNumber(int line, boolean sourceLinesStartAt1, boolean targetLinesStartAt1) {
+        if (sourceLinesStartAt1) {
+            return targetLinesStartAt1 ? line : line - 1;
+        } else {
+            return targetLinesStartAt1 ? line + 1 : line;
+        }
+    }
+
+    /**
+     * Convert the source platform's path format to the target platform's path format.
+     * @param path
+     *           the path value from the source platform
+     * @param sourceIsUri
+     *           the path format of the source platform is uri or not
+     * @param targetIsUri
+     *           the path format of the target platform is uri or not
+     * @return the new path value
+     */
+    public static String formatPath(String path, boolean sourceIsUri, boolean targetIsUri) {
+        if (path == null) {
+            return null;
+        }
+
+        if (sourceIsUri) {
+            if (targetIsUri) {
+                return path;
+            } else {
+                try {
+                    return Paths.get(new URI(path)).toString();
+                } catch (URISyntaxException | IllegalArgumentException
+                        | FileSystemNotFoundException | SecurityException e) {
+                    return null;
+                }
+            }
+        } else {
+            if (targetIsUri) {
+                try {
+                    return Paths.get(path).toUri().toString();
+                } catch (InvalidPathException e) {
+                    return null;
+                }
+            } else {
+                return path;
+            }
+        }
+    }
+
+    /**
+     * Get the ThreadReference instance by the thread id.
+     * @param debugSession
+     *              the debug session
+     * @param threadId
+     *              the thread id
+     * @return the corresponding ThreadReference
+     */
+    public static ThreadReference getThread(IDebugSession debugSession, int threadId) {
+        for (ThreadReference thread : safeGetAllThreads(debugSession)) {
+            if (thread.uniqueID() == threadId) {
+                return thread;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get all available ThreadReferences in the target debug session.
+     * If the virtual machine from the debug session has already terminated,
+     * this function will return an empty list instead of throwing VMDisconnectionException.
+     * @param debugSession
+     *              the debug session
+     * @return the available ThreadReferences in the debug session
+     */
+    public static List<ThreadReference> safeGetAllThreads(IDebugSession debugSession) {
+        try {
+            return debugSession.allThreads();
+        } catch (VMDisconnectedException ex) {
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Generate an error response with the given error message.
+     * @param response
+     *              the response object
+     * @param errorCode
+     *              the error code
+     * @param errorMessage
+     *              the error message
+     */
+    public static void setErrorResponse(Response response, int errorCode, String errorMessage) {
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, errorMessage));
+        response.message = errorMessage;
+        response.success = false;
+    }
+
+    /**
+     * Generate an error response with the given exception¡£
+     * @param response
+     *              the response object
+     * @param errorCode
+     *              the error code
+     * @param e
+     *              the exception
+     */
+    public static void setErrorResponse(Response response, int errorCode, Exception e) {
+        String errorMessage = e.getMessage() != null ? e.getMessage() : e.toString();
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, errorMessage));
+        response.message = errorMessage;
+        response.success = false;
     }
 }

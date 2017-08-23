@@ -50,6 +50,11 @@ public class InitializeRequestHandler implements IDebugRequestHandler {
         caps.supportsConfigurationDoneRequest = true;
         caps.supportsHitConditionalBreakpoints = true;
         caps.supportTerminateDebuggee = true;
+        Types.ExceptionBreakpointFilter[] exceptionFilters = {
+                Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER,
+                Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER,
+        };
+        caps.exceptionBreakpointFilters = exceptionFilters;
         response.body = caps;
     }
 }

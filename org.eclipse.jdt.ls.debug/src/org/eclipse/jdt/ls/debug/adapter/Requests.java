@@ -174,7 +174,7 @@ public class Requests {
         SETEXCEPTIONBREAKPOINTS("setExceptionBreakpoints", SetExceptionBreakpointsArguments.class),
         SETFUNCTIONBREAKPOINTS("setFunctionBreakpoints", SetFunctionBreakpointsArguments.class),
         EVALUATE("evaluate", EvaluateArguments.class),
-        UNSUPPORTED("", null);
+        UNSUPPORTED("", Arguments.class);
 
         private String command;
         private Class<? extends Arguments> argumentType;

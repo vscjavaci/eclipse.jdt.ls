@@ -13,12 +13,9 @@ package org.eclipse.jdt.ls.debug.adapter;
 
 import java.util.List;
 
-import org.eclipse.jdt.ls.debug.DebugException;
-
 public interface IDebugRequestHandler {
     List<Requests.Command> getTargetCommands();
     
-    void handle(Requests.Command command, Requests.Arguments arguments, Messages.Response response,
-                IDebugAdapterContext context) throws DebugException;
+    void handle(Requests.Command command, Requests.Arguments arguments, Messages.Response response, IDebugAdapterContext context);
 
 }
