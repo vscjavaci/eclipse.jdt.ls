@@ -142,22 +142,6 @@ public class DebugAdapter implements IDebugAdapter {
         initialize();
     }
 
-    private void initialize() {
-        // Register request handlers.
-        registerHandler(new InitializeRequestHandler());
-    }
-
-    private void registerHandler(IDebugRequestHandler handler) {
-        for (Command command : handler.getTargetCommands()) {
-            List<IDebugRequestHandler> handlerList = requestHandlers.get(command);
-            if (handlerList == null) {
-                handlerList = new ArrayList<>();
-                requestHandlers.put(command, handlerList);
-            }
-            handlerList.add(handler);
-        }
-    }
-
     @Override
     public Messages.Response dispatchRequest(Messages.Request request) {
         Messages.Response response = new Messages.Response();
@@ -217,7 +201,7 @@ public class DebugAdapter implements IDebugAdapter {
                 case VARIABLES:
                     Requests.VariablesArguments varArguments = (VariablesArguments) cmdArgs;
                     if (varArguments.variablesReference == -1) {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.ARGUMENT_MISSING,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                                 "VariablesRequest: property 'variablesReference' is missing, null, or empty");
                     } else {
                         variables(varArguments, response);
@@ -230,10 +214,10 @@ public class DebugAdapter implements IDebugAdapter {
                         // Just exit out of editing if we're given an empty expression.
                         response.body = new Responses.ResponseBody();
                     } else if (setVarArguments.variablesReference == -1) {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.ARGUMENT_MISSING,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                                 "SetVariablesRequest: property 'variablesReference' is missing, null, or empty");
                     } else if (setVarArguments.name == null) {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.ARGUMENT_MISSING,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                                 "SetVariablesRequest: property 'name' is missing, null, or empty");
                     } else {
                         setVariable(setVarArguments, response);
@@ -243,7 +227,7 @@ public class DebugAdapter implements IDebugAdapter {
                 case SOURCE:
                     Requests.SourceArguments sourceArguments = (SourceArguments) cmdArgs;
                     if (sourceArguments.sourceReference == -1) {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.ARGUMENT_MISSING,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                                 "SourceRequest: property 'sourceReference' is missing, null, or empty");
                     } else {
                         source(sourceArguments, response);
@@ -267,7 +251,7 @@ public class DebugAdapter implements IDebugAdapter {
                     if (setFuncBreakpointArguments.breakpoints != null) {
                         setFunctionBreakpoints(setFuncBreakpointArguments, response);
                     } else {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.ARGUMENT_MISSING,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                                 "SetFunctionBreakpointsRequest: property 'breakpoints' is missing, null, or empty");
                     }
                     break;
@@ -275,7 +259,7 @@ public class DebugAdapter implements IDebugAdapter {
                 case EVALUATE:
                     Requests.EvaluateArguments evaluateArguments = (EvaluateArguments) cmdArgs;
                     if (evaluateArguments.expression == null) {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.ARGUMENT_MISSING,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                                 "EvaluateRequest: property 'expression' is missing, null, or empty");
                     } else {
                         evaluate(evaluateArguments, response);
@@ -289,17 +273,55 @@ public class DebugAdapter implements IDebugAdapter {
                             handler.handle(command, cmdArgs, response, this.debugContext);
                         }
                     } else {
-                        AdapterUtils.setErrorResponse(response, ErrorCodes.UNRECOGNIZED_REQUEST_FAILURE,
+                        AdapterUtils.setErrorResponse(response, ErrorCode.UNRECOGNIZED_REQUEST_FAILURE,
                                 String.format("Unrecognized request: { _request: %s }", request.command));
                     }
             }
         } catch (Exception e) {
             Logger.logException("DebugSession dispatch exception", e);
-            AdapterUtils.setErrorResponse(response, ErrorCodes.UNKNOWN_FAILURE,
+            AdapterUtils.setErrorResponse(response, ErrorCode.UNKNOWN_FAILURE,
                     e.getMessage() != null ? e.getMessage() : e.toString());
         }
 
         return response;
+    }
+
+    /**
+     * Send event to DA immediately.
+     *
+     * @see ProtocolServer#sendEvent(String, Object)
+     */
+    public void sendEvent(Events.DebugEvent event) {
+        this.eventConsumer.accept(event, false);
+    }
+
+    /**
+     * Send event to DA after the current dispatching request is resolved.
+     *
+     * @see ProtocolServer#sendEventLater(String, Object)
+     */
+    public void sendEventLater(Events.DebugEvent event) {
+        this.eventConsumer.accept(event, true);
+    }
+
+    public <T extends IProvider> T getProvider(Class<T> clazz) {
+        return providerContext.getProvider(clazz);
+    }
+
+    private void initialize() {
+        // Register request handlers.
+        registerHandler(new InitializeRequestHandler());
+    }
+
+    private void registerHandler(IDebugRequestHandler handler) {
+        for (Command command : handler.getTargetCommands()) {
+            List<IDebugRequestHandler> handlerList = requestHandlers.get(command);
+            if (handlerList == null) {
+                handlerList = new ArrayList<>();
+                requestHandlers.put(command, handlerList);
+            }
+            handlerList.add(handler);
+        }
     }
 
     /* ======================================================*/
@@ -313,7 +335,7 @@ public class DebugAdapter implements IDebugAdapter {
         } catch (DebugException e) {
             // When launching failed, send a TerminatedEvent to tell DA the debugger would exit.
             this.sendEventLater(new Events.TerminatedEvent());
-            AdapterUtils.setErrorResponse(response, ErrorCodes.LAUNCH_FAILURE, e);
+            AdapterUtils.setErrorResponse(response, ErrorCode.LAUNCH_FAILURE, e);
         }
     }
 
@@ -324,7 +346,7 @@ public class DebugAdapter implements IDebugAdapter {
         } catch (DebugException e) {
             // When attaching failed, send a TerminatedEvent to tell DA the debugger would exit.
             this.sendEventLater(new Events.TerminatedEvent());
-            AdapterUtils.setErrorResponse(response, ErrorCodes.ATTACH_FAILURE, e);
+            AdapterUtils.setErrorResponse(response, ErrorCode.ATTACH_FAILURE, e);
         }
     }
 
@@ -372,7 +394,7 @@ public class DebugAdapter implements IDebugAdapter {
 
         // When breakpoint source path is null or an invalid file path, send an ErrorResponse back.
         if (sourcePath == null) {
-            AdapterUtils.setErrorResponse(response, ErrorCodes.SET_BREAKPOINT_FAILURE,
+            AdapterUtils.setErrorResponse(response, ErrorCode.SET_BREAKPOINT_FAILURE,
                     String.format("Failed to setBreakpoint. Reason: '%s' is an invalid path.", arguments.source.path));
             return ;
         }
@@ -395,7 +417,7 @@ public class DebugAdapter implements IDebugAdapter {
             }
             response.body = new Responses.SetBreakpointsResponseBody(res);
         } catch (DebugException e) {
-            AdapterUtils.setErrorResponse(response, ErrorCodes.SET_BREAKPOINT_FAILURE,
+            AdapterUtils.setErrorResponse(response, ErrorCode.SET_BREAKPOINT_FAILURE,
                     String.format("Failed to setBreakpoint. Reason: '%s'", e.getMessage()));
         }
     }
@@ -408,7 +430,7 @@ public class DebugAdapter implements IDebugAdapter {
 
             this.debugSession.setExceptionBreakpoints(notifyCaught, notifyUncaught);
         } catch (Exception ex) {
-            AdapterUtils.setErrorResponse(response, ErrorCodes.SET_EXCEPTIONBREAKPOINT_FAILURE,
+            AdapterUtils.setErrorResponse(response, ErrorCode.SET_EXCEPTIONBREAKPOINT_FAILURE,
                     String.format("Failed to setExceptionBreakpoints. Reason: '%s'", ex.getMessage()));
         }
     }
@@ -475,7 +497,7 @@ public class DebugAdapter implements IDebugAdapter {
         try {
             response.body = this.variableRequestHandler.stackTrace(arguments);
         } catch (IncompatibleThreadStateException | AbsentInformationException | URISyntaxException e) {
-            AdapterUtils.setErrorResponse(response, ErrorCodes.GET_STACKTRACE_FAILURE,
+            AdapterUtils.setErrorResponse(response, ErrorCode.GET_STACKTRACE_FAILURE,
                     String.format("Failed to get stackTrace. Reason: '%s'", e.getMessage()));
         }
     }
@@ -488,7 +510,7 @@ public class DebugAdapter implements IDebugAdapter {
         try {
             response.body = this.variableRequestHandler.variables(arguments);
         } catch (AbsentInformationException e) {
-            AdapterUtils.setErrorResponse(response, ErrorCodes.GET_VARIABLE_FAILURE,
+            AdapterUtils.setErrorResponse(response, ErrorCode.GET_VARIABLE_FAILURE,
                     String.format("Failed to get variables. Reason: '%s'", e.getMessage()));
         }
     }
@@ -550,28 +572,6 @@ public class DebugAdapter implements IDebugAdapter {
         }
     }
 
-    /**
-     * Send event to DA immediately.
-     *
-     * @see ProtocolServer#sendEvent(String, Object)
-     */
-    public void sendEvent(Events.DebugEvent event) {
-        this.eventConsumer.accept(event, false);
-    }
-
-    /**
-     * Send event to DA after the current dispatching request is resolved.
-     *
-     * @see ProtocolServer#sendEventLater(String, Object)
-     */
-    public void sendEventLater(Events.DebugEvent event) {
-        this.eventConsumer.accept(event, true);
-    }
-
-    public <T extends IProvider> T getProvider(Class<T> clazz) {
-        return providerContext.getProvider(clazz);
-    }
-
     private void launchDebugSession(Requests.LaunchArguments arguments) throws DebugException {
         this.cwd = arguments.cwd;
         String mainClass = arguments.startupClass;
@@ -598,8 +598,9 @@ public class DebugAdapter implements IDebugAdapter {
             });
             debuggeeConsole.start();
         } catch (IOException | IllegalConnectorArgumentsException | VMStartException e) {
-            Logger.logException("Failed to launch debuggee vm. Reason: \"" + e.getMessage() + "\"", e);
-            throw new DebugException("Failed to launch debuggee vm. Reason: \"" + e.getMessage() + "\"", e);
+            String errorMessage = String.format("Failed to launch debuggee vm. Reason: \"%s\"", e.toString());
+            Logger.logException(errorMessage, e);
+            throw new DebugException(errorMessage, e);
         }
     }
 
@@ -616,8 +617,9 @@ public class DebugAdapter implements IDebugAdapter {
             this.debugSession = DebugUtility.attach(providerContext.getVirtualMachineManagerProvider().getVirtualMachineManager(),
                     arguments.hostName, arguments.port, arguments.attachTimeout);
         } catch (IOException | IllegalConnectorArgumentsException e) {
-            Logger.logException("Failed to attach to remote debuggee vm. Reason: " + e.getMessage(), e);
-            throw new DebugException("Failed to attach to remote debuggee vm. Reason: " + e.getMessage(), e);
+            String errorMessage = String.format("Failed to attach to remote debuggee vm. Reason: \"%s\"", e.toString());
+            Logger.logException(errorMessage, e);
+            throw new DebugException(errorMessage, e);
         }
     }
 

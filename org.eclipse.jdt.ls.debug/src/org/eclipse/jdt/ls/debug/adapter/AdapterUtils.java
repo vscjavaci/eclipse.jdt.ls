@@ -143,8 +143,8 @@ public class AdapterUtils {
      * @param errorMessage
      *              the error message
      */
-    public static void setErrorResponse(Response response, int errorCode, String errorMessage) {
-        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, String.format("#%d: %s", errorCode, errorMessage)));
+    public static void setErrorResponse(Response response, ErrorCode errorCode, String errorMessage) {
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode.ordinal(), errorMessage));
         response.message = errorMessage;
         response.success = false;
     }
@@ -159,9 +159,9 @@ public class AdapterUtils {
      * @param e
      *              the exception
      */
-    public static void setErrorResponse(Response response, int errorCode, Exception e) {
-        String errorMessage = e.getMessage() != null ? e.getMessage() : e.toString();
-        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, String.format("#%d: %s", errorCode, errorMessage)));
+    public static void setErrorResponse(Response response, ErrorCode errorCode, Exception e) {
+        String errorMessage = e.toString();
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode.ordinal(), errorMessage));
         response.message = errorMessage;
         response.success = false;
     }

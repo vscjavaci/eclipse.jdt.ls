@@ -11,14 +11,14 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-public final class ErrorCodes {
-    public static final int UNKNOWN_FAILURE = 1000;
-    public static final int UNRECOGNIZED_REQUEST_FAILURE = 1001;
-    public static final int LAUNCH_FAILURE = 1002;
-    public static final int ATTACH_FAILURE = 1003;
-    public static final int ARGUMENT_MISSING = 1004;
-    public static final int SET_BREAKPOINT_FAILURE = 1005;
-    public static final int SET_EXCEPTIONBREAKPOINT_FAILURE = 1006;
-    public static final int GET_STACKTRACE_FAILURE = 1007;
-    public static final int GET_VARIABLE_FAILURE = 1008;
+public enum ErrorCode {
+    UNKNOWN_FAILURE,
+    UNRECOGNIZED_REQUEST_FAILURE,
+    LAUNCH_FAILURE,
+    ATTACH_FAILURE,
+    ARGUMENT_MISSING,
+    SET_BREAKPOINT_FAILURE,
+    SET_EXCEPTIONBREAKPOINT_FAILURE,
+    GET_STACKTRACE_FAILURE,
+    GET_VARIABLE_FAILURE
 }
