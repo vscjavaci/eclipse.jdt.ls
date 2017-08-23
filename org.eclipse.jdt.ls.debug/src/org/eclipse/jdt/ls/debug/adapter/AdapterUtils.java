@@ -186,7 +186,7 @@ public class AdapterUtils {
     }
 
     /**
-     * Generate an error response with the given exception¡£
+     * Generate an error response with the given exception.
      * @param response
      *              the response object
      * @param errorCode
