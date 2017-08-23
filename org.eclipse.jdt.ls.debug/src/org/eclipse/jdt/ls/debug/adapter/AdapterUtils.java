@@ -180,7 +180,7 @@ public class AdapterUtils {
      *              the error message
      */
     public static void setErrorResponse(Response response, int errorCode, String errorMessage) {
-        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, errorMessage));
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, String.format("#%d: %s", errorCode, errorMessage)));
         response.message = errorMessage;
         response.success = false;
     }
@@ -196,7 +196,7 @@ public class AdapterUtils {
      */
     public static void setErrorResponse(Response response, int errorCode, Exception e) {
         String errorMessage = e.getMessage() != null ? e.getMessage() : e.toString();
-        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, errorMessage));
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode, String.format("#%d: %s", errorCode, errorMessage)));
         response.message = errorMessage;
         response.success = false;
     }

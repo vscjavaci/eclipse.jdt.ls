@@ -11,7 +11,7 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
-public class ErrorCodes {
+public final class ErrorCodes {
     public static final int UNKNOWN_FAILURE = 1000;
     public static final int UNRECOGNIZED_REQUEST_FAILURE = 1001;
     public static final int LAUNCH_FAILURE = 1002;
