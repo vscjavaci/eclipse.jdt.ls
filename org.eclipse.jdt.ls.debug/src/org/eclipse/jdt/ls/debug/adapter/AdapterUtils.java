@@ -18,16 +18,10 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jdt.ls.debug.IDebugSession;
 import org.eclipse.jdt.ls.debug.adapter.Messages.Response;
-
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.VMDisconnectedException;
 
 public class AdapterUtils {
     private static final String osName = System.getProperty("os.name", "").toLowerCase();
@@ -82,6 +76,7 @@ public class AdapterUtils {
 
     /**
      * Convert the source platform's line number to the target platform's line number.
+     *
      * @param line
      *           the line number from the source platform
      * @param sourceLinesStartAt1
@@ -100,6 +95,7 @@ public class AdapterUtils {
 
     /**
      * Convert the source platform's path format to the target platform's path format.
+     *
      * @param path
      *           the path value from the source platform
      * @param sourceIsUri
@@ -138,40 +134,8 @@ public class AdapterUtils {
     }
 
     /**
-     * Get the ThreadReference instance by the thread id.
-     * @param debugSession
-     *              the debug session
-     * @param threadId
-     *              the thread id
-     * @return the corresponding ThreadReference
-     */
-    public static ThreadReference getThread(IDebugSession debugSession, int threadId) {
-        for (ThreadReference thread : safeGetAllThreads(debugSession)) {
-            if (thread.uniqueID() == threadId) {
-                return thread;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Get all available ThreadReferences in the target debug session.
-     * If the virtual machine from the debug session has already terminated,
-     * this function will return an empty list instead of throwing VMDisconnectionException.
-     * @param debugSession
-     *              the debug session
-     * @return the available ThreadReferences in the debug session
-     */
-    public static List<ThreadReference> safeGetAllThreads(IDebugSession debugSession) {
-        try {
-            return debugSession.allThreads();
-        } catch (VMDisconnectedException ex) {
-            return new ArrayList<>();
-        }
-    }
-
-    /**
      * Generate an error response with the given error message.
+     *
      * @param response
      *              the response object
      * @param errorCode
@@ -187,6 +151,7 @@ public class AdapterUtils {
 
     /**
      * Generate an error response with the given exception.
+     *
      * @param response
      *              the response object
      * @param errorCode
