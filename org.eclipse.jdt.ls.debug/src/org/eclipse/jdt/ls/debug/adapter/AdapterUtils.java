@@ -85,7 +85,7 @@ public class AdapterUtils {
      *           the target platform's line starts at 1 or not
      * @return the new line number
      */
-    public static int formatLineNumber(int line, boolean sourceLinesStartAt1, boolean targetLinesStartAt1) {
+    public static int convertLineNumber(int line, boolean sourceLinesStartAt1, boolean targetLinesStartAt1) {
         if (sourceLinesStartAt1) {
             return targetLinesStartAt1 ? line : line - 1;
         } else {
@@ -104,7 +104,7 @@ public class AdapterUtils {
      *           the path format of the target platform is uri or not
      * @return the new path value
      */
-    public static String formatPath(String path, boolean sourceIsUri, boolean targetIsUri) {
+    public static String convertPath(String path, boolean sourceIsUri, boolean targetIsUri) {
         if (path == null) {
             return null;
         }
