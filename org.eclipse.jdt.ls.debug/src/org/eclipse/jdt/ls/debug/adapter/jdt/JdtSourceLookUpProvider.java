@@ -100,54 +100,13 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
             throw new IllegalArgumentException("fullyQualifiedName is null");
         }
         // Jdt Search Engine doesn't support searching anonymous class or local type directly.
-        // For inner type, such as HelloWorld$InnerType, replace the separator "$" with "." and then search it.
-        // For anonymous type, such as HelloWorld$1, search its enclosing type instead.
+        // But because the inner class and anonymous class have the same java file as the enclosing type,
+        // search their enclosing type instead.
         if (fullyQualifiedName.indexOf("$") >= 0) {
-            String result = searchDeclarationFileByFqn(fullyQualifiedName.replace('$', '.'));
-            if (result != null) {
-                return result;
-            } else {
-                return searchDeclarationFileByFqn(AdapterUtils.parseEnclosingType(fullyQualifiedName));
-            }
+            return searchDeclarationFileByFqn(AdapterUtils.parseEnclosingType(fullyQualifiedName));
         } else {
             return searchDeclarationFileByFqn(fullyQualifiedName);
         }
-    }
-
-    private String searchDeclarationFileByFqn(String fullyQualifiedName) {
-        String projectName = (String)context.get(Constants.PROJECTNAME);
-        try {
-            IJavaSearchScope searchScope = projectName != null
-                    ? JDTUtils.createSearchScope(getJavaProjectFromName(projectName))
-                    : SearchEngine.createWorkspaceScope();
-            SearchPattern pattern = SearchPattern.createPattern(
-                    fullyQualifiedName,
-                    IJavaSearchConstants.TYPE,
-                    IJavaSearchConstants.DECLARATIONS,
-                    SearchPattern.R_EXACT_MATCH);
-            ArrayList<String> uris = new ArrayList<String>();
-            SearchRequestor requestor = new SearchRequestor() {
-                @Override
-                public void acceptSearchMatch(SearchMatch match) {
-                    Object element = match.getElement();
-                    if (element instanceof IType) {
-                        IType type = (IType)element;
-                        uris.add(type.isBinary() ? JDTUtils.getFileURI(type.getClassFile()) : JDTUtils.getFileURI(type.getResource()));
-                    }
-                }
-            };
-            SearchEngine searchEngine = new SearchEngine();
-            searchEngine.search(
-                    pattern,
-                    new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
-                    searchScope,
-                    requestor,
-                    null /* progress monitor */);
-            return uris.size() == 0 ? null : uris.get(0);
-        } catch (CoreException e) {
-            Logger.logException("Failed to parse java project", e);
-        }
-        return null;
     }
 
     @Override
@@ -191,5 +150,41 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
         }
         IJavaProject javaProject = JavaCore.create(project);
         return javaProject;
+    }
+
+    private String searchDeclarationFileByFqn(String fullyQualifiedName) {
+        String projectName = (String)context.get(Constants.PROJECTNAME);
+        try {
+            IJavaSearchScope searchScope = projectName != null
+                    ? JDTUtils.createSearchScope(getJavaProjectFromName(projectName))
+                    : SearchEngine.createWorkspaceScope();
+            SearchPattern pattern = SearchPattern.createPattern(
+                    fullyQualifiedName,
+                    IJavaSearchConstants.TYPE,
+                    IJavaSearchConstants.DECLARATIONS,
+                    SearchPattern.R_EXACT_MATCH);
+            ArrayList<String> uris = new ArrayList<String>();
+            SearchRequestor requestor = new SearchRequestor() {
+                @Override
+                public void acceptSearchMatch(SearchMatch match) {
+                    Object element = match.getElement();
+                    if (element instanceof IType) {
+                        IType type = (IType)element;
+                        uris.add(type.isBinary() ? JDTUtils.getFileURI(type.getClassFile()) : JDTUtils.getFileURI(type.getResource()));
+                    }
+                }
+            };
+            SearchEngine searchEngine = new SearchEngine();
+            searchEngine.search(
+                    pattern,
+                    new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
+                    searchScope,
+                    requestor,
+                    null /* progress monitor */);
+            return uris.size() == 0 ? null : uris.get(0);
+        } catch (CoreException e) {
+            Logger.logException("Failed to parse java project", e);
+        }
+        return null;
     }
 }
