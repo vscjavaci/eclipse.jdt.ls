@@ -838,7 +838,7 @@ public class DebugAdapter implements IDebugAdapter {
                 this.variableRequestHandler.recyclableThreads(thread);
             }
         } catch (VMDisconnectedException ex) {
-        	this.variableRequestHandler.recyclableAllObject();
+            this.variableRequestHandler.recyclableAllObject();
         }
     }
 
