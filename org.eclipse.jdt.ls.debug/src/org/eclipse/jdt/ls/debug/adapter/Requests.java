@@ -41,7 +41,6 @@ public class Requests {
         public String type;
         public String name;
         public String request;
-        public String cwd;
         public String startupClass;
         public String projectName;
         public String classpath;
@@ -54,7 +53,6 @@ public class Requests {
         public String type;
         public String name;
         public String request;
-        public String cwd;
         public String hostName;
         public int port;
         public int attachTimeout;

@@ -117,7 +117,6 @@ public class DebugAdapter implements IDebugAdapter {
 
     private boolean isAttached = false;
 
-    private String cwd;
     private String[] sourcePath;
     private IDebugSession debugSession;
     private BreakpointManager breakpointManager;
@@ -580,15 +579,9 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private void launchDebugSession(Requests.LaunchArguments arguments) throws DebugException {
-        this.cwd = arguments.cwd;
         String mainClass = arguments.startupClass;
         String classpath = arguments.classpath;
-        if (arguments.sourcePath == null || arguments.sourcePath.length == 0) {
-            this.sourcePath = new String[] { cwd };
-        } else {
-            this.sourcePath = new String[arguments.sourcePath.length];
-            System.arraycopy(arguments.sourcePath, 0, this.sourcePath, 0, arguments.sourcePath.length);
-        }
+        this.sourcePath = arguments.sourcePath != null ? arguments.sourcePath : new String[0];
 
         Logger.logInfo("Launch JVM with main class \"" + mainClass + "\", -classpath \"" + classpath + "\"");
 
@@ -612,13 +605,7 @@ public class DebugAdapter implements IDebugAdapter {
     }
 
     private void attachDebugSession(Requests.AttachArguments arguments) throws DebugException {
-        this.cwd = arguments.cwd;
-        if (arguments.sourcePath == null || arguments.sourcePath.length == 0) {
-            this.sourcePath = new String[] { cwd };
-        } else {
-            this.sourcePath = new String[arguments.sourcePath.length];
-            System.arraycopy(arguments.sourcePath, 0, this.sourcePath, 0, arguments.sourcePath.length);
-        }
+        this.sourcePath = arguments.sourcePath != null ? arguments.sourcePath : new String[0];
 
         try {
             this.debugSession = DebugUtility.attach(providerContext.getVirtualMachineManagerProvider().getVirtualMachineManager(),
@@ -784,19 +771,17 @@ public class DebugAdapter implements IDebugAdapter {
             relativeSourcePath = enclosingType.replace('.', '/') + ".java";
         }
         String uri = providerContext.getSourceLookUpProvider().getSourceFileURI(fullyQualifiedName, relativeSourcePath);
-        // If the source lookup engine cannot find the source file, then lookup it in the source directories specified by user.
-        if (uri == null) {
-            String absoluteSourcepath = AdapterUtils.sourceLookup(this.sourcePath, relativeSourcePath);
-            if (absoluteSourcepath == null) {
-                absoluteSourcepath = Paths.get(this.cwd, relativeSourcePath).toString();
+        if (uri != null) {
+            String clientPath = this.convertDebuggerPathToClient(uri);
+            if (uri.startsWith("file:")) {
+                return new Types.Source(sourceName, clientPath, 0);
+            } else {
+                return new Types.Source(sourceName, clientPath, this.sourceCollection.create(uri));
             }
-            uri = Paths.get(absoluteSourcepath).toUri().toString();
-        }
-        String clientPath = this.convertDebuggerPathToClient(uri);
-        if (uri.startsWith("file:")) {
-            return new Types.Source(sourceName, clientPath, 0);
         } else {
-            return new Types.Source(sourceName, clientPath, this.sourceCollection.create(uri));
+            // If the source lookup engine cannot find the source file, then lookup it in the source directories specified by user.
+            String absoluteSourcepath = AdapterUtils.sourceLookup(this.sourcePath, relativeSourcePath);
+            return new Types.Source(sourceName, absoluteSourcepath, 0);
         }
     }
 
