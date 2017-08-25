@@ -33,6 +33,7 @@ import org.eclipse.jdt.internal.core.SourceType;
 import org.eclipse.jdt.ls.core.internal.JDTUtils;
 import org.eclipse.jdt.ls.core.internal.handlers.JsonRpcHelpers;
 import org.eclipse.jdt.ls.debug.DebugException;
+import org.eclipse.jdt.ls.debug.adapter.AdapterUtils;
 import org.eclipse.jdt.ls.debug.adapter.ISourceLookUpProvider;
 import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
@@ -98,6 +99,22 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
         if (fullyQualifiedName == null) {
             throw new IllegalArgumentException("fullyQualifiedName is null");
         }
+        // Jdt Search Engine doesn't support searching anonymous class or local type directly.
+        // For inner type, such as HelloWorld$InnerType, replace the separator "$" with "." and then search it.
+        // For anonymous type, such as HelloWorld$1, search its enclosing type instead.
+        if (fullyQualifiedName.indexOf("$") >= 0) {
+            String result = searchDeclarationFileByFqn(fullyQualifiedName.replace('$', '.'));
+            if (result != null) {
+                return result;
+            } else {
+                return searchDeclarationFileByFqn(AdapterUtils.parseEnclosingType(fullyQualifiedName));
+            }
+        } else {
+            return searchDeclarationFileByFqn(fullyQualifiedName);
+        }
+    }
+
+    private String searchDeclarationFileByFqn(String fullyQualifiedName) {
         String projectName = (String)context.get(Constants.PROJECTNAME);
         try {
             IJavaSearchScope searchScope = projectName != null
