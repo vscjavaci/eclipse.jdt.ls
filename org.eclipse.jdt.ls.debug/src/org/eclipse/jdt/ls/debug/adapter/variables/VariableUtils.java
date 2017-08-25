@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.sun.jdi.InternalException;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 import com.sun.jdi.AbsentInformationException;
@@ -141,11 +142,32 @@ public abstract class VariableUtils {
                 res.add(var);
             }
         } catch (AbsentInformationException ex) {
+            // 1. in oracle implementations, when there is no debug information, the AbsentInformationException will be
+            // thrown, then we need to retrieve arguments from stackFrame#getArgumentValues.
+            // 2. in eclipse jdt implementations, when there is no debug information, stackFrame#visibleVariables will
+            // return some generated variables like arg0, arg1, and the stackFrame#getArgumentValues will return null
+
+            // for both scenarios, we need to handle the possible null returned by stackFrame#getArgumentValues and
+            // we need to call stackFrame.getArgumentValues get the arguments if AbsentInformationException is thrown
             int argId = 0;
-            for (Value argValue : stackFrame.getArgumentValues()) {
-                Variable var = new Variable("arg" + argId, argValue);
-                var.argumentIndex = argId++;
-                res.add(var);
+            try {
+                List<Value> arguments = stackFrame.getArgumentValues();
+                if (arguments == null) {
+                    return res;
+                }
+                for (Value argValue : arguments) {
+                    Variable var = new Variable("arg" + argId, argValue);
+                    var.argumentIndex = argId++;
+                    res.add(var);
+                }
+            } catch (InternalException ex2) {
+                // From Oracle's forums:
+                // This could be a JPDA bug. Unexpected JDWP Error: 32 means that an 'opaque' frame was
+                // detected at the lower JPDA levels,
+                // typically a native frame.
+                if (ex2.errorCode() != 32) {
+                    throw ex;
+                }
             }
         }
         return res;
