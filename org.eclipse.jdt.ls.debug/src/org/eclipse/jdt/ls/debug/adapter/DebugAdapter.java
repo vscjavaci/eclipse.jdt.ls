@@ -124,7 +124,6 @@ public class DebugAdapter implements IDebugAdapter {
     private IProviderContext providerContext;
     private VariableRequestHandler variableRequestHandler;
     private IdCollection<String> sourceCollection = new IdCollection<>();
-    private AtomicInteger messageId = new AtomicInteger(1);
 
     private IDebugAdapterContext debugContext = null;
     private Map<Command, List<IDebugRequestHandler>> requestHandlers = null;
@@ -802,10 +801,6 @@ public class DebugAdapter implements IDebugAdapter {
                 this.convertDebuggerLineToClient(location.lineNumber()), 0);
     }
 
-    private Types.Message convertDebuggerMessageToClient(String message) {
-        return new Types.Message(this.messageId.getAndIncrement(), message);
-    }
-
     private void checkThreadRunningAndRecycleIds(ThreadReference thread) {
         try {
             if (allThreadRunning()) {
@@ -1013,7 +1008,8 @@ public class DebugAdapter implements IDebugAdapter {
 
             // obj is null means the stackframe is continued by user manually,
             if (obj == null) {
-                return new Responses.ErrorResponseBody(convertDebuggerMessageToClient("Cannot set value because the thread is resumed."));
+                return new Responses.ErrorResponseBody(
+                        new Types.Message(ErrorCode.SET_VARIABLE_FAILURE.ordinal(), "Cannot set value because the thread is resumed."));
             }
             ThreadReference thread;
             String name = arguments.name;
@@ -1042,7 +1038,7 @@ public class DebugAdapter implements IDebugAdapter {
                 }
             } catch (IllegalArgumentException | AbsentInformationException | InvalidTypeException
                     | UnsupportedOperationException | ClassNotLoadedException e) {
-                return new Responses.ErrorResponseBody(convertDebuggerMessageToClient(e.getMessage()));
+                return new Responses.ErrorResponseBody(new Types.Message(ErrorCode.SET_VARIABLE_FAILURE.ordinal(), e.toString()));
             }
             int referenceId = getReferenceId(thread, newValue, showStaticVariables);
 
@@ -1145,9 +1141,9 @@ public class DebugAdapter implements IDebugAdapter {
             JdiObjectProxy<StackFrame> stackFrameProxy = (JdiObjectProxy<StackFrame>)this.objectPool.getObjectById(arguments.frameId);
             if (stackFrameProxy == null) {
                 // stackFrameProxy is null means the stackframe is continued by user manually,
-                return new Responses.ErrorResponseBody(convertDebuggerMessageToClient("Cannot evaluate because the thread is resumed."));
+                return new Responses.ErrorResponseBody(
+                        new Types.Message(ErrorCode.EVALUATE_FAILURE.ordinal(), "Cannot evaluate because the thread is resumed."));
             }
-
 
             // split a.b.c => ["a", "b", "c"]
             List<String> referenceExpressions = Arrays.stream(StringUtils.split(expression, '.'))
