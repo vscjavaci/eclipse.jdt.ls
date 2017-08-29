@@ -144,7 +144,7 @@ public class AdapterUtils {
      *              the error message
      */
     public static void setErrorResponse(Response response, ErrorCode errorCode, String errorMessage) {
-        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode.ordinal(), errorMessage));
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode.getId(), errorMessage));
         response.message = errorMessage;
         response.success = false;
     }
@@ -161,7 +161,7 @@ public class AdapterUtils {
      */
     public static void setErrorResponse(Response response, ErrorCode errorCode, Exception e) {
         String errorMessage = e.toString();
-        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode.ordinal(), errorMessage));
+        response.body = new Responses.ErrorResponseBody(new Types.Message(errorCode.getId(), errorMessage));
         response.message = errorMessage;
         response.success = false;
     }

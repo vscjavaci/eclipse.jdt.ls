@@ -1009,7 +1009,7 @@ public class DebugAdapter implements IDebugAdapter {
             // obj is null means the stackframe is continued by user manually,
             if (obj == null) {
                 return new Responses.ErrorResponseBody(
-                        new Types.Message(ErrorCode.SET_VARIABLE_FAILURE.ordinal(), "Cannot set value because the thread is resumed."));
+                        new Types.Message(ErrorCode.SET_VARIABLE_FAILURE.getId(), "Cannot set value because the thread is resumed."));
             }
             ThreadReference thread;
             String name = arguments.name;
@@ -1038,7 +1038,7 @@ public class DebugAdapter implements IDebugAdapter {
                 }
             } catch (IllegalArgumentException | AbsentInformationException | InvalidTypeException
                     | UnsupportedOperationException | ClassNotLoadedException e) {
-                return new Responses.ErrorResponseBody(new Types.Message(ErrorCode.SET_VARIABLE_FAILURE.ordinal(), e.toString()));
+                return new Responses.ErrorResponseBody(new Types.Message(ErrorCode.SET_VARIABLE_FAILURE.getId(), e.toString()));
             }
             int referenceId = getReferenceId(thread, newValue, showStaticVariables);
 
@@ -1142,7 +1142,7 @@ public class DebugAdapter implements IDebugAdapter {
             if (stackFrameProxy == null) {
                 // stackFrameProxy is null means the stackframe is continued by user manually,
                 return new Responses.ErrorResponseBody(
-                        new Types.Message(ErrorCode.EVALUATE_FAILURE.ordinal(), "Cannot evaluate because the thread is resumed."));
+                        new Types.Message(ErrorCode.EVALUATE_FAILURE.getId(), "Cannot evaluate because the thread is resumed."));
             }
 
             // split a.b.c => ["a", "b", "c"]
