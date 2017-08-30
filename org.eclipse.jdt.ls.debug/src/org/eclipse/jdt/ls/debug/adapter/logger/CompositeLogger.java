@@ -29,6 +29,30 @@ public class CompositeLogger implements ILogger {
         this.loggers = loggers;
     }
     
+    /**
+     * register a logger.
+     * @param logger
+     *              the logger to register
+     */
+    public void registerLogger(ILogger logger) {
+        if (logger == null) {
+            throw new IllegalArgumentException("logger is null");
+        }
+        this.loggers.add(logger);
+    }
+    
+    /**
+     * unregister a logger.
+     * @param logger
+     *              the logger to unregister
+     */
+    public void unregisterLogger(ILogger logger) {
+        if (logger == null) {
+            throw new IllegalArgumentException("logger is null");
+        }
+        this.loggers.remove(logger);
+    }
+    
     @Override
     public void logInfo(String message) {
         for (ILogger p : loggers) {

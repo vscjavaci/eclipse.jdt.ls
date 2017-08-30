@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.ls.core.debug.IDebugServer;
 import org.eclipse.jdt.ls.debug.adapter.ProtocolServer;
+import org.eclipse.jdt.ls.debug.adapter.logger.BundleLogger;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class JavaDebugServer implements IDebugServer {
@@ -33,6 +34,10 @@ public class JavaDebugServer implements IDebugServer {
     private boolean isStarted = false;
     private ExecutorService executor = null;
 
+    static {
+        Logger.registerLogger(new BundleLogger());
+    }
+    
     private JavaDebugServer() {
         try {
             this.serverSocket = new ServerSocket(0, 1);

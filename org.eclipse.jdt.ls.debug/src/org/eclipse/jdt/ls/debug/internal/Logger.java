@@ -13,20 +13,25 @@ package org.eclipse.jdt.ls.debug.internal;
 
 import java.util.ArrayList;
 
-import org.eclipse.jdt.ls.debug.adapter.logger.BundleLogger;
 import org.eclipse.jdt.ls.debug.adapter.logger.CompositeLogger;
 import org.eclipse.jdt.ls.debug.adapter.logger.DefaultLogger;
 import org.eclipse.jdt.ls.debug.adapter.logger.ILogger;
-import org.eclipse.jdt.ls.debug.adapter.logger.LoggerWithFilter;
 
 public class Logger {
-    private static ILogger provider;
+    private static CompositeLogger provider;
 
     static {
         ArrayList<ILogger> list = new ArrayList<ILogger>();
         list.add(new DefaultLogger());
-        list.add(new LoggerWithFilter(new BundleLogger()));
         provider = new CompositeLogger(list);
+    }
+    
+    public static void registerLogger(ILogger logger) {
+        provider.registerLogger(logger);
+    }
+    
+    public static void unregisterLogger(ILogger logger) {
+        provider.unregisterLogger(logger);
     }
     
     /**
@@ -47,6 +52,6 @@ public class Logger {
     }
     
     public static void logWarn(String warn) {
-        provider.logInfo(warn);
+        provider.logWarn(warn);
     }
 }
