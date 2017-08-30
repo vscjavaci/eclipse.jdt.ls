@@ -25,6 +25,10 @@ public class Requests {
     public static class Arguments {
 
     }
+    
+    public static class ArgumentsWithThreadId extends Arguments {
+        public long threadId;
+    }
 
     public static class InitializeArguments extends Arguments {
         public String clientID;
@@ -82,8 +86,7 @@ public class Requests {
         public boolean sourceModified = false;
     }
 
-    public static class StackTraceArguments extends Arguments {
-        public long threadId;
+    public static class StackTraceArguments extends ArgumentsWithThreadId {
         public int startFrame;
         public int levels;
     }
@@ -100,25 +103,20 @@ public class Requests {
 
     }
 
-    public static class ContinueArguments extends Arguments {
-        public long threadId;
+    public static class ContinueArguments extends ArgumentsWithThreadId {
     }
 
-    public static class NextArguments extends Arguments {
-        public long threadId;
+    public static class NextArguments extends ArgumentsWithThreadId {
     }
 
-    public static class StepInArguments extends Arguments {
-        public long threadId;
+    public static class StepInArguments extends ArgumentsWithThreadId {
         public int targetId;
     }
 
-    public static class StepOutArguments extends Arguments {
-        public long threadId;
+    public static class StepOutArguments extends ArgumentsWithThreadId {
     }
 
-    public static class PauseArguments extends Arguments {
-        public long threadId;
+    public static class PauseArguments extends ArgumentsWithThreadId {
     }
 
     public static class ScopesArguments extends Arguments {

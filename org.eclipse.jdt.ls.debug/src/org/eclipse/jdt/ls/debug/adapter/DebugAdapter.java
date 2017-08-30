@@ -33,6 +33,8 @@ import org.eclipse.jdt.ls.debug.adapter.handler.SourceRequestHandler;
 import org.eclipse.jdt.ls.debug.adapter.handler.StackTraceRequestHandler;
 import org.eclipse.jdt.ls.debug.adapter.handler.ThreadsRequestHandler;
 import org.eclipse.jdt.ls.debug.adapter.handler.VariablesRequestHandler;
+import org.eclipse.jdt.ls.debug.adapter.resource.disposer.IThreadResourceDisposer;
+import org.eclipse.jdt.ls.debug.adapter.resource.disposer.OnDemandThreadResourceDisposer;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class DebugAdapter implements IDebugAdapter {
@@ -40,6 +42,8 @@ public class DebugAdapter implements IDebugAdapter {
     private IProviderContext providerContext;
     private IDebugAdapterContext debugContext = null;
     private Map<Command, List<IDebugRequestHandler>> requestHandlers = null;
+    
+    private static final IThreadResourceDisposer ON_DEMAND_THREAD_RESOURCE_DISPOSER = new OnDemandThreadResourceDisposer();
 
     /**
      * Constructor.
