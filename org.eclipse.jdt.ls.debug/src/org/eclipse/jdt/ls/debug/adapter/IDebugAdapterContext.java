@@ -11,6 +11,8 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import java.util.Map;
+
 import org.eclipse.jdt.ls.debug.IDebugSession;
 import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
 
@@ -83,6 +85,6 @@ public interface IDebugAdapterContext {
 
     void setVariableFormatter(IVariableFormatter variableFormatter);
 
-    ICache<String, String> getSourceLookupCache();
+    Map<String, String> getSourceLookupCache();
 
 }

@@ -11,6 +11,9 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.eclipse.jdt.ls.debug.IDebugSession;
 import org.eclipse.jdt.ls.debug.adapter.Events.DebugEvent;
 import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
@@ -151,7 +154,7 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     }
 
     @Override
-    public ICache<String, String> getSourceLookupCache() {
-        return this.sourceMappingCache;
+    public Map<String, String> getSourceLookupCache() {
+        return Collections.synchronizedMap(this.sourceMappingCache);
     }
 }
