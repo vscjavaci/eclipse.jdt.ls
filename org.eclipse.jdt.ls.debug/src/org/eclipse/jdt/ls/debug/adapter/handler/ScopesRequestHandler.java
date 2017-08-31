@@ -39,7 +39,7 @@ public class ScopesRequestHandler implements IDebugRequestHandler {
     public void handle(Command command, Arguments arguments, Response response, IDebugAdapterContext context) {
         ScopesArguments scopesArgs = (ScopesArguments) arguments;
         List<Types.Scope> scopes = new ArrayList<>();
-        JdiObjectProxy<StackFrame> stackFrameProxy = (JdiObjectProxy<StackFrame>) context.getRecyclableIdPool().getObjectById(scopesArgs.frameId);
+        JdiObjectProxy<StackFrame> stackFrameProxy = (JdiObjectProxy<>) context.getRecyclableIdPool().getObjectById(scopesArgs.frameId);
         if (stackFrameProxy == null) {
             response.body = new Responses.ScopesResponseBody(scopes);
             return;
