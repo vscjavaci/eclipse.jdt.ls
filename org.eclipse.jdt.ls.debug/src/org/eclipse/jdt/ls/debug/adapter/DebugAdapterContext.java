@@ -17,6 +17,8 @@ import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
 import org.eclipse.jdt.ls.debug.adapter.variables.VariableFormatterFactory;
 
 public class DebugAdapterContext implements IDebugAdapterContext {
+    private static final int MAX_CACHE_ITEMS = 10000;
+    private LRUCache sourceMappingCache = new LRUCache<String, String>(MAX_CACHE_ITEMS);
     private DebugAdapter debugAdapter;
 
     private IDebugSession debugSession;
@@ -146,5 +148,10 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     @Override
     public void setVariableFormatter(IVariableFormatter variableFormatter) {
         this.variableFormatter = variableFormatter;
+    }
+
+    @Override
+    public ICache<String, String> getSourceLookupCache() {
+        return this.sourceMappingCache;
     }
 }

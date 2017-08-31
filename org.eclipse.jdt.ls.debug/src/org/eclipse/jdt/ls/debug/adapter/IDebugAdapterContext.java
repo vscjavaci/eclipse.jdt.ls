@@ -82,4 +82,7 @@ public interface IDebugAdapterContext {
     IVariableFormatter getVariableFormatter();
 
     void setVariableFormatter(IVariableFormatter variableFormatter);
+
+    ICache<String, String> getSourceLookupCache();
+
 }
