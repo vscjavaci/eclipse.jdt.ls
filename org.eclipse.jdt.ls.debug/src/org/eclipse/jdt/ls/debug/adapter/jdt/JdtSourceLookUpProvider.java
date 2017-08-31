@@ -12,13 +12,14 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IBuffer;
 import org.eclipse.jdt.core.IClassFile;
-import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.core.search.IJavaSearchScope;
 import org.eclipse.jdt.core.search.SearchEngine;
@@ -26,12 +27,8 @@ import org.eclipse.jdt.core.search.SearchMatch;
 import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
-import org.eclipse.jdt.internal.core.BinaryMember;
-import org.eclipse.jdt.internal.core.SourceField;
-import org.eclipse.jdt.internal.core.SourceMethod;
-import org.eclipse.jdt.internal.core.SourceType;
+import org.eclipse.jdt.internal.debug.core.breakpoints.ValidBreakpointLocationLocator;
 import org.eclipse.jdt.ls.core.internal.JDTUtils;
-import org.eclipse.jdt.ls.core.internal.handlers.JsonRpcHelpers;
 import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.adapter.AdapterUtils;
 import org.eclipse.jdt.ls.debug.adapter.Constants;
@@ -40,6 +37,10 @@ import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
+    public static final int SHARED_AST_LEVEL = AST.JLS8;
+    public static final boolean SHARED_AST_STATEMENT_RECOVERY = true;
+    public static final boolean SHARED_BINDING_RECOVERY = true;
+
     private HashMap<String, Object> context = new HashMap<String, Object>();
 
     @Override
@@ -50,6 +51,15 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
         context.putAll(props);
     }
 
+    public boolean supportsRealtimeBreakpointVerification() {
+        return true;
+    }
+
+    /**
+     * For a given source file and a list of line locations,
+     * return the fully qualified names of the type of the line location.
+     * If the line location points an empty line or invalid line, it returns a null fully qualified name.
+     */
     @Override
     public String[] getFullyQualifiedName(String uri, int[] lines, int[] columns) throws DebugException {
         if (uri == null) {
@@ -70,27 +80,28 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
             typeRoot = JDTUtils.resolveClassFile(uri);
         }
 
-        for (int i = 0; i < lines.length; i++) {
-            String fqn = null;
-            if (typeRoot != null) {
-                try {
-                    int offset = JsonRpcHelpers.toOffset(typeRoot.getBuffer(), lines[i], columns[i]);
-                    IJavaElement javaElement = typeRoot.getElementAt(offset);
-                    if (javaElement instanceof SourceField || javaElement instanceof SourceMethod
-                            || javaElement instanceof BinaryMember) {
-                        IType type = ((IMember) javaElement).getDeclaringType();
-                        fqn = type.getFullyQualifiedName();
-                    } else if (javaElement instanceof SourceType) {
-                        fqn = ((SourceType) javaElement).getFullyQualifiedName();
-                    }
-                } catch (JavaModelException e) {
-                    Logger.logException("Failed to parse the java element at line " + lines[i], e);
-                    throw new DebugException(
-                            String.format("Failed to parse the java element at line %d. Reason: %s", lines[i], e.getMessage()),
-                            e);
+        if (typeRoot != null && lines.length > 0) {
+            final ASTParser parser = ASTParser.newParser(SHARED_AST_LEVEL);
+            parser.setResolveBindings(true);
+            parser.setStatementsRecovery(SHARED_AST_STATEMENT_RECOVERY);
+            parser.setBindingsRecovery(SHARED_BINDING_RECOVERY);
+            parser.setSource(typeRoot);
+            CompilationUnit cunit = (CompilationUnit) parser.createAST(null);
+            for (int i = 0; i < lines.length; i++) {
+                // TODO
+                // The valid locator will verify if the current line is a valid location or not.
+                // If so, it will return the fully qualified name of the class type that contains the current line.
+                // Otherwise, it will try to find a valid location from the next lines and return it's fully qualified name.
+                // In current stage, we don't support to move the invalid breakpoint down to the next valid location, and just
+                // mark it as "unverified".
+                // In future, we could consider supporting to update the breakpoint to a valid location.
+                ValidBreakpointLocationLocator locator = new ValidBreakpointLocationLocator(cunit, lines[i], true, true);
+                cunit.accept(locator);
+                // When the final valid line location is same as the original line, that represents it's a valid breakpoint.
+                if (lines[i] == locator.getLineLocation()) {
+                    fqns[i] = locator.getFullyQualifiedTypeName();
                 }
             }
-            fqns[i] = fqn;
         }
         return fqns;
     }
