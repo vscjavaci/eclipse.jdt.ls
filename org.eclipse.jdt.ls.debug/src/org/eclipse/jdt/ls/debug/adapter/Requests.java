@@ -45,7 +45,7 @@ public class Requests {
         public String mainClass;
         public String programArguments = "";
         public String vmArguments = "";
-        public String classPath;
+        public String[] classPath = new String[0];
         public String[] sourcePath = new String[0];
     }
 

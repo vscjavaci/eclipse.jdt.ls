@@ -45,7 +45,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
  */
 public class ResolveClasspathsHandler {
 
-	public CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param) {
+	public CompletableFuture<String[]> resolveClasspaths(ClasspathResolveRequestParams param) {
 		return CompletableFutures.computeAsync(cm -> {
 			try {
 				return computeClassPath(param.getProjectName(), param.getMainClass());
@@ -117,7 +117,7 @@ public class ResolveClasspathsHandler {
 	 * @throws CoreException
 	 *             CoreException
 	 */
-	private static String computeClassPath(String projectName, String mainClass) throws CoreException {
+	private static String[] computeClassPath(String projectName, String mainClass) throws CoreException {
 		IJavaProject project = null;
 		// if type exists in multiple projects, debug configuration need provide project name.
 		if (projectName != null) {
@@ -144,12 +144,10 @@ public class ResolveClasspathsHandler {
 	 * @throws CoreException
 	 *             CoreException
 	 */
-	private static String computeClassPath(IJavaProject javaProject) throws CoreException {
+	private static String[] computeClassPath(IJavaProject javaProject) throws CoreException {
 		if (javaProject == null) {
 			throw new IllegalArgumentException("javaProject is null");
 		}
-		String[] classPathArray = JavaRuntime.computeDefaultRuntimeClassPath(javaProject);
-		String classPath = String.join(System.getProperty("path.separator"), classPathArray);
-		return classPath;
+		return JavaRuntime.computeDefaultRuntimeClassPath(javaProject);
 	}
 }
