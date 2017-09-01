@@ -22,37 +22,37 @@ public class ClasspathResolveRequestParams {
 	 *  the fully qualified name of startupClass
 	 */
 	@NonNull
-	private String startupClass;
+	private String mainClass;
 
 	/*
 	 * the project name
 	 */
 	private String projectName;
 
-	public ClasspathResolveRequestParams(final String startupClass) {
-		this.startupClass = startupClass;
+	public ClasspathResolveRequestParams(final String mainClass) {
+		this.mainClass = mainClass;
 	}
 
-	public ClasspathResolveRequestParams(final String startupClass, final String projectName) {
-		this.startupClass = startupClass;
+	public ClasspathResolveRequestParams(final String mainClass, final String projectName) {
+		this.mainClass = mainClass;
 		this.projectName = projectName;
 	}
 
 	/**
-	 * @return the startupClass
+	 * @return the mainClass
 	 */
 	@NonNull
 	@Pure
-	public String getStartupClass() {
-		return startupClass;
+	public String getMainClass() {
+		return mainClass;
 	}
 
 	/**
-	 * @param startupClass
-	 *            the startupClass to set
+	 * @param mainClass
+	 *            the mainClass to set
 	 */
-	public void setStartupClass(String startupClass) {
-		this.startupClass = startupClass;
+	public void setMainClass(String mainClass) {
+		this.mainClass = mainClass;
 	}
 
 	/**
@@ -75,7 +75,7 @@ public class ClasspathResolveRequestParams {
 	@Pure
 	public String toString() {
 		ToStringBuilder b = new ToStringBuilder(this);
-		b.add("startupClass", this.startupClass);
+		b.add("mainClass", this.mainClass);
 		b.add("projectName", this.projectName);
 		return b.toString();
 	}
@@ -93,11 +93,11 @@ public class ClasspathResolveRequestParams {
 			return false;
 		}
 		ClasspathResolveRequestParams other = (ClasspathResolveRequestParams) obj;
-		if (this.startupClass == null) {
-			if (other.startupClass != null) {
+		if (this.mainClass == null) {
+			if (other.mainClass != null) {
 				return false;
 			}
-		} else if (!this.startupClass.equals(other.startupClass)) {
+		} else if (!this.mainClass.equals(other.mainClass)) {
 			return false;
 		}
 		if (this.projectName == null) {
@@ -115,7 +115,7 @@ public class ClasspathResolveRequestParams {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.startupClass == null) ? 0 : this.startupClass.hashCode());
+		result = prime * result + ((this.mainClass == null) ? 0 : this.mainClass.hashCode());
 		result = prime * result + ((this.projectName == null) ? 0 : this.projectName.hashCode());
 		return result;
 	}

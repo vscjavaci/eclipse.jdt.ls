@@ -48,7 +48,7 @@ public class ResolveClasspathsHandler {
 	public CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param) {
 		return CompletableFutures.computeAsync(cm -> {
 			try {
-				return computeClassPath(param.getProjectName(), param.getStartupClass());
+				return computeClassPath(param.getProjectName(), param.getMainClass());
 			} catch (CoreException e) {
 				logException("Failed to resolve classpath.", e);
 				throw new ResponseErrorException(new ResponseError(-32602, "Failed to resolve classpath: " + e.getMessage(), e));
