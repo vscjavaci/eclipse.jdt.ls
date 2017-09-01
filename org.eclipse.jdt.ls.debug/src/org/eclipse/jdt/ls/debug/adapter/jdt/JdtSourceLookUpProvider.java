@@ -37,10 +37,6 @@ import org.eclipse.jdt.ls.debug.internal.JavaDebuggerServerPlugin;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
-    public static final int SHARED_AST_LEVEL = AST.JLS8;
-    public static final boolean SHARED_AST_STATEMENT_RECOVERY = true;
-    public static final boolean SHARED_BINDING_RECOVERY = true;
-
     private HashMap<String, Object> context = new HashMap<String, Object>();
 
     @Override
@@ -81,15 +77,13 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
         }
 
         if (typeRoot != null && lines.length > 0) {
-            final ASTParser parser = ASTParser.newParser(SHARED_AST_LEVEL);
-            parser.setResolveBindings(true);
-            parser.setStatementsRecovery(SHARED_AST_STATEMENT_RECOVERY);
-            parser.setBindingsRecovery(SHARED_BINDING_RECOVERY);
+            // Currently we only support Java SE 8 Edition (JLS8).
+            final ASTParser parser = ASTParser.newParser(AST.JLS8);
             parser.setSource(typeRoot);
             CompilationUnit cunit = (CompilationUnit) parser.createAST(null);
             for (int i = 0; i < lines.length; i++) {
                 // TODO
-                // The valid locator will verify if the current line is a valid location or not.
+                // The ValidBreakpointLocationLocator will verify if the current line is a valid location or not.
                 // If so, it will return the fully qualified name of the class type that contains the current line.
                 // Otherwise, it will try to find a valid location from the next lines and return it's fully qualified name.
                 // In current stage, we don't support to move the invalid breakpoint down to the next valid location, and just
