@@ -79,6 +79,9 @@ public class JdtSourceLookUpProvider implements ISourceLookUpProvider {
         if (typeRoot != null && lines.length > 0) {
             // Currently we only support Java SE 8 Edition (JLS8).
             final ASTParser parser = ASTParser.newParser(AST.JLS8);
+            parser.setResolveBindings(true);
+            parser.setBindingsRecovery(true);
+            parser.setStatementsRecovery(true);
             parser.setSource(typeRoot);
             CompilationUnit cunit = (CompilationUnit) parser.createAST(null);
             for (int i = 0; i < lines.length; i++) {
