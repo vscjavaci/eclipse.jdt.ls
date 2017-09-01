@@ -33,6 +33,8 @@ import org.eclipse.jdt.ls.debug.adapter.Requests.StepOutArguments;
 import org.eclipse.jdt.ls.debug.adapter.Requests.ThreadsArguments;
 import org.eclipse.jdt.ls.debug.adapter.Responses;
 import org.eclipse.jdt.ls.debug.adapter.Types;
+import org.eclipse.jdt.ls.debug.adapter.resource.disposer.IRequestHandlerResourceDisposer;
+import org.eclipse.jdt.ls.debug.adapter.resource.disposer.OnDemandThreadResourceDisposer;
 
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VMDisconnectedException;
@@ -72,6 +74,11 @@ public class ThreadsRequestHandler implements IDebugRequestHandler {
             default:
                 return;
         }
+    }
+
+    @Override
+    public IRequestHandlerResourceDisposer getResourceDisposer() {
+        return new OnDemandThreadResourceDisposer();
     }
 
     private void threads(Requests.ThreadsArguments arguments, Response response, IDebugAdapterContext context) {

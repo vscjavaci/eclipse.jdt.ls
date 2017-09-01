@@ -13,9 +13,15 @@ package org.eclipse.jdt.ls.debug.adapter;
 
 import java.util.List;
 
+import org.eclipse.jdt.ls.debug.adapter.resource.disposer.IRequestHandlerResourceDisposer;
+
 public interface IDebugRequestHandler {
     List<Requests.Command> getTargetCommands();
 
     void handle(Requests.Command command, Requests.Arguments arguments, Messages.Response response, IDebugAdapterContext context);
+
+    public default IRequestHandlerResourceDisposer getResourceDisposer() {
+        return null;
+    }
 
 }

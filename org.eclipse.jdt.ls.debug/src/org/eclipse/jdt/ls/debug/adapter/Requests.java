@@ -25,7 +25,7 @@ public class Requests {
     public static class Arguments {
 
     }
-    
+
     public static class ArgumentsWithThreadId extends Arguments {
         public long threadId;
     }

@@ -70,7 +70,7 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     public IDebugSession getDebugSession() {
         return this.debugSession;
     }
-    
+
     @Override
     public boolean isDebuggerLinesStartAt1() {
         return this.debuggerLinesStartAt1;
