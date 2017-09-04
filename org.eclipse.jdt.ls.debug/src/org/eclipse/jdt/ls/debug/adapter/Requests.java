@@ -43,10 +43,10 @@ public class Requests {
         public String request;
         public String projectName;
         public String mainClass;
-        public String programArguments = "";
-        public String vmArguments = "";
-        public String[] classPath = new String[0];
-        public String[] sourcePath = new String[0];
+        public String args = "";
+        public String vmArgs = "";
+        public String[] classPaths = new String[0];
+        public String[] sourcePaths = new String[0];
     }
 
     public static class AttachArguments extends Arguments {
@@ -55,8 +55,8 @@ public class Requests {
         public String request;
         public String hostName;
         public int port;
-        public int attachTimeout = 30000; // Default to 30s.
-        public String[] sourcePath = new String[0];
+        public int timeout = 30000; // Default to 30s.
+        public String[] sourcePaths = new String[0];
         public String projectName;
     }
 

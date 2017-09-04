@@ -47,15 +47,15 @@ public class LaunchRequestHandler implements IDebugRequestHandler {
     @Override
     public void handle(Command command, Arguments arguments, Response response, IDebugAdapterContext context) {
         LaunchArguments launchArguments = (LaunchArguments) arguments;
-        if (StringUtils.isBlank(launchArguments.mainClass) || launchArguments.classPath == null
-                || launchArguments.classPath.length == 0) {
+        if (StringUtils.isBlank(launchArguments.mainClass) || launchArguments.classPaths == null
+                || launchArguments.classPaths.length == 0) {
             AdapterUtils.setErrorResponse(response, ErrorCode.ARGUMENT_MISSING,
                     String.format("Failed to launch debuggee VM. Missing mainClass or classPath options in launch configuration"));
             return;
         }
 
         context.setAttached(false);
-        context.setSourcePath(launchArguments.sourcePath);
+        context.setSourcePaths(launchArguments.sourcePaths);
 
         IVirtualMachineManagerProvider vmProvider = context.getProvider(IVirtualMachineManagerProvider.class);
         ISourceLookUpProvider sourceProvider = context.getProvider(ISourceLookUpProvider.class);
@@ -67,9 +67,9 @@ public class LaunchRequestHandler implements IDebugRequestHandler {
 
         try {
             Logger.logInfo(String.format("Trying to launch Java Program with options \"%s -cp %s %s %s\" .",
-                    launchArguments.vmArguments, launchArguments.classPath, launchArguments.mainClass, launchArguments.programArguments));
+                    launchArguments.vmArgs, launchArguments.classPaths, launchArguments.mainClass, launchArguments.args));
             IDebugSession debugSession = DebugUtility.launch(vmProvider.getVirtualMachineManager(),
-                    launchArguments.mainClass, launchArguments.programArguments, launchArguments.vmArguments, Arrays.asList(launchArguments.classPath));
+                    launchArguments.mainClass, launchArguments.args, launchArguments.vmArgs, Arrays.asList(launchArguments.classPaths));
             context.setDebugSession(debugSession);
 
             Logger.logInfo("Launching debuggee VM succeeded.");
