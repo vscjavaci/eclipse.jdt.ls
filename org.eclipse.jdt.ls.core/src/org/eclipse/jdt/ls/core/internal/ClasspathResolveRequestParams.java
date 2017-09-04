@@ -19,7 +19,7 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
  */
 public class ClasspathResolveRequestParams {
 	/*
-	 *  the fully qualified name of startupClass
+	 *  the fully qualified name of mainClass
 	 */
 	@NonNull
 	private String mainClass;
