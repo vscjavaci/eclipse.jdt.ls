@@ -457,7 +457,7 @@ public class JDTLanguageServer implements LanguageServer, TextDocumentService, W
 	}
 
 	@Override
-	public CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param) {
+	public CompletableFuture<String[]> resolveClasspaths(ClasspathResolveRequestParams param) {
 		logInfo(">> java/resolveClasspath");
 		ResolveClasspathsHandler handler = new ResolveClasspathsHandler();
 		return handler.resolveClasspaths(param);

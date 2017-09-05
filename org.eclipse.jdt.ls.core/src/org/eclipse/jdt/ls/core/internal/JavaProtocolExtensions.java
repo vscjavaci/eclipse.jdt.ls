@@ -40,5 +40,5 @@ public interface JavaProtocolExtensions {
 	CompletableFuture<String> startDebugSession(String type);
 
 	@JsonRequest
-	CompletableFuture<String> resolveClasspaths(ClasspathResolveRequestParams param);
+	CompletableFuture<String[]> resolveClasspaths(ClasspathResolveRequestParams param);
 }
