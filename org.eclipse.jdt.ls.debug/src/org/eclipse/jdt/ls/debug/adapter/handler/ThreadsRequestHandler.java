@@ -128,30 +128,13 @@ public class ThreadsRequestHandler implements IDebugRequestHandler {
          */
         if (thread != null) {
             allThreadsContinued = false;
-            resumeThread(thread);
+            DebugUtility.resumeThread(thread);
             checkThreadRunningAndRecycleIds(thread, context);
         } else {
             context.getDebugSession().resume();
-            // Ensure that all threads are fully resumed when the VM is resumed.
-            for (ThreadReference tr : DebugUtility.getAllThreadsSafely(context.getDebugSession())) {
-                resumeThread(tr);
-            }
             context.getRecyclableIdPool().removeAllObjects();
         }
         response.body = new Responses.ContinueResponseBody(allThreadsContinued);
-    }
-
-    private void resumeThread(ThreadReference thread) {
-        if (thread == null) {
-            return;
-        }
-        while (thread.suspendCount() > 0) {
-            /**
-             * Invoking this method will decrement the count of pending suspends on this thread.
-             * If it is decremented to 0, the thread will continue to execute.
-             */
-            thread.resume();
-        }
     }
 
     private void checkThreadRunningAndRecycleIds(ThreadReference thread, IDebugAdapterContext context) {
