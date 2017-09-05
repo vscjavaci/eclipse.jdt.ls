@@ -121,15 +121,37 @@ public class ThreadsRequestHandler implements IDebugRequestHandler {
     private void resume(Requests.ContinueArguments arguments, Response response, IDebugAdapterContext context) {
         boolean allThreadsContinued = true;
         ThreadReference thread = DebugUtility.getThread(context.getDebugSession(), arguments.threadId);
+        /**
+         * See the jdi doc https://docs.oracle.com/javase/7/docs/jdk/api/jpda/jdi/com/sun/jdi/ThreadReference.html#resume(),
+         * suspends of both the virtual machine and individual threads are counted. Before a thread will run again, it must
+         * be resumed (through ThreadReference#resume() or VirtualMachine#resume()) the same number of times it has been suspended.
+         */
         if (thread != null) {
             allThreadsContinued = false;
-            thread.resume();
+            resumeThread(thread);
             checkThreadRunningAndRecycleIds(thread, context);
         } else {
             context.getDebugSession().resume();
+            // Ensure that all threads are fully resumed when the VM is resumed.
+            for (ThreadReference tr : DebugUtility.getAllThreadsSafely(context.getDebugSession())) {
+                resumeThread(tr);
+            }
             context.getRecyclableIdPool().removeAllObjects();
         }
         response.body = new Responses.ContinueResponseBody(allThreadsContinued);
+    }
+
+    private void resumeThread(ThreadReference thread) {
+        if (thread == null) {
+            return;
+        }
+        while (thread.suspendCount() > 0) {
+            /**
+             * Invoking this method will decrement the count of pending suspends on this thread.
+             * If it is decremented to 0, the thread will continue to execute.
+             */
+            thread.resume();
+        }
     }
 
     private void checkThreadRunningAndRecycleIds(ThreadReference thread, IDebugAdapterContext context) {
