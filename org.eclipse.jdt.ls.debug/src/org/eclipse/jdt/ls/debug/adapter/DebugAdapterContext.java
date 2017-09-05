@@ -25,6 +25,7 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     private DebugAdapter debugAdapter;
 
     private IDebugSession debugSession;
+
     private boolean debuggerLinesStartAt1 = true;
     private boolean debuggerPathsAreUri = true;
     private boolean clientLinesStartAt1 = true;
@@ -36,6 +37,11 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     private RecyclableObjectPool<Long, Object> recyclableIdPool = new RecyclableObjectPool<>();
     private IVariableFormatter variableFormatter = VariableFormatterFactory.createVariableFormatter();
 
+    /**
+     * constructor.
+     * @param debugAdapter
+     *                    debug adapter
+     */
     public DebugAdapterContext(DebugAdapter debugAdapter) {
         this.debugAdapter = debugAdapter;
     }
@@ -136,11 +142,6 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     @Override
     public RecyclableObjectPool<Long, Object> getRecyclableIdPool() {
         return this.recyclableIdPool;
-    }
-
-    @Override
-    public void setRecyclableIdPool(RecyclableObjectPool<Long, Object> idPool) {
-        this.recyclableIdPool = idPool;
     }
 
     @Override

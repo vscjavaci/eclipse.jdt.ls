@@ -79,12 +79,9 @@ public interface IDebugAdapterContext {
 
     RecyclableObjectPool<Long, Object> getRecyclableIdPool();
 
-    void setRecyclableIdPool(RecyclableObjectPool<Long, Object> idPool);
-
     IVariableFormatter getVariableFormatter();
 
     void setVariableFormatter(IVariableFormatter variableFormatter);
 
     Map<String, String> getSourceLookupCache();
-
 }
