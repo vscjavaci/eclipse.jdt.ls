@@ -3,7 +3,7 @@
 <locations>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="org.mockito.mockito-all" version="1.9.5"/>
-<repository location="http://mirrors.ustc.edu.cn/eclipse/scout/releases/4.0/testing"/>
+<repository location="http://download.eclipse.org/scout/releases/4.0/testing"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="org.eclipse.equinox.core.feature.feature.group" version="1.4.0.v20170518-1049"/>
