@@ -25,8 +25,51 @@
             <property name="eachLine" value="true"/>
         </module>
         -->
+    <!-- No trailing spaces allowed -->
+    <module name="RegexpSingleline">
+        <property name="format" value="\s+$"/>
+        <property name="message" value="Line has trailing spaces."/>
+    </module>
 
     <module name="TreeWalker">
+        <!-- Default CheckStyle Whitespace rules seem reasonable to use. -->
+        <module name="EmptyForIteratorPad"/>
+        <module name="MethodParamPad"/>
+        <module name="NoWhitespaceAfter"/>
+        <module name="NoWhitespaceBefore"/>
+        <module name="OperatorWrap"/>
+        <module name="ParenPad"/>
+        <module name="TypecastParenPad"/>
+        <module name="WhitespaceAfter"/>
+        <module name="WhitespaceAround"/>
+
+        <!-- Modifier Order as specified by Java Language Specifications. -->
+        <module name="ModifierOrder"/>
+
+        <!-- Empty blocks allowed, as long as they have explicit comments stating why they are empty.  -->
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+
+
+        <module name="LeftCurly"/>
+        <module name="NeedBraces"/>
+        <module name="RightCurly"/>
+
+         <!-- Added some coding problems as INFO.  Up to developer to react to them. -->
+        <module name="CovariantEquals">
+            <property name="severity" value="info" />
+        </module>
+        <!-- Only apply this to local variables; Designers seem to prefer using same parameter names as class members. -->
+        <module name="HiddenField">
+            <property name="tokens" value="VARIABLE_DEF"/>
+        </module>
+
+        <!-- No multiple assignement in a single line. -->
+        <module name="InnerAssignment" />
+
+        <module name="UnusedImports" />
+
         <module name="OuterTypeFilename"/>
         <module name="IllegalTokenText">
             <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
@@ -153,7 +196,6 @@
              <message key="ws.notPreceded"
              value="GenericWhitespace ''{0}'' is not preceded with whitespace."/>
         </module>
-        <!--
         <module name="Indentation">
             <property name="basicOffset" value="4"/>
             <property name="braceAdjustment" value="0"/>
@@ -162,17 +204,16 @@
             <property name="lineWrappingIndentation" value="4"/>
             <property name="arrayInitIndent" value="4"/>
         </module>
-        -->
         <module name="OverloadMethodsDeclarationOrder"/>
         <module name="VariableDeclarationUsageDistance"/>
-        <!--<module name="CustomImportOrder">
+        <module name="CustomImportOrder">
           	<property name="customImportOrderRules"
 		        value="STATIC###STANDARD_JAVA_PACKAGE###SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE"/>
 		    <property name="specialImportsRegExp" value="^org\."/>
 		    <property name="thirdPartyPackageRegExp" value="^com\."/>
 		    <property name="sortImportsInGroupAlphabetically" value="true"/>
 		    <property name="separateLineBetweenGroups" value="true"/>
-        </module> -->
+        </module>
         <module name="MethodParamPad"/>
         <module name="ParenPad"/>
         <module name="OperatorWrap">

@@ -11,12 +11,15 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import java.util.Map;
+
 import org.eclipse.jdt.ls.debug.IDebugSession;
+import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
 
 public interface IDebugAdapterContext {
     /**
      * Send debug event synchronously.
-     * 
+     *
      * @param event
      *            the debug event
      */
@@ -24,7 +27,7 @@ public interface IDebugAdapterContext {
 
     /**
      * Send debug event asynchronously.
-     * 
+     *
      * @param event
      *            the debug event
      */
@@ -41,7 +44,7 @@ public interface IDebugAdapterContext {
 
     /**
      * Get the debug session.
-     * 
+     *
      * @return the debug session.
      */
     IDebugSession getDebugSession();
@@ -66,9 +69,9 @@ public interface IDebugAdapterContext {
 
     void setAttached(boolean attached);
 
-    String[] getSourcePath();
+    String[] getSourcePaths();
 
-    void setSourcePath(String[] sourcePath);
+    void setSourcePaths(String[] sourcePaths);
 
     String getSourceUri(int sourceReference);
 
@@ -77,4 +80,11 @@ public interface IDebugAdapterContext {
     RecyclableObjectPool<Long, Object> getRecyclableIdPool();
 
     void setRecyclableIdPool(RecyclableObjectPool<Long, Object> idPool);
+
+    IVariableFormatter getVariableFormatter();
+
+    void setVariableFormatter(IVariableFormatter variableFormatter);
+
+    Map<String, String> getSourceLookupCache();
+
 }

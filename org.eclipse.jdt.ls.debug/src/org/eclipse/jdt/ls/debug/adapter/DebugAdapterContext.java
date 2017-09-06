@@ -11,10 +11,17 @@
 
 package org.eclipse.jdt.ls.debug.adapter;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.eclipse.jdt.ls.debug.IDebugSession;
 import org.eclipse.jdt.ls.debug.adapter.Events.DebugEvent;
+import org.eclipse.jdt.ls.debug.adapter.variables.IVariableFormatter;
+import org.eclipse.jdt.ls.debug.adapter.variables.VariableFormatterFactory;
 
 public class DebugAdapterContext implements IDebugAdapterContext {
+    private static final int MAX_CACHE_ITEMS = 10000;
+    private Map<String, String> sourceMappingCache = Collections.synchronizedMap(new LRUCache<>(MAX_CACHE_ITEMS));
     private DebugAdapter debugAdapter;
 
     private IDebugSession debugSession;
@@ -23,10 +30,11 @@ public class DebugAdapterContext implements IDebugAdapterContext {
     private boolean clientLinesStartAt1 = true;
     private boolean clientPathsAreUri = false;
     private boolean isAttached = false;
+    private String[] sourcePaths;
 
-    private String[] sourcePath;
     private IdCollection<String> sourceReferences = new IdCollection<>();
     private RecyclableObjectPool<Long, Object> recyclableIdPool = new RecyclableObjectPool<>();
+    private IVariableFormatter variableFormatter = VariableFormatterFactory.createVariableFormatter();
 
     public DebugAdapterContext(DebugAdapter debugAdapter) {
         this.debugAdapter = debugAdapter;
@@ -107,12 +115,12 @@ public class DebugAdapterContext implements IDebugAdapterContext {
         this.isAttached = attached;
     }
 
-    public String[] getSourcePath() {
-        return this.sourcePath;
+    public String[] getSourcePaths() {
+        return this.sourcePaths;
     }
 
-    public void setSourcePath(String[] sourcePath) {
-        this.sourcePath = sourcePath;
+    public void setSourcePaths(String[] sourcePaths) {
+        this.sourcePaths = sourcePaths;
     }
 
     @Override
@@ -135,4 +143,18 @@ public class DebugAdapterContext implements IDebugAdapterContext {
         this.recyclableIdPool = idPool;
     }
 
+    @Override
+    public IVariableFormatter getVariableFormatter() {
+        return this.variableFormatter;
+    }
+
+    @Override
+    public void setVariableFormatter(IVariableFormatter variableFormatter) {
+        this.variableFormatter = variableFormatter;
+    }
+
+    @Override
+    public Map<String, String> getSourceLookupCache() {
+        return this.sourceMappingCache;
+    }
 }

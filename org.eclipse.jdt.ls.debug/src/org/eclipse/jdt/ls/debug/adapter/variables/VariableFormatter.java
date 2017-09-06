@@ -11,16 +11,17 @@
 
 package org.eclipse.jdt.ls.debug.adapter.variables;
 
-import com.sun.jdi.Type;
-import com.sun.jdi.Value;
-import org.eclipse.jdt.ls.debug.adapter.formatter.IFormatter;
-import org.eclipse.jdt.ls.debug.adapter.formatter.ITypeFormatter;
-import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.eclipse.jdt.ls.debug.adapter.formatter.IFormatter;
+import org.eclipse.jdt.ls.debug.adapter.formatter.ITypeFormatter;
+import org.eclipse.jdt.ls.debug.adapter.formatter.IValueFormatter;
+
+import com.sun.jdi.Type;
+import com.sun.jdi.Value;
 
 public class VariableFormatter implements IVariableFormatter {
     private Map<IValueFormatter, Integer> valueFormatterMap;
@@ -68,9 +69,9 @@ public class VariableFormatter implements IVariableFormatter {
     public Map<String, Object> getDefaultOptions() {
         Map<String, Object> defaultOptions = new HashMap<>();
         int count1 = valueFormatterMap.keySet().stream().mapToInt(
-                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
+            formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
         int count2 = typeFormatterMap.keySet().stream().mapToInt(
-                formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
+            formatter -> this.mergeDefaultOptions(formatter, defaultOptions)).sum();
         if (count1 + count2 != defaultOptions.size()) {
             throw new IllegalStateException("There is some configuration conflicts on type and value formatters.");
         }
@@ -94,7 +95,7 @@ public class VariableFormatter implements IVariableFormatter {
 
     @Override
     public Value stringToValue(String stringValue, Type type, Map<String, Object> options) {
-        IValueFormatter formatter = (IValueFormatter)getFormatter(this.valueFormatterMap, type, options);
+        IValueFormatter formatter = (IValueFormatter) getFormatter(this.valueFormatterMap, type, options);
         return formatter.valueOf(stringValue, type, options);
     }
 
@@ -106,7 +107,6 @@ public class VariableFormatter implements IVariableFormatter {
         typeFormatterMap.put(typeFormatter, priority);
     }
 
-    
     private int mergeDefaultOptions(IFormatter formatter, Map<String, Object> options) {
         int count = 0;
         for (Map.Entry<String, Object> entry : formatter.getDefaultOptions().entrySet()) {

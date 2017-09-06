@@ -14,6 +14,7 @@ package org.eclipse.jdt.ls.debug.internal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jdt.ls.debug.IBreakpoint;
@@ -90,8 +91,8 @@ public class Breakpoint implements IBreakpoint {
             return super.equals(obj);
         }
 
-        IBreakpoint breakpoint = (IBreakpoint)obj;
-        return this.className().equals(breakpoint.className()) && this.lineNumber() == breakpoint.lineNumber();
+        IBreakpoint breakpoint = (IBreakpoint) obj;
+        return Objects.equals(this.className(), breakpoint.className()) && this.lineNumber() == breakpoint.lineNumber();
     }
 
     @Override
@@ -104,11 +105,11 @@ public class Breakpoint implements IBreakpoint {
         this.hitCount = hitCount;
 
         Observable.fromIterable(this.requests())
-        .filter(request -> request instanceof BreakpointRequest)
-        .subscribe(request -> {
-            request.addCountFilter(hitCount);
-            request.enable();
-        });
+            .filter(request -> request instanceof BreakpointRequest)
+            .subscribe(request -> {
+                request.addCountFilter(hitCount);
+                request.enable();
+            });
     }
 
     @Override

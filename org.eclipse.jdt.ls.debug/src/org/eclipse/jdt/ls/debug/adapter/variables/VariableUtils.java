@@ -15,13 +15,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.sun.jdi.InternalException;
 import org.eclipse.jdt.ls.debug.internal.Logger;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ArrayType;
+import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.Field;
+import com.sun.jdi.InternalException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.ObjectReference;
 import com.sun.jdi.ReferenceType;
@@ -51,7 +52,7 @@ public abstract class VariableUtils {
         return value.type() instanceof ReferenceType && ((ReferenceType) type).allFields().stream()
                 .filter(t -> includeStatic || !t.isStatic()).toArray().length > 0;
     }
-    
+
     /**
      * Get the variables of the object.
      *
@@ -135,6 +136,9 @@ public abstract class VariableUtils {
      */
     public static List<Variable> listLocalVariables(StackFrame stackFrame) throws AbsentInformationException {
         List<Variable> res = new ArrayList<>();
+        if (stackFrame.location().method().isNative()) {
+            return res;
+        }
         try {
             for (LocalVariable localVariable : stackFrame.visibleVariables()) {
                 Variable var = new Variable(localVariable.name(), stackFrame.getValue(localVariable));
@@ -142,9 +146,14 @@ public abstract class VariableUtils {
                 res.add(var);
             }
         } catch (AbsentInformationException ex) {
-            // avoid listing variable on native methods 
-            if (stackFrame.location().method().isNative()) {
-                return res;
+            // avoid listing variable on native methods
+
+            try {
+                if (stackFrame.location().method().argumentTypes().size() == 0) {
+                    return res;
+                }
+            } catch (ClassNotLoadedException ex2) {
+                // ignore since the method is hit.
             }
             // 1. in oracle implementations, when there is no debug information, the AbsentInformationException will be
             // thrown, then we need to retrieve arguments from stackFrame#getArgumentValues.

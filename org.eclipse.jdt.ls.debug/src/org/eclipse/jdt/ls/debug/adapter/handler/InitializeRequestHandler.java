@@ -19,7 +19,7 @@ import org.eclipse.jdt.ls.debug.adapter.IDebugAdapterContext;
 import org.eclipse.jdt.ls.debug.adapter.IDebugRequestHandler;
 import org.eclipse.jdt.ls.debug.adapter.Messages;
 import org.eclipse.jdt.ls.debug.adapter.Requests;
-import org.eclipse.jdt.ls.debug.adapter.Types;  
+import org.eclipse.jdt.ls.debug.adapter.Types;
 
 public class InitializeRequestHandler implements IDebugRequestHandler {
     @Override
@@ -49,10 +49,11 @@ public class InitializeRequestHandler implements IDebugRequestHandler {
         Types.Capabilities caps = new Types.Capabilities();
         caps.supportsConfigurationDoneRequest = true;
         caps.supportsHitConditionalBreakpoints = true;
+        caps.supportsSetVariable = true;
         caps.supportTerminateDebuggee = true;
         Types.ExceptionBreakpointFilter[] exceptionFilters = {
-                Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER,
-                Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER,
+            Types.ExceptionBreakpointFilter.UNCAUGHT_EXCEPTION_FILTER,
+            Types.ExceptionBreakpointFilter.CAUGHT_EXCEPTION_FILTER,
         };
         caps.exceptionBreakpointFilters = exceptionFilters;
         response.body = caps;

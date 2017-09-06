@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jdt.ls.debug.DebugException;
 import org.eclipse.jdt.ls.debug.IBreakpoint;
 import org.eclipse.jdt.ls.debug.adapter.AdapterUtils;
@@ -94,7 +95,7 @@ public class SetBreakpointsRequestHandler implements IDebugRequestHandler {
 
     private Types.Breakpoint convertDebuggerBreakpointToClient(IBreakpoint breakpoint, IDebugAdapterContext context) {
         int id = (int) breakpoint.getProperty("id");
-        boolean verified = breakpoint.getProperty("verified") != null ? (boolean) breakpoint.getProperty("verified") : false;
+        boolean verified = breakpoint.getProperty("verified") != null && (boolean) breakpoint.getProperty("verified");
         int lineNumber = AdapterUtils.convertLineNumber(breakpoint.lineNumber(), context.isDebuggerLinesStartAt1(), context.isClientLinesStartAt1());
         return new Types.Breakpoint(id, verified, lineNumber, "");
     }
@@ -115,7 +116,11 @@ public class SetBreakpointsRequestHandler implements IDebugRequestHandler {
                 hitCount = 0; // If hitCount is an illegal number, ignore hitCount condition.
             }
             breakpoints[i] = context.getDebugSession().createBreakpoint(fqns[i], lines[i], hitCount);
+            if (sourceProvider.supportsRealtimeBreakpointVerification() && StringUtils.isNotBlank(fqns[i])) {
+                breakpoints[i].putProperty("verified", true);
+            }
         }
         return breakpoints;
     }
+
 }
