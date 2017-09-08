@@ -24,6 +24,7 @@ import org.eclipse.jdt.ls.debug.adapter.Requests.Arguments;
 import org.eclipse.jdt.ls.debug.adapter.Requests.Command;
 import org.eclipse.jdt.ls.debug.adapter.Requests.SetExceptionBreakpointsArguments;
 import org.eclipse.jdt.ls.debug.adapter.Types;
+import org.eclipse.jdt.ls.debug.internal.Logger;
 
 public class SetExceptionBreakpointsRequestHandler implements IDebugRequestHandler {
 
@@ -41,6 +42,7 @@ public class SetExceptionBreakpointsRequestHandler implements IDebugRequestHandl
 
             context.getDebugSession().setExceptionBreakpoints(notifyCaught, notifyUncaught);
         } catch (Exception ex) {
+            Logger.logException("Unhandled exception while setting exception breakpoints.", ex);
             AdapterUtils.setErrorResponse(response, ErrorCode.SET_EXCEPTIONBREAKPOINT_FAILURE,
                     String.format("Failed to setExceptionBreakpoints. Reason: '%s'", ex.toString()));
         }
